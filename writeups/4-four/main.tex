@@ -1,0 +1,455 @@
+\title{\LaTeX Template}
+\author{
+        Kia Rahmani \\
+                Department of Computer Science\\
+        Purdue University, USA
+}
+\date{\today}
+
+% Main Document
+\documentclass[12pt,letter]{article}
+\usepackage{xcolor,listings}
+\usepackage{graphicx}
+\usepackage[inline]{enumitem}
+\usepackage[utf8]{inputenc}
+\usepackage[english,ngerman]{babel}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
+
+
+
+\begin{document}
+\selectlanguage{english}
+%\maketitle
+%\begin{abstract} \end{abstract}
+
+
+% Sections
+% ---------------------------------------------------
+\section{Syntax of simpSQL}
+The following is the formal definition of the simpSQL language based on Kartik's document,
+representing a simple programing language with realistic standard SQL queries.
+
+% the syntax of standard SQL
+\begin{figure}[h]
+	$$
+	t \in \texttt{TableName} \qquad 
+	f_{id},f_v \in \texttt{FieldName} \qquad 
+	v \in \texttt{Value} $$
+	%
+	\vspace{-7mm} %visually better
+	%
+	$$\qquad
+	x \in \texttt{Variable} \qquad
+	txn \in \texttt{TxnName}
+	$$
+	%
+	\vspace{-6mm} %visually better
+	%
+	$$ \odot \in \{<,\leq,=,\neq,>,\geq\} \qquad 
+	\oplus \in \{\cap,\cup\} \qquad 
+	\otimes \in \{\wedge, \vee\}
+	$$ 
+	%
+	$$
+	\begin{matrix*}[l]
+		pk & ::= & (f_{id},f_v)\\
+		obj &  ::= & (t,pk,\overline{f_v}) \\
+		r_{obj} &  ::= & \bar{v} \\
+		\phi_{pk}  & ::= & pk_{id} \odot v \;|\; pk_{v} \odot v
+		\;|\; \phi_{pk} \otimes \phi_{pk} \\
+		e  & ::= & x \;|\; \texttt{CHOOSE} \; x\;|\; r_{obj} \;|\; e \oplus e\\
+		\phi_{c}  & ::= & r^i_{obj}\odot v \;|\;  r\;\texttt{IN} \; e \;|\; \phi_{c} \otimes \phi_{c} \\
+		op   & ::= & obj.put(r) \quad
+		|\quad x\leftarrow obj.get(\phi_{obj})  \\
+		c   & ::=  & \{\overline{op}\}_{DC}
+		\;|\; x\leftarrow e \;|\;
+		\\  & & \texttt{IF}\; \phi_c \;\texttt{THEN} \;c \;\texttt{ELSE}\; c \;|\;  c;c \;|\;
+		\{c\}_{_{SER}} \;|\;
+		\\  & & \texttt{FOREACH}\; r \;\texttt{IN} \; x \; \texttt{DO}\; c \;\texttt{END}
+		
+	\end{matrix*}
+	$$
+	\hrule \hrule 
+\caption{Syntax of simpSQL}
+\label{fig:standard}
+\end{figure}
+
+
+
+% ---------------------------------------------------
+\section{Syntax of kvSQL}
+Figure \ref{fig:syn} presents the kvSQL language which is used to write
+generic key-value backed applications. The language is not very
+different from SQL; it simply replaces tables with (denormalized)
+objects supporting restricted queries. We will later formally define the
+translation standard SQL to kvSQL\footnote{proving this translation
+correct is NOT giong to be challenging, since we will initially translate the simpSQL
+program to a kvSQL version \emph{with SER transactions everywhere} and the difference will
+only be in the data models}.
+
+
+% the syntax of kvSQL
+\begin{figure}[h]
+	$$
+	t \in \texttt{TableName} \qquad 
+	f_{id},f_v \in \texttt{FieldName} \qquad 
+	v \in \texttt{Value} $$
+	%
+	\vspace{-7mm} %visually better
+	%
+	$$\qquad
+	x \in \texttt{Variable} \qquad
+	txn \in \texttt{TxnName}
+	$$
+	%
+	\vspace{-6mm} %visually better
+	%
+	$$ \odot \in \{<,\leq,=,\neq,>,\geq\} \qquad 
+	\oplus \in \{\cap,\cup\} \qquad 
+	\otimes \in \{\wedge, \vee\}
+	$$ 
+	%
+	$$
+	\begin{matrix*}[l]
+		pk & ::= & (f_{id},f_v)\\
+		obj &  ::= & (t,pk,\overline{f_v}) \\
+		r_{obj} &  ::= & \bar{v} \\
+		\phi_{pk}  & ::= & pk_{id} \odot v \;|\; pk_{v} \odot v
+		\;|\; \phi_{pk} \otimes \phi_{pk} \\
+		e  & ::= & x \;|\; \texttt{CHOOSE} \; x\;|\; r_{obj} \;|\; e \oplus e\\
+		\phi_{c}  & ::= & r^i_{obj}\odot v \;|\;  r\;\texttt{IN} \; e \;|\; \phi_{c} \otimes \phi_{c} \\
+		op   & ::= & obj.put(r) \quad
+		|\quad x\leftarrow obj.get(\phi_{obj})  \\
+		c   & ::=  & \{\overline{op}\}_{DC}
+		\;|\; x\leftarrow e \;|\;
+		\\  & & \texttt{IF}\; \phi_c \;\texttt{THEN} \;c \;\texttt{ELSE}\; c \;|\;  c;c \;|\;
+		\{c\}_{_{SER}} \;|\;
+		\\  & & \texttt{FOREACH}\; r \;\texttt{IN} \; x \; \texttt{DO}\; c \;\texttt{END}
+		
+	\end{matrix*}
+	$$
+	\hrule \hrule 
+\caption{Syntax of kvSQL}
+\label{fig:syn}
+\end{figure}
+
+
+% ---------------------------------------------------
+\section{Definition of the denormalizer}
+\subsection{Data Modeling Rules}
+
+\subsection{Program rewriting rules}
+
+
+
+
+% ---------------------------------------------------
+\newpage
+\section{Example: TPC-C in simpSQL and kvSQL}
+
+% WAREHOUSE
+\subsubsection*{SimpSQL Table: Warehouse}  
+\begin{tabular}{ |c|c|c|c|c| }
+ \hline
+ \underline{w\_id} & w\_name & w\_address & w\_tax & w\_ytd \\
+ \hline
+ &   &   & & \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Warehouse}  
+id := (w\_id) \\
+warehouse\_by\_id :=
+(Warehouse,(id,\_),[w\_name;w\_address;w\_tax;w\_ytd]) 
+\\ \\
+\hrule
+
+%DISTRICT 
+\subsubsection*{SimpSQL Table: District}  
+\begin{tabular}{ |c|c|c|c|c|c| }
+ \hline
+ \underline{d\_id} & \underline{d\_w\_id} & d\_info & d\_ytd & d\_tax & d\_next\_o\_id\\
+ \hline
+ &   &   & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): District}  
+ id := (d\_id,d\_w\_id) \\
+ d\_info\_by\_id := 
+(District,(id,\_),[d\_info])  \\
+ d\_ytd\_by\_id := 
+(District,(id,\_),[d\_ytd])  \\
+ d\_tax\_by\_id := 
+(District,(id,\_),[d\_tax])  \\
+ d\_next\_o\_id\_by\_id := 
+(District,(id,\_),[d\_next\_o\_id])  \\
+\\ 
+\hrule
+
+%CUSTOMER
+\subsubsection*{SimpSQL Table: Customer}  
+\begin{tabular}{ |c|c|c|c|c|c|c|c| }
+ \hline
+ \underline{c\_id} & \underline{c\_d\_id} & \underline{c\_w\_id} &
+ c\_name & c\_ytd &
+ c\_delivery\_cnt & c\_payment\_cnt & c\_balance\\
+ \hline
+ &   &   & & & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Customer}  
+id := (c\_id,c\_d\_id,c\_w\_id) \\
+ c\_name+ytd+...\_by\_id := 
+(Customer,(id,\_),[c\_name;c\_ytd;...])  \\
+ c\_balance\_by\_id := 
+(Customer,(id,\_),[c\_balance])  \\
+ c\_ytd+...\_by\_name := 
+(Customer,(id,c\_name),[c\_ytd;...])  \\
+ c\_balance\_by\_name := 
+(Customer,(id,c\_name),[c\_balance])  \\
+\\
+
+%ORDERS
+\subsubsection*{SimpSQL Table: Orders}  
+\begin{tabular}{ |c|c|c|c|c|c| }
+ \hline
+ \underline{o\_id} & \underline{o\_d\_id} & \underline{o\_w\_id} &
+ o\_c\_id & o\_carrier\_id & o\_entry\_d\\
+ \hline
+ &   &   & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Orders}  
+id := (o\_id,o\_d\_id,o\_w\_id) \\
+order\_by\_id := 
+(Orders,(id,\_),[o\_c\_id;o\_carrier\_id;o\_entry\_d])  \\
+o\_id+entryD+CarriedID\_by\_o\_c\_id := 
+(Orders,(id,o\_c\_id),[o\_id;...])  \\
+\\ 
+\hrule
+
+
+%ITEM
+\subsubsection*{SimpSQL Table: Item}  
+\begin{tabular}{ |c|c| }
+ \hline
+ \underline{i\_id} & i\_info\\
+ \hline
+ &   \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Item}  
+id := (i\_id)\\
+ i\_info\_by\_id := 
+(Item,(id,\_),[i\_info]) \\
+\\
+\hrule
+
+
+% ORDERLINE
+\subsubsection*{SimpSQL Table: OrderLine}  
+\begin{tabular}{ |c|c|c|c|c| }
+ \hline
+ \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id} &
+ \underline{ol\_number} & ol\_info\\
+ \hline
+ &   &   & & \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): OrderLine}  
+id := (ol\_o\_id,ol\_d\_id,ol\_w\_id,ol\_number) \\
+ol\_info\_by\_id :=
+(OrderLine,(id,\_),[ol\_info]) \\
+ol\_number+info\_by\_ol\_o\_id :=
+(OrderLine,(id,ol\_o\_id),[ol\_number;ol\_info]) \\
+\\ 
+\hrule
+
+
+% STOCK
+\subsubsection*{SimpSQL Table: Stock}  
+\begin{tabular}{ |c|c|c|c|c| }
+ \hline
+ \underline{s\_i\_id} & \underline{s\_w\_id} & s\_quant & s\_order\_cnt &
+ s\_info \\
+ \hline
+ &   &   & & \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Stock}  
+id := (s\_i\_id,s\_w\_id) \\
+s\_quant\_by\_id :=
+(Stock,(id,\_),[s\_quant]) \\
+s\_orderCnt\_by\_id :=
+(Stock,(id,\_),[s\_order\_cnt]) \\
+s\_info\_by\_id :=
+(Stock,(id,\_),[s\_info]) \\
+\\ 
+\hrule
+
+
+% ORDERLINE |><| STOCK 
+\subsubsection*{SimpSQL Table: OrderLine JOIN Stock}
+\begin{tabular}{ |c|c|c|c|c|c|c|c| }
+ \hline
+ \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id} &
+ \underline{ol\_number} & ol\_info &s\_i\_id & s\_w\_id & s\_quant \\
+ \hline
+ &   &   & & & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): OrderLine JOIN Stock}  
+id := (ol\_o\_id,ol\_d\_id,ol\_w\_id,ol\_number) \\
+s\_quant\_by\_ol\_o\_id :=
+(OrderLine $\bowtie$ Stock,(id,ol\_o\_id),[s\_quant]) \\
+\\ 
+\hrule
+
+
+% NEWORDER
+\subsubsection*{SimpSQL Table: NewOrder}
+\begin{tabular}{ |c|c|c| }
+ \hline
+ \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id}\\
+ \hline
+ &   &  \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): NewOrder}  
+id := (no\_o\_id,no\_d\_id,no\_w\_id) \\
+?\_by\_no\_d\_id :=
+(NewOrder,(id,no\_d\_id),[]) \\
+\\ 
+\hrule
+
+%History
+\subsubsection*{SimpSQL Table: History}  
+\begin{tabular}{ |c|c| }
+ \hline
+ \underline{h\_id} & h\_info\\
+ \hline
+ &   \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): History}  
+id := (h\_id)\\
+ h\_info\_by\_id := 
+(Item,(id,\_),[h\_info]) \\
+\\
+\hrule
+
+
+
+
+
+
+
+
+
+
+\newpage
+\subsection*{simpSQL TPC-C}
+
+
+
+
+
+
+
+\subsection*{kvSQL TPC-C}
+
+
+\subsubsection{kv transactions}
+%--------- New Order
+\begin{lstlisting}[language=Python, caption=NewOrder Transaction]
+new order
+NEW ORDER!
+\end{lstlisting}
+
+%--------- Payment
+\begin{lstlisting}[language=Python, caption=Payment Transaction]
+payment
+payment
+payment
+payment
+payment
+\end{lstlisting}
+
+
+%--------- Order Status
+\begin{lstlisting}[language=Python, caption=OrderStatus Transaction]
+order status
+order status
+order status
+order status
+\end{lstlisting}
+
+
+%--------- Stock Level
+\begin{lstlisting}[language=Python, caption=StockLevel Transaction]
+Stock level
+Stock level
+Stock level
+Stock level
+Stock level
+\end{lstlisting}
+
+
+%--------- Delivery
+\begin{lstlisting}[language=Python, caption=Delivery Transaction]
+delivery
+delivery
+delivery
+delivery
+delivery
+\end{lstlisting}
+
+
+
+
+
+
+
+% The Biblography
+\bibliographystyle{}
+\bibliography{../kia-bib}
+\end{document}
