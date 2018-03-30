@@ -61,44 +61,6 @@ representing a simple programing language with realistic standard SQL queries.
 
 % the syntax of standard SQL
 \begin{figure}[h]
-	$$
-	t \in \texttt{TableName} \qquad 
-	f_{id},f_v \in \texttt{FieldName} \qquad 
-	v \in \texttt{Value} $$
-	%
-	\vspace{-7mm} %visually better
-	%
-	$$\qquad
-	x \in \texttt{Variable} \qquad
-	txn \in \texttt{TxnName}
-	$$
-	%
-	\vspace{-6mm} %visually better
-	%
-	$$ \odot \in \{<,\leq,=,\neq,>,\geq\} \qquad 
-	\oplus \in \{\cap,\cup\} \qquad 
-	\otimes \in \{\wedge, \vee\}
-	$$ 
-	%
-	$$
-	\begin{matrix*}[l]
-		pk & ::= & (f_{id},f_v)\\
-		obj &  ::= & (t,pk,\overline{f_v}) \\
-		r_{obj} &  ::= & \bar{v} \\
-		\phi_{pk}  & ::= & pk_{id} \odot v \;|\; pk_{v} \odot v
-		\;|\; \phi_{pk} \otimes \phi_{pk} \\
-		e  & ::= & x \;|\; \texttt{CHOOSE} \; x\;|\; r_{obj} \;|\; e \oplus e\\
-		\phi_{c}  & ::= & r^i_{obj}\odot v \;|\;  r\;\texttt{IN} \; e \;|\; \phi_{c} \otimes \phi_{c} \\
-		op   & ::= & obj.put(r) \quad
-		|\quad x\leftarrow obj.get(\phi_{obj})  \\
-		c   & ::=  & \{\overline{op}\}_{DC}
-		\;|\; x\leftarrow e \;|\;
-		\\  & & \texttt{IF}\; \phi_c \;\texttt{THEN} \;c \;\texttt{ELSE}\; c \;|\;  c;c \;|\;
-		\{c\}_{_{SER}} \;|\;
-		\\  & & \texttt{FOREACH}\; r \;\texttt{IN} \; x \; \texttt{DO}\; c \;\texttt{END}
-		
-	\end{matrix*}
-	$$
 	\hrule \hrule 
 \caption{Syntax of simpSQL}
 \label{fig:standard}
@@ -112,8 +74,8 @@ Figure \ref{fig:syn} presents the kvSQL language which is used to write
 generic key-value backed applications. The language is not very
 different from SQL; it simply replaces tables with (denormalized)
 objects supporting restricted queries. We will later formally define the
-translation standard SQL to kvSQL\footnote{proving this translation
-correct is NOT giong to be challenging, since we will initially translate the simpSQL
+translation from simpSQL to kvSQL\footnote{proving this translation
+correct is NOT going to be very challenging, since we will initially translate the simpSQL
 program to a kvSQL version \emph{with SER transactions everywhere} and the difference will
 only be in the data models}.
 
@@ -141,7 +103,7 @@ only be in the data models}.
 	%
 	$$
 	\begin{matrix*}[l]
-		pk & ::= & (f_{id},f_v)\\
+		pk & ::= & (\overline{f_{id}},f_v)\\
 		obj &  ::= & (t,pk,\overline{f_v}) \\
 		r_{obj} &  ::= & \bar{v} \\
 		\phi_{pk}  & ::= & pk_{id} \odot v \;|\; pk_{v} \odot v
@@ -174,7 +136,6 @@ only be in the data models}.
 
 
 % ---------------------------------------------------
-\newpage
 \section{Example: TPC-C in simpSQL and kvSQL}
 
 % WAREHOUSE
@@ -240,6 +201,7 @@ id := (c\_id,c\_d\_id,c\_w\_id) \\
  c\_balance\_by\_name := 
 (Customer,(id,c\_name),[c\_balance])  \\
 \\
+\hrule
 
 %ORDERS
 \subsubsection*{SimpSQL Table: Orders}  
@@ -386,7 +348,6 @@ id := (h\_id)\\
 
 
 
-\newpage
 \subsection*{simpSQL TPC-C}
 
 
