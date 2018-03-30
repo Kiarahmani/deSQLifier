@@ -357,12 +357,10 @@ id := (h\_id)\\
 
 
 \subsection*{kvSQL TPC-C}
-
-
 \subsubsection{kv transactions}
 %--------- New Order
 \begin{lstlisting}[language=Python, caption=NewOrder Transaction]
-new order
+naddew order
 NEW ORDER!
 \end{lstlisting}
 
@@ -374,35 +372,94 @@ payment
 payment
 payment
 \end{lstlisting}
-
-
+%  (*$ $*)
+% ?(*$ \leftarrow (?).get$ (?=?)*)
 %--------- Order Status
-\begin{lstlisting}[language=Python, caption=OrderStatus Transaction]
-order status
-order status
-order status
-order status
+\begin{lstlisting}[language=Python, caption=OrderStatus
+Transaction,escapeinside={(*}{*)}]
+# Group columns are sometimes replaced with "info" 
+# for better readability 
+OrderStatus(cust_id,cust_name,) := {
+	IF (cust_id (*$ \neq $*) NULL)
+	THEN cx(*$ \leftarrow (c\_info\_by\_id).get$ (id=cust\_id)*)  
+	ELSE cx1(*$ \leftarrow (c\_info\_by\_name).get$ (c\_name=cust\_name)*);
+	     cx = (*$\texttt{CHOOSE}\; cx1 $*) # pick the middle customer;
+	ox1(*$ \leftarrow (o\_info\_by\_o\_c\_id).get$(o\_c\_id=cx.id)*);
+	ox =  (*$\texttt{CHOOSE}\; ox1 $*);	# pick the largest order id
+	olx(*$\leftarrow(ol\_info\_by\_ol\_o\_id).get$(ol\_o\_id=ox.o\_id)*);
+	print olx
+}(*$_{SER}$*)
 \end{lstlisting}
 
 
+
+\vspace{10mm}
 %--------- Stock Level
-\begin{lstlisting}[language=Python, caption=StockLevel Transaction]
-Stock level
-Stock level
-Stock level
-Stock level
-Stock level
+\begin{lstlisting}[language=Python, caption=StockLevel Transaction, escapeinside={(*}{*)}]
+# Group columns are sometimes replaced with "info" 
+# for better readability 
+StockLevel(dist_id) := {
+	dnox(*$ \leftarrow (d\_next\_o\_id\_by\_id).get$ (id=dist\_id)*)
+	sqx1 (*$ \leftarrow (s\_quant\_by\_ol\_o\_id).get$(ol\_o\_id=dnox.next\_o\_id)*)
+	sqx = (*$\texttt{CHOOSE}\; sqx1 $*) #Filter by w_id and d_id | Filter by s_quant
+	print sqx
+}(*$_{SER}$*)
 \end{lstlisting}
 
+\newpage
 
 %--------- Delivery
-\begin{lstlisting}[language=Python, caption=Delivery Transaction]
-delivery
-delivery
-delivery
-delivery
-delivery
+\begin{lstlisting}[language=Python, caption=Delivery Transaction,escapeinside={(*}{*)}]
+# Group columns are sometimes replaced with "info" 
+# for better readability 
+Delivery(dist_id, carr_num, curr_time) := {
+	nox1(*$ \leftarrow (no\_by\_no\_d\_id).get$(no\_d\_id=dist\_id)*);
+	nox (*$\texttt{CHOOSE}\; nox1 $*); #Pick the lowest order id
+	(*$ (d\_next\_o\_id\_by\_id).delete$(id=nox.o\_id)*);
+	ox(*$ \leftarrow (order\_by\_id).get$(id=nox.o\_id)*);
+	(*$ (oder\_by\_id).put$(ox[o\_carier\_id $\mapsto$ carr\_num])*);
+	olx1(*$ \leftarrow(ol\_info\_by\_ol\_o\_id).get$(ol\_o\_id=nox.o\_id)*);
+	olx (*$\texttt{CHOOSE}\; olx1 $*); #Filter by w_id and d_id 
+	FOREACH r IN olx DO
+		(*$ (ol\_info\_by\_ol\_o\_id).put$(r[ol\_info$\mapsto$curr\_time])*);
+		(*$ s = s + r.ol\_info $*)
+	END;
+	cx(*$ \leftarrow (c\_info\_by\_id).get$ (id=ox.c\_id)*)
+	(*$ (c\_info\_by\_id).put$(cx[c\_delivery\_cnt $\mapsto$
+	c\_delivery\_cnt + 1][c\_balance $\mapsto$ c\_balance - s])*);
+	# denormalized objects are not updated yet
+}(*$_{SER}$*)
 \end{lstlisting}
+
+\newpage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
