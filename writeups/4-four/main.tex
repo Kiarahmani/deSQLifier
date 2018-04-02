@@ -347,91 +347,172 @@ id := (h\_id)\\
 
 
 
-
+% TPC-C written in standard SQL (simpSQL)
 \subsection*{simpSQL TPC-C}
 
 
 
 
 
-
-
+% TPC-C written in IR (kvSQL)
 \subsection*{kvSQL TPC-C}
-\subsubsection{kv transactions}
+
+
+\newpage
+\paragraph{New Order}:
 %--------- New Order
-\begin{lstlisting}[language=Python, caption=NewOrder Transaction]
-naddew order
-NEW ORDER!
+\begin{lstlisting}[language=Python, caption=NewOrder Transaction,escapeinside={(*}{*)}]
+# some non-interesting updates are eliminated
+NewOrder((*wh\_id,dist\_id,cust\_id,item\_list*)) := {	
+	wx(*$= (warehouse\_by\_id).\texttt{GET}$ (id=wh\_id)*) #Retrieve warehouse by PK
+	dtx(*$= (d\_tax\_by\_id).\texttt{GET}$ (id=dist\_id)*) #Retrieve d_tax by PK
+	#Update d_next_o_id by PK:
+	dnoix(*$= (d\_next\_o\_id\_by\_id).\texttt{GET}$ (id=dist\_id)*) 
+	(*$ (d\_next\_o\_id\_by\_id).\texttt{PUT}$(dnoix[d\_next\_o\_id $\mapsto$d\_next\_o\_id+1])*);
+	cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customer by PK
+	#Enter new rows into Order and NewOrder objects (3 Objects):
+	(*$ (order\_by\_id).\texttt{PUT}$(...)*); #new row is created from known values
+	(*$ (o\_info\_by\_o\_c\_id).\texttt{PUT}$(...)*); #structure of the new row should match the denormalized object
+	(*$ (no\_by\_d\_id).\texttt{PUT}$(...)*);
+	
+	FOREACH item_id IN (*item\_list*) DO
+		ix(*$= (item\_info\_by\_id).\texttt{GET}$ (id=item\_id)*)
+		#Retrieve Stock information by PK
+		socx(*$= (s\_orderCnt\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
+		sqx(*$= (s\_quant\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
+		six(*$= (s\_info\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
+		IF ((*sqx - ol\_quant $<$ 10*))
+			(*$ (s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant $\mapsto$s\_quant - ol\_quant + 91])*);		
+			(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...)*);
+		ELSE
+			(*$ (s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant $\mapsto$s\_quant - ol\_quant])*);		
+
+	END;
+
+
+}(*$_{SER}$*)
 \end{lstlisting}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+\vspace{10mm}
+\paragraph{Payment}:
 %--------- Payment
-\begin{lstlisting}[language=Python, caption=Payment Transaction]
-payment
-payment
-payment
-payment
-payment
+\begin{lstlisting}[language=Python, caption=Payment Transaction,escapeinside={(*}{*)}]
+Payment((*wh\_id,dist\_id,cust\_id,cust\_name,amnt*)) := {
+	wx(*$= (warehouse\_by\_id).\texttt{GET}$ (id=wh\_id)*) #Retrieve warehouse by PK
+	(*$ (warehouse\_by\_id).\texttt{PUT}$(wx[w\_ytd $\mapsto$w\_ytd+1])*); #Update the ytd of the wrhs
+	dx(*$= (d\_ytd\_by\_id).\texttt{GET}$ (id=dist\_id)*) #Retrieve d_ytd by PK
+	(*$ (d\_ytd\_by\_id).\texttt{PUT}$(dx[d\_ytd $\mapsto$d\_ytd+1])*); #Update the ytd of the district
+	
+	# Retrive customer info (except c_balance):
+	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
+	THEN cx1(*$ = (c\_info\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
+	     cx = (*$\texttt{CHOOSE}\; cx1 $*) # pick the middle customer;
+	ELSE cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customers by PK
+	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx*)
+						(*[c\_ytd\_payment$\mapsto$c\_ytd\_payment+amnt]*)
+						(*[c\_payment\_cnt$\mapsto$c\_payment\_cnt+1])*);
+	
+	# Retrive and update customer's balance:
+	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
+	THEN cbx1(*$ = (c\_balance\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
+	     cbx = (*$\texttt{CHOOSE}\; cbx1 $*) # pick the middle customer;
+	     #Update both customer objects:
+	     (*$ (c\_balance\_by\_id).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
+	     (*$ (c\_balance\_by\_name).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
+	ELSE cbx(*$= (c\_balance\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*)#Retrieve customers by PK
+	     #Retrieve the same customer's info
+	     cix(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*)#Retrieve customer by PK
+			 # Update both objects:
+	     (*$ (c\_balance\_by\_id).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
+			 (*$ (c\_balance\_by\_name).\texttt{PUT}$((cix.name,cust\_id,cbx.c\_balance-amnt))*);
+	(*$ (h\_info\_by\_id).\texttt{PUT}$(wh\_id,dist\_id,...)*);		 
+}(*$_{SER}$*)
 \end{lstlisting}
-%  (*$ $*)
-% ?(*$ \leftarrow (?).get$ (?=?)*)
+
+
+
+
+\vspace{10mm}
+\paragraph{Order Status}:
 %--------- Order Status
 \begin{lstlisting}[language=Python, caption=OrderStatus
 Transaction,escapeinside={(*}{*)}]
-# Group columns are sometimes replaced with "info" 
-# for better readability 
-OrderStatus(cust_id,cust_name,) := {
-	IF (cust_id (*$ \neq $*) NULL)
-	THEN cx(*$ \leftarrow (c\_info\_by\_id).get$ (id=cust\_id)*)  
-	ELSE cx1(*$ \leftarrow (c\_info\_by\_name).get$ (c\_name=cust\_name)*);
+OrderStatus((*cust\_id,cust\_name*)) := {
+	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
+	THEN cx1(*$ = (c\_info\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
 	     cx = (*$\texttt{CHOOSE}\; cx1 $*) # pick the middle customer;
-	ox1(*$ \leftarrow (o\_info\_by\_o\_c\_id).get$(o\_c\_id=cx.id)*);
-	ox =  (*$\texttt{CHOOSE}\; ox1 $*);	# pick the largest order id
-	olx(*$\leftarrow(ol\_info\_by\_ol\_o\_id).get$(ol\_o\_id=ox.o\_id)*);
-	print olx
+	ELSE cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customers by PK
+	ox1(*$ = (o\_info\_by\_o\_c\_id).\texttt{GET}$(o\_c\_id=cx.id)*); #Retrieve orders by non-PK
+	ox =  (*$\texttt{CHOOSE}\;$ ox1 *);	# pick the largest order o_id
+	olx(*$=(ol\_info\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=ox.o\_id)*); #Retrieve OrdLn by non-PK
+	print olx  
 }(*$_{SER}$*)
 \end{lstlisting}
 
 
 
 \vspace{10mm}
+\paragraph{Stock Level}:
 %--------- Stock Level
 \begin{lstlisting}[language=Python, caption=StockLevel Transaction, escapeinside={(*}{*)}]
-# Group columns are sometimes replaced with "info" 
-# for better readability 
-StockLevel(dist_id) := {
-	dnox(*$ \leftarrow (d\_next\_o\_id\_by\_id).get$ (id=dist\_id)*)
-	sqx1 (*$ \leftarrow (s\_quant\_by\_ol\_o\_id).get$(ol\_o\_id=dnox.next\_o\_id)*)
-	sqx = (*$\texttt{CHOOSE}\; sqx1 $*) #Filter by w_id and d_id | Filter by s_quant
-	print sqx
+StockLevel((*dist\_id,wh\_id*)) := {
+	#Retrieve d_next_o_id by PK:
+	dnox(*$=(d\_next\_o\_id\_by\_id).\texttt{GET}$ (id=(wh\_id,dist\_id))*)
+	sqx1 (*$ = (s\_quant\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=dnox.next\_o\_id)*)
+	sqx = (*$\texttt{FILTER}$ sqx1 *) #Filter by w_id and d_id and by s_quant
+	print sqx 
 }(*$_{SER}$*)
 \end{lstlisting}
 
-\newpage
 
+
+
+\vspace{10 mm}
+\paragraph{Delivery}:
 %--------- Delivery
 \begin{lstlisting}[language=Python, caption=Delivery Transaction,escapeinside={(*}{*)}]
-# Group columns are sometimes replaced with "info" 
-# for better readability 
-Delivery(dist_id, carr_num, curr_time) := {
-	nox1(*$ \leftarrow (no\_by\_no\_d\_id).get$(no\_d\_id=dist\_id)*);
-	nox (*$\texttt{CHOOSE}\; nox1 $*); #Pick the lowest order id
-	(*$ (d\_next\_o\_id\_by\_id).delete$(id=nox.o\_id)*);
-	ox(*$ \leftarrow (order\_by\_id).get$(id=nox.o\_id)*);
-	(*$ (oder\_by\_id).put$(ox[o\_carier\_id $\mapsto$ carr\_num])*);
-	olx1(*$ \leftarrow(ol\_info\_by\_ol\_o\_id).get$(ol\_o\_id=nox.o\_id)*);
-	olx (*$\texttt{CHOOSE}\; olx1 $*); #Filter by w_id and d_id 
-	FOREACH r IN olx DO
-		(*$ (ol\_info\_by\_ol\_o\_id).put$(r[ol\_info$\mapsto$curr\_time])*);
-		(*$ s = s + r.ol\_info $*)
+Delivery(*(dist\_id, carr\_num, curr\_time)*) := {
+	nox2(*$ = (no\_by\_d\_id).\texttt{GET}$(no\_d\_id=dist\_id)*); #Retrive by partial key
+	nox1 = (*$\texttt{FILTER}$*)(nox2); #Filter records by W_id 
+	nox = (*$\texttt{CHOOSE}$*)(nox1); #Pick the record with the lowest o_id
+	(*$(no\_by\_d\_id).\texttt{DELETE}$(id=(nox.o\_id,...))*); #Delete by PK 
+	ox (*$ = (order\_by\_id).\texttt{GET}$(id=(nox.o\_id,...))*); #Retrive order by PK
+	(*$ (order\_by\_id).\texttt{PUT}$(ox[o\_carier\_id $\mapsto$carr\_num])*); #Update the carrier ID
+	(*$ (o\_id+...\_by\_o\_c\_id).\texttt{PUT}$(ox'[o\_carier\_id $\mapsto$carr\_num])*); #Update the carrier ID
+	# ox' only includes interesting columns from ox
+	olx1(*$=(ol\_info\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=nox.o\_id)*);
+	olx = (*$\texttt{FILTER}\;$ olx1 *); #Filter by w_id and d_id 
+	s = 0;
+	FOREACH olr IN olx DO
+		(*$ (ol\_info\_by\_ol\_o\_id).\texttt{PUT}$(olr[ol\_info$\mapsto$curr\_time])*);
+		(*$ (ol\_info\_by\_id).\texttt{PUT}$(olr[ol\_info$\mapsto$curr\_time])*);
+		(*$ s = s +$ olr.ol\_info *)
 	END;
-	cx(*$ \leftarrow (c\_info\_by\_id).get$ (id=ox.c\_id)*)
-	(*$ (c\_info\_by\_id).put$(cx[c\_delivery\_cnt $\mapsto$
-	c\_delivery\_cnt + 1][c\_balance $\mapsto$ c\_balance - s])*);
-	# denormalized objects are not updated yet
+	cx(*$ \leftarrow (c\_info\_by\_id).\texttt{GET}$ (id=ox.c\_id)*) #Retrive customer by PK
+	#Update c_info_by_id and c_balance_by_id:
+	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx[c\_delivery\_cnt $\mapsto$ c\_delivery\_cnt + 1])*);#update deliveryCnt
+	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx[c\_balance $\mapsto$ c\_balance - s])*); #update delivery cnt
+	#Update c_info_by_name and c_balance_by_name:
+	(*$ (c\_info\_by\_name).\texttt{PUT}$(cx'[c\_delvry\_cnt$\mapsto$c\_delvry\_cnt+1])*);#update deliveryCnt
+	(*$ (c\_info\_by\_name).\texttt{PUT}$(cx'[c\_balance $\mapsto$ c\_balance - s])*); #update delivery cnt
 }(*$_{SER}$*)
 \end{lstlisting}
 
-\newpage
 
 
 
