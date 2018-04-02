@@ -301,6 +301,8 @@ s\_info\_by\_id :=
 id := (ol\_o\_id,ol\_d\_id,ol\_w\_id,ol\_number) \\
 s\_quant\_by\_ol\_o\_id :=
 (OrderLine $\bowtie$ Stock,(id,ol\_o\_id),[s\_quant]) \\
+ol\_by\_s\_i\_id :=
+(OrderLine $\bowtie$ Stock,(id,s\_i\_id),[ol\_o\_id,...]) \\
 \\ 
 \hrule
 
@@ -317,7 +319,7 @@ s\_quant\_by\_ol\_o\_id :=
 
 \subsubsection*{kvSQL Object(s): NewOrder}  
 id := (no\_o\_id,no\_d\_id,no\_w\_id) \\
-?\_by\_no\_d\_id :=
+no\_by\_no\_d\_id :=
 (NewOrder,(id,no\_d\_id),[]) \\
 \\ 
 \hrule
@@ -363,7 +365,7 @@ id := (h\_id)\\
 %--------- New Order
 \begin{lstlisting}[language=Python, caption=NewOrder Transaction,escapeinside={(*}{*)}]
 # some non-interesting updates are eliminated
-NewOrder((*wh\_id,dist\_id,cust\_id,item\_list*)) := {	
+NewOrder((*wh\_id,dist\_id,cust\_id,item\_list,ol\_quant*)) := {	
 	wx(*$= (warehouse\_by\_id).\texttt{GET}$ (id=wh\_id)*) #Retrieve warehouse by PK
 	dtx(*$= (d\_tax\_by\_id).\texttt{GET}$ (id=dist\_id)*) #Retrieve d_tax by PK
 	#Update d_next_o_id by PK:
@@ -377,16 +379,23 @@ NewOrder((*wh\_id,dist\_id,cust\_id,item\_list*)) := {
 	
 	FOREACH item_id IN (*item\_list*) DO
 		ix(*$= (item\_info\_by\_id).\texttt{GET}$ (id=item\_id)*)
-		#Retrieve Stock information by PK
+		#Retrieve Stock information by PK (from 3 objects):
 		socx(*$= (s\_orderCnt\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
 		sqx(*$= (s\_quant\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
 		six(*$= (s\_info\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
 		IF ((*sqx - ol\_quant $<$ 10*))
-			(*$ (s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant $\mapsto$s\_quant - ol\_quant + 91])*);		
-			(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...)*);
+			(*$
+			(s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant$\mapsto$(s\_quant-ol\_quant+91)])*);		
+			olx(*$= (ol\_by\_s\_id).\texttt{GET}$ (s\_id=(item\_id))*) #All OL using this stock
+			FOREACH o_id IN (*ol\_x*) DO
+				(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...,sqx[s\_quant $\mapsto$(s\_quant - ol\_quant+91)],...)*);
+			END;
 		ELSE
 			(*$ (s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant $\mapsto$s\_quant - ol\_quant])*);		
-
+			olx(*$= (ol\_by\_s\_id).\texttt{GET}$ (s\_id=(item\_id))*) #All OL using this stock
+			FOREACH o_id IN (*ol\_x*) DO #update the denormalized join object
+				(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...,sqx[s\_quant $\mapsto$(s\_quant - ol\_quant)],...)*);
+			END;
 	END;
 
 
