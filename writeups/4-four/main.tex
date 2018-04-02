@@ -17,6 +17,7 @@
 \usepackage{mathtools}
 \usepackage{mathpartir}
 \usepackage{listings}
+\usepackage{amsfonts}
 \usepackage{color}
 
 \definecolor{codegreen}{rgb}{0,0.6,0}
@@ -61,62 +62,58 @@ representing a simple programing language with realistic standard SQL queries.
 
 % the syntax of standard SQL
 \begin{figure}[h]
+\textcolor{red}{//TODO}
+\\
 	\hrule \hrule 
 \caption{Syntax of simpSQL}
 \label{fig:standard}
 \end{figure}
 
 
-
 % ---------------------------------------------------
 \section{Syntax of kvSQL}
 Figure \ref{fig:syn} presents the kvSQL language which is used to write
-generic key-value backed applications. The language is not very
-different from SQL; it simply replaces tables with (denormalized)
-objects supporting restricted queries. We will later formally define the
-translation from simpSQL to kvSQL\footnote{proving this translation
-correct is NOT going to be very challenging, since we will initially translate the simpSQL
-program to a kvSQL version \emph{with SER transactions everywhere} and the difference will
-only be in the data models}.
-
-
+generic key-value store backed applications. The language is not very
+different from SQL; however it replaces tables with (denormalized)
+objects supporting restricted queries. This model represents the real world restrictions in EC stores such as Cassandra. We will later formally define the
+translation from simpSQL to kvSQL
+%\footnote{proving this translation
+%correct is NOT going to be very challenging, since we will initially translate the simpSQL
+%program to a kvSQL version \emph{with SER transactions everywhere} and the difference will
+%only be in the data models}.
 % the syntax of kvSQL
 \begin{figure}[h]
 	$$
 	t \in \texttt{TableName} \qquad 
 	f_{id},f_v \in \texttt{FieldName} \qquad 
-	v \in \texttt{Value} $$
-	%
-	\vspace{-7mm} %visually better
-	%
-	$$\qquad
-	x \in \texttt{Variable} \qquad
+	v_{val},v_{rec} \in \texttt{Variable} \qquad
 	txn \in \texttt{TxnName}
 	$$
 	%
 	\vspace{-6mm} %visually better
 	%
-	$$ \odot \in \{<,\leq,=,\neq,>,\geq\} \qquad 
-	\oplus \in \{\cap,\cup\} \qquad 
+	$$ \odot \in \{<,\leq,=,>,\geq\} \qquad 
+	\oplus \in \{+,-,\times,/ \} \qquad 
 	\otimes \in \{\wedge, \vee\}
 	$$ 
 	%
 	$$
 	\begin{matrix*}[l]
-		pk & ::= & (\overline{f_{id}},f_v)\\
+		pk & ::= & (\overline{f_{id}},f_v)\;|\;(\overline{f_{id}},f_{id})\\
 		obj &  ::= & (t,pk,\overline{f_v}) \\
-		r_{obj} &  ::= & \bar{v} \\
-		\phi_{pk}  & ::= & pk_{id} \odot v \;|\; pk_{v} \odot v
+		r &  ::= & \bar{e}\;|\; \texttt{CHOOSE}(v_{rec}) \\
+		e &  ::= & \mathbb{Z} \;|\; \texttt{NULL} \;|\; r^i \;|\; v_{val} \;|\; e \oplus e \\
+		\phi_{pk}  & ::= & pk^{1} = \bar{e} \;|\; pk^{2} \odot e
 		\;|\; \phi_{pk} \otimes \phi_{pk} \\
-		e  & ::= & x \;|\; \texttt{CHOOSE} \; x\;|\; r_{obj} \;|\; e \oplus e\\
-		\phi_{c}  & ::= & r^i_{obj}\odot v \;|\;  r\;\texttt{IN} \; e \;|\; \phi_{c} \otimes \phi_{c} \\
-		op   & ::= & obj.put(r) \quad
-		|\quad x\leftarrow obj.get(\phi_{obj})  \\
+		op   & ::= & obj.\texttt{PUT}(r) \;|\; 
+		v_{rec} = obj.\texttt{GET}(\phi_{obj^{2}}) \;|\;  obj.\texttt{DELETE}(\phi_{obj^{2}})  \\
+		\phi_{c}  & ::= & e\odot e \;|\;  r\;\texttt{IN} \; v_{rec} \;|\; \phi_{c} 
+		\otimes \phi_{c} \;|\; \neg \phi_{c} \\
 		c   & ::=  & \{\overline{op}\}_{DC}
-		\;|\; x\leftarrow e \;|\;
+		\;|\; v_{val} = e \;|\; v_{rec} = \texttt{FILTER} (v_{rec})
 		\\  & & \texttt{IF}\; \phi_c \;\texttt{THEN} \;c \;\texttt{ELSE}\; c \;|\;  c;c \;|\;
 		\{c\}_{_{SER}} \;|\;
-		\\  & & \texttt{FOREACH}\; r \;\texttt{IN} \; x \; \texttt{DO}\; c \;\texttt{END}
+		\\  & & \texttt{FOREACH}\; v \;\texttt{IN} \; v \; \texttt{DO}\; c \;\texttt{END}
 		
 	\end{matrix*}
 	$$
@@ -127,17 +124,10 @@ only be in the data models}.
 
 
 % ---------------------------------------------------
-\section{Definition of the denormalizer}
+\section{simpSQL to kvSQL Translation}
 \subsection{Data Modeling Rules}
-
-\subsection{Program rewriting rules}
-
-
-
-
-% ---------------------------------------------------
-\section{Example: TPC-C in simpSQL and kvSQL}
-
+\textcolor{red}{//TODO}
+\subsection{EXAMPLE: TPC-C}
 % WAREHOUSE
 \subsubsection*{SimpSQL Table: Warehouse}  
 \begin{tabular}{ |c|c|c|c|c| }
@@ -343,24 +333,19 @@ id := (h\_id)\\
 
 
 
+\vspace{10mm}
+\subsection{Program Rewriting Rules}
+\textcolor{red}{//TODO}
+
+\subsection{EXAMPLE: TPC-C}
 
 
-
-
-
-
+% ---------------------------------------------------
 % TPC-C written in standard SQL (simpSQL)
-\subsection*{simpSQL TPC-C}
-
-
-
-
-
+\subsection{simpSQL Version}
+\textcolor{red}{//TODO}
 % TPC-C written in IR (kvSQL)
-\subsection*{kvSQL TPC-C}
-
-
-\newpage
+\subsection{kvSQL Version}
 \paragraph{New Order}:
 %--------- New Order
 \begin{lstlisting}[language=Python, caption=NewOrder Transaction,escapeinside={(*}{*)}]
@@ -396,27 +381,19 @@ NewOrder((*wh\_id,dist\_id,cust\_id,item\_list,ol\_quant*)) := {
 			FOREACH o_id IN (*ol\_x*) DO #update the denormalized join object
 				(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...,sqx[s\_quant $\mapsto$(s\_quant - ol\_quant)],...)*);
 			END;
+	
+		#Enter a new order line (4 objects):
+		(*$ (ol\_info\_by\_id).\texttt{PUT}$(...)*); #insert a new row from known values
+		(*$ (ol\_number+info\_by\_ol\_o\_id).\texttt{PUT}$(...)*);#same values; dnrmlz'd object
+		(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...)*); #known values; insert in join object
+		(*$ (ol\_by\_s\_id).\texttt{PUT}$(...)*); #insert in the denormalized join object
 	END;
-
+	
 
 }(*$_{SER}$*)
 \end{lstlisting}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-\newpage
 \vspace{10mm}
 \paragraph{Payment}:
 %--------- Payment
@@ -456,7 +433,7 @@ Payment((*wh\_id,dist\_id,cust\_id,cust\_name,amnt*)) := {
 
 
 
-\vspace{10mm}
+\vspace{5mm}
 \paragraph{Order Status}:
 %--------- Order Status
 \begin{lstlisting}[language=Python, caption=OrderStatus
@@ -521,9 +498,13 @@ Delivery(*(dist\_id, carr\_num, curr\_time)*) := {
 	(*$ (c\_info\_by\_name).\texttt{PUT}$(cx'[c\_balance $\mapsto$ c\_balance - s])*); #update delivery cnt
 }(*$_{SER}$*)
 \end{lstlisting}
-
-
-
+\section{Soundness of the Translation}
+\section{Optimization}
+Either by strengthening (using Kartik's analysis and program patches) or weakening (how?), 
+from "an" initial version of the kvSQL program we create a more optimized version.
+\textcolor{red}{//TODO}
+\subsection{Soundness of the Optimizer}
+\textcolor{red}{//TODO}
 
 
 
