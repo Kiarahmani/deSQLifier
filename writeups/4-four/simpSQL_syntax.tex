@@ -1,0 +1,40 @@
+% the syntax of standard SQL
+\begin{figure}[h]
+        $$
+        tn \in \texttt{TableName} \qquad 
+        f_{id},f_v \in \texttt{FieldName} \qquad 
+        v \in \texttt{Variable} \qquad
+        $$
+        %
+        \vspace{-6mm} %visually better
+        %
+        $$ \odot \in \{<,\leq,=,>,\geq\} \qquad 
+        \oplus \in \{+,-,\times,/ \} \qquad 
+        \otimes \in \{\wedge, \vee\}
+        $$
+        %
+        $$
+        \begin{matrix*}[l]
+                
+                
+
+                t & ::= & (tn,\overline{f_{id}},\overline{f_{v}})\\
+                e_d & ::= & f \;|\; v \;|\; e_d \oplus e_d \;|\; \mathbb{Z}\\ 
+                \phi_d & ::= & f\odot e_d \;|\; f \; \texttt{IN} \; v \;|\; \neg \phi_d \;|\;\phi_d \otimes \phi_d  \\
+                e_c & ::= &  v \;|\; \texttt{CHOOSE} \; v \;|\; e_c\oplus e_c \;|\; \texttt{NULL} \;|\; \mathbb{Z} \\
+                \phi_c & ::= & v\odot e_c \;|\; \neg \phi_c \;|\;\phi_c \otimes \phi_c  \\
+                \phi_j & ::= & f=f \;|\; \phi_j \wedge \phi_j  \\
+                c   & ::=  & \texttt{SELECT}\; \bar{f} \;\texttt{AS}\; v \;\texttt{WHERE}\; \phi_d \;|\; 
+		\texttt{SELECT}_{\phi_j}\; \bar{f} \;\texttt{AS}\; v\;\texttt{WHERE}\; \phi_d \;|\; \\
+		& & \texttt{UPDATE SET}\; \bar{f}=\bar{e_c} \;\texttt{WHERE}\; \phi_d \;|\; \ v=e_c \;|\; c;c \;|\;\\ 
+                & & \texttt{INSERT VALUES}\; \bar{f}=\bar{e_c} \;|\;
+		\;\texttt{DELETE}\; tn \;\texttt{WHERE}\; \phi_d \;|\;\\
+                & & \texttt{IF}\; \phi_c \;\texttt{THEN}\; c \;\texttt{ELSE}\; c \;|\; 
+                \;\texttt{FOREACH}\; v_1 \;\texttt{in}\; v_2 \;\texttt{DO}\; c \;\texttt{END}\;
+        \end{matrix*}
+        $$
+        \hrule \hrule
+
+\caption{Syntax of simpSQL}
+\label{fig:standard}
+\end{figure}

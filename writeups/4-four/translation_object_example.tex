@@ -1,0 +1,204 @@
+% WAREHOUSE
+\subsubsection*{SimpSQL Table: Warehouse}  
+\begin{tabular}{ |c|c|c|c|c| }
+ \hline
+ \underline{w\_id} & w\_name & w\_address & w\_tax & w\_ytd \\
+ \hline
+ &   &   & & \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Warehouse}  
+id := (w\_id) \\
+warehouse\_by\_id :=
+(Warehouse,(id,\_),[w\_name;w\_address;w\_tax;w\_ytd]) 
+\\ \\
+\hrule
+
+%DISTRICT 
+\subsubsection*{SimpSQL Table: District}  
+\begin{tabular}{ |c|c|c|c|c|c| }
+ \hline
+ \underline{d\_id} & \underline{d\_w\_id} & d\_info & d\_ytd & d\_tax & d\_next\_o\_id\\
+ \hline
+ &   &   & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): District}  
+ id := (d\_id,d\_w\_id) \\
+ d\_info\_by\_id := 
+(District,(id,\_),[d\_info])  \\
+ d\_ytd\_by\_id := 
+(District,(id,\_),[d\_ytd])  \\
+ d\_tax\_by\_id := 
+(District,(id,\_),[d\_tax])  \\
+ d\_next\_o\_id\_by\_id := 
+(District,(id,\_),[d\_next\_o\_id])  \\
+\\ 
+\hrule
+
+%CUSTOMER
+\subsubsection*{SimpSQL Table: Customer}  
+\begin{tabular}{ |c|c|c|c|c|c|c|c| }
+ \hline
+ \underline{c\_id} & \underline{c\_d\_id} & \underline{c\_w\_id} &
+ c\_name & c\_ytd &
+ c\_delivery\_cnt & c\_payment\_cnt & c\_balance\\
+ \hline
+ &   &   & & & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Customer}  
+id := (c\_id,c\_d\_id,c\_w\_id) \\
+ c\_name+ytd+...\_by\_id := 
+(Customer,(id,\_),[c\_name;c\_ytd;...])  \\
+ c\_balance\_by\_id := 
+(Customer,(id,\_),[c\_balance])  \\
+ c\_ytd+...\_by\_name := 
+(Customer,(id,c\_name),[c\_ytd;...])  \\
+ c\_balance\_by\_name := 
+(Customer,(id,c\_name),[c\_balance])  \\
+\\
+\hrule
+
+%ORDERS
+\subsubsection*{SimpSQL Table: Orders}  
+\begin{tabular}{ |c|c|c|c|c|c| }
+ \hline
+ \underline{o\_id} & \underline{o\_d\_id} & \underline{o\_w\_id} &
+ o\_c\_id & o\_carrier\_id & o\_entry\_d\\
+ \hline
+ &   &   & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Orders}  
+id := (o\_id,o\_d\_id,o\_w\_id) \\
+order\_by\_id := 
+(Orders,(id,\_),[o\_c\_id;o\_carrier\_id;o\_entry\_d])  \\
+o\_id+entryD+CarriedID\_by\_o\_c\_id := 
+(Orders,(id,o\_c\_id),[o\_id;...])  \\
+\\ 
+\hrule
+
+
+%ITEM
+\subsubsection*{SimpSQL Table: Item}  
+\begin{tabular}{ |c|c| }
+ \hline
+ \underline{i\_id} & i\_info\\
+ \hline
+ &   \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Item}  
+id := (i\_id)\\
+ i\_info\_by\_id := 
+(Item,(id,\_),[i\_info]) \\
+\\
+\hrule
+
+
+% ORDERLINE
+\subsubsection*{SimpSQL Table: OrderLine}  
+\begin{tabular}{ |c|c|c|c|c| }
+ \hline
+ \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id} &
+ \underline{ol\_number} & ol\_info\\
+ \hline
+ &   &   & & \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): OrderLine}  
+id := (ol\_o\_id,ol\_d\_id,ol\_w\_id,ol\_number) \\
+ol\_info\_by\_id :=
+(OrderLine,(id,\_),[ol\_info]) \\
+ol\_number+info\_by\_ol\_o\_id :=
+(OrderLine,(id,ol\_o\_id),[ol\_number;ol\_info]) \\
+\\ 
+\hrule
+
+
+% STOCK
+\subsubsection*{SimpSQL Table: Stock}  
+\begin{tabular}{ |c|c|c|c|c| }
+ \hline
+ \underline{s\_i\_id} & \underline{s\_w\_id} & s\_quant & s\_order\_cnt &
+ s\_info \\
+ \hline
+ &   &   & & \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): Stock}  
+id := (s\_i\_id,s\_w\_id) \\
+s\_quant\_by\_id :=
+(Stock,(id,\_),[s\_quant]) \\
+s\_orderCnt\_by\_id :=
+(Stock,(id,\_),[s\_order\_cnt]) \\
+s\_info\_by\_id :=
+(Stock,(id,\_),[s\_info]) \\
+\\ 
+\hrule
+
+
+% ORDERLINE |><| STOCK 
+\subsubsection*{SimpSQL Table: OrderLine JOIN Stock}
+\begin{tabular}{ |c|c|c|c|c|c|c|c| }
+ \hline
+ \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id} &
+ \underline{ol\_number} & ol\_info &s\_i\_id & s\_w\_id & s\_quant \\
+ \hline
+ &   &   & & & & &\\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): OrderLine JOIN Stock}  
+id := (ol\_o\_id,ol\_d\_id,ol\_w\_id,ol\_number) \\
+s\_quant\_by\_ol\_o\_id :=
+(OrderLine $\bowtie$ Stock,(id,ol\_o\_id),[s\_quant]) \\
+ol\_by\_s\_i\_id :=
+(OrderLine $\bowtie$ Stock,(id,s\_i\_id),[ol\_o\_id,...]) \\
+\\ 
+\hrule
+
+
+% NEWORDER
+\subsubsection*{SimpSQL Table: NewOrder}
+\begin{tabular}{ |c|c|c| }
+ \hline
+ \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id}\\
+ \hline
+ &   &  \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): NewOrder}  
+id := (no\_o\_id,no\_d\_id,no\_w\_id) \\
+no\_by\_no\_d\_id :=
+(NewOrder,(id,no\_d\_id),[]) \\
+\\ 
+\hrule
+
+%History
+\subsubsection*{SimpSQL Table: History}  
+\begin{tabular}{ |c|c| }
+ \hline
+ \underline{h\_id} & h\_info\\
+ \hline
+ &   \\
+ \hline
+\end{tabular}
+
+\subsubsection*{kvSQL Object(s): History}  
+id := (h\_id)\\
+ h\_info\_by\_id := 
+(Item,(id,\_),[h\_info]) \\
+\\
+\hrule
+
+

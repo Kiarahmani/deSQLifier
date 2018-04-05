@@ -1,11 +1,10 @@
-\title{\LaTeX Template}
+\title{\textrm{deSQLifier (4)}}
 \author{
         Kia Rahmani \\
                 Department of Computer Science\\
         Purdue University, USA
 }
 \date{\today}
-
 % Main Document
 \documentclass[12pt,letter]{article}
 \usepackage{xcolor,listings}
@@ -23,9 +22,28 @@
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
- 
-\lstdefinestyle{mystyle}{
+\definecolor{backcolour}{RGB}{255, 219, 219}
+\definecolor{backcolourSimp}{RGB}{219, 232, 255}
+
+\lstdefinestyle{simpSQLstyle}{
+    backgroundcolor=\color{backcolourSimp},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstdefinestyle{kvSQLstyle}{
     backgroundcolor=\color{backcolour},   
     commentstyle=\color{codegreen},
     keywordstyle=\color{magenta},
@@ -43,31 +61,21 @@
     showtabs=false,                  
     tabsize=2
 }
- 
-\lstset{style=mystyle}
-
-
 
 \begin{document}
 \selectlanguage{english}
-%\maketitle
+\maketitle
 %\begin{abstract} \end{abstract}
 
-
-% Sections
+% ---------------------------------------------------
+% ---------------------------------------------------
+% Sections ------------------------------------------
+% ---------------------------------------------------
 % ---------------------------------------------------
 \section{Syntax of simpSQL}
 The following is the formal definition of the simpSQL language based on Kartik's document,
 representing a simple programing language with realistic standard SQL queries.
-
-% the syntax of standard SQL
-\begin{figure}[h]
-\textcolor{red}{//TODO}
-\\
-	\hrule \hrule 
-\caption{Syntax of simpSQL}
-\label{fig:standard}
-\end{figure}
+\input{simpSQL_syntax}
 
 
 % ---------------------------------------------------
@@ -77,464 +85,46 @@ generic key-value store backed applications. The language is not very
 different from SQL; however it replaces tables with (denormalized)
 objects supporting restricted queries. This model represents the real world restrictions in EC stores such as Cassandra. We will later formally define the
 translation from simpSQL to kvSQL
-%\footnote{proving this translation
-%correct is NOT going to be very challenging, since we will initially translate the simpSQL
-%program to a kvSQL version \emph{with SER transactions everywhere} and the difference will
-%only be in the data models}.
-% the syntax of kvSQL
-\begin{figure}[h]
-	$$
-	t \in \texttt{TableName} \qquad 
-	f_{id},f_v \in \texttt{FieldName} \qquad 
-	v_{val},v_{rec} \in \texttt{Variable} \qquad
-	txn \in \texttt{TxnName}
-	$$
-	%
-	\vspace{-6mm} %visually better
-	%
-	$$ \odot \in \{<,\leq,=,>,\geq\} \qquad 
-	\oplus \in \{+,-,\times,/ \} \qquad 
-	\otimes \in \{\wedge, \vee\}
-	$$ 
-	%
-	$$
-	\begin{matrix*}[l]
-		pk & ::= & (\overline{f_{id}},f_v)\;|\;(\overline{f_{id}},f_{id})\\
-		obj &  ::= & (t,pk,\overline{f_v}) \\
-		r &  ::= & \bar{e}\;|\; \texttt{CHOOSE}(v_{rec}) \\
-		e &  ::= & \mathbb{Z} \;|\; \texttt{NULL} \;|\; r^i \;|\; v_{val} \;|\; e \oplus e \\
-		\phi_{pk}  & ::= & pk^{1} = \bar{e} \;|\; pk^{2} \odot e
-		\;|\; \phi_{pk} \otimes \phi_{pk} \\
-		op   & ::= & obj.\texttt{PUT}(r) \;|\; 
-		v_{rec} = obj.\texttt{GET}(\phi_{obj^{2}}) \;|\;  obj.\texttt{DELETE}(\phi_{obj^{2}})  \\
-		\phi_{c}  & ::= & e\odot e \;|\;  r\;\texttt{IN} \; v_{rec} \;|\; \phi_{c} 
-		\otimes \phi_{c} \;|\; \neg \phi_{c} \\
-		c   & ::=  & \{\overline{op}\}_{DC}
-		\;|\; v_{val} = e \;|\; v_{rec} = \texttt{FILTER} (v_{rec})
-		\\  & & \texttt{IF}\; \phi_c \;\texttt{THEN} \;c \;\texttt{ELSE}\; c \;|\;  c;c \;|\;
-		\{c\}_{_{SER}} \;|\;
-		\\  & & \texttt{FOREACH}\; v \;\texttt{IN} \; v \; \texttt{DO}\; c \;\texttt{END}
-		
-	\end{matrix*}
-	$$
-	\hrule \hrule 
-\caption{Syntax of kvSQL}
-\label{fig:syn}
-\end{figure}
+\input{kvSQL_syntax}
 
 
 % ---------------------------------------------------
 \section{simpSQL to kvSQL Translation}
-\subsection{Data Modeling Rules}
+In this section we will present the complete algorithm to translate arbitrary simpSQL 
+programs to an equivalent kvSQL verison. 
+As an example, we will also apply our procedure on full TPC-C benchmark and
+derive the kvSQL TPC-C.
+
+\subsection{Data Remodeling Rules}
 \textcolor{red}{//TODO}
-\subsection{EXAMPLE: TPC-C}
-% WAREHOUSE
-\subsubsection*{SimpSQL Table: Warehouse}  
-\begin{tabular}{ |c|c|c|c|c| }
- \hline
- \underline{w\_id} & w\_name & w\_address & w\_tax & w\_ytd \\
- \hline
- &   &   & & \\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): Warehouse}  
-id := (w\_id) \\
-warehouse\_by\_id :=
-(Warehouse,(id,\_),[w\_name;w\_address;w\_tax;w\_ytd]) 
-\\ \\
-\hrule
-
-%DISTRICT 
-\subsubsection*{SimpSQL Table: District}  
-\begin{tabular}{ |c|c|c|c|c|c| }
- \hline
- \underline{d\_id} & \underline{d\_w\_id} & d\_info & d\_ytd & d\_tax & d\_next\_o\_id\\
- \hline
- &   &   & & &\\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): District}  
- id := (d\_id,d\_w\_id) \\
- d\_info\_by\_id := 
-(District,(id,\_),[d\_info])  \\
- d\_ytd\_by\_id := 
-(District,(id,\_),[d\_ytd])  \\
- d\_tax\_by\_id := 
-(District,(id,\_),[d\_tax])  \\
- d\_next\_o\_id\_by\_id := 
-(District,(id,\_),[d\_next\_o\_id])  \\
-\\ 
-\hrule
-
-%CUSTOMER
-\subsubsection*{SimpSQL Table: Customer}  
-\begin{tabular}{ |c|c|c|c|c|c|c|c| }
- \hline
- \underline{c\_id} & \underline{c\_d\_id} & \underline{c\_w\_id} &
- c\_name & c\_ytd &
- c\_delivery\_cnt & c\_payment\_cnt & c\_balance\\
- \hline
- &   &   & & & & &\\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): Customer}  
-id := (c\_id,c\_d\_id,c\_w\_id) \\
- c\_name+ytd+...\_by\_id := 
-(Customer,(id,\_),[c\_name;c\_ytd;...])  \\
- c\_balance\_by\_id := 
-(Customer,(id,\_),[c\_balance])  \\
- c\_ytd+...\_by\_name := 
-(Customer,(id,c\_name),[c\_ytd;...])  \\
- c\_balance\_by\_name := 
-(Customer,(id,c\_name),[c\_balance])  \\
-\\
-\hrule
-
-%ORDERS
-\subsubsection*{SimpSQL Table: Orders}  
-\begin{tabular}{ |c|c|c|c|c|c| }
- \hline
- \underline{o\_id} & \underline{o\_d\_id} & \underline{o\_w\_id} &
- o\_c\_id & o\_carrier\_id & o\_entry\_d\\
- \hline
- &   &   & & &\\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): Orders}  
-id := (o\_id,o\_d\_id,o\_w\_id) \\
-order\_by\_id := 
-(Orders,(id,\_),[o\_c\_id;o\_carrier\_id;o\_entry\_d])  \\
-o\_id+entryD+CarriedID\_by\_o\_c\_id := 
-(Orders,(id,o\_c\_id),[o\_id;...])  \\
-\\ 
-\hrule
-
-
-%ITEM
-\subsubsection*{SimpSQL Table: Item}  
-\begin{tabular}{ |c|c| }
- \hline
- \underline{i\_id} & i\_info\\
- \hline
- &   \\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): Item}  
-id := (i\_id)\\
- i\_info\_by\_id := 
-(Item,(id,\_),[i\_info]) \\
-\\
-\hrule
-
-
-% ORDERLINE
-\subsubsection*{SimpSQL Table: OrderLine}  
-\begin{tabular}{ |c|c|c|c|c| }
- \hline
- \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id} &
- \underline{ol\_number} & ol\_info\\
- \hline
- &   &   & & \\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): OrderLine}  
-id := (ol\_o\_id,ol\_d\_id,ol\_w\_id,ol\_number) \\
-ol\_info\_by\_id :=
-(OrderLine,(id,\_),[ol\_info]) \\
-ol\_number+info\_by\_ol\_o\_id :=
-(OrderLine,(id,ol\_o\_id),[ol\_number;ol\_info]) \\
-\\ 
-\hrule
-
-
-% STOCK
-\subsubsection*{SimpSQL Table: Stock}  
-\begin{tabular}{ |c|c|c|c|c| }
- \hline
- \underline{s\_i\_id} & \underline{s\_w\_id} & s\_quant & s\_order\_cnt &
- s\_info \\
- \hline
- &   &   & & \\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): Stock}  
-id := (s\_i\_id,s\_w\_id) \\
-s\_quant\_by\_id :=
-(Stock,(id,\_),[s\_quant]) \\
-s\_orderCnt\_by\_id :=
-(Stock,(id,\_),[s\_order\_cnt]) \\
-s\_info\_by\_id :=
-(Stock,(id,\_),[s\_info]) \\
-\\ 
-\hrule
-
-
-% ORDERLINE |><| STOCK 
-\subsubsection*{SimpSQL Table: OrderLine JOIN Stock}
-\begin{tabular}{ |c|c|c|c|c|c|c|c| }
- \hline
- \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id} &
- \underline{ol\_number} & ol\_info &s\_i\_id & s\_w\_id & s\_quant \\
- \hline
- &   &   & & & & &\\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): OrderLine JOIN Stock}  
-id := (ol\_o\_id,ol\_d\_id,ol\_w\_id,ol\_number) \\
-s\_quant\_by\_ol\_o\_id :=
-(OrderLine $\bowtie$ Stock,(id,ol\_o\_id),[s\_quant]) \\
-ol\_by\_s\_i\_id :=
-(OrderLine $\bowtie$ Stock,(id,s\_i\_id),[ol\_o\_id,...]) \\
-\\ 
-\hrule
-
-
-% NEWORDER
-\subsubsection*{SimpSQL Table: NewOrder}
-\begin{tabular}{ |c|c|c| }
- \hline
- \underline{ol\_o\_id} & \underline{ol\_d\_id} & \underline{ol\_w\_id}\\
- \hline
- &   &  \\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): NewOrder}  
-id := (no\_o\_id,no\_d\_id,no\_w\_id) \\
-no\_by\_no\_d\_id :=
-(NewOrder,(id,no\_d\_id),[]) \\
-\\ 
-\hrule
-
-%History
-\subsubsection*{SimpSQL Table: History}  
-\begin{tabular}{ |c|c| }
- \hline
- \underline{h\_id} & h\_info\\
- \hline
- &   \\
- \hline
-\end{tabular}
-
-\subsubsection*{kvSQL Object(s): History}  
-id := (h\_id)\\
- h\_info\_by\_id := 
-(Item,(id,\_),[h\_info]) \\
-\\
-\hrule
-
-
+\subsection{Data Remodeling: TPC-C}
+\input{translation_object_example}
 
 \vspace{10mm}
 \subsection{Program Rewriting Rules}
 \textcolor{red}{//TODO}
 
-\subsection{EXAMPLE: TPC-C}
+\subsection{Program Rewriting: TPC-C}
+\input{translation_txn_example}
+
+\subsection{Soundness of the Translation}
+\textcolor{red}{//TODO}
 
 
 % ---------------------------------------------------
-% TPC-C written in standard SQL (simpSQL)
-\subsection{simpSQL Version}
-\textcolor{red}{//TODO}
-% TPC-C written in IR (kvSQL)
-\subsection{kvSQL Version}
-\paragraph{New Order}:
-%--------- New Order
-\begin{lstlisting}[language=Python, caption=NewOrder Transaction,escapeinside={(*}{*)}]
-# some non-interesting updates are eliminated
-NewOrder((*wh\_id,dist\_id,cust\_id,item\_list,ol\_quant*)) := {	
-	wx(*$= (warehouse\_by\_id).\texttt{GET}$ (id=wh\_id)*) #Retrieve warehouse by PK
-	dtx(*$= (d\_tax\_by\_id).\texttt{GET}$ (id=dist\_id)*) #Retrieve d_tax by PK
-	#Update d_next_o_id by PK:
-	dnoix(*$= (d\_next\_o\_id\_by\_id).\texttt{GET}$ (id=dist\_id)*) 
-	(*$ (d\_next\_o\_id\_by\_id).\texttt{PUT}$(dnoix[d\_next\_o\_id $\mapsto$d\_next\_o\_id+1])*);
-	cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customer by PK
-	#Enter new rows into Order and NewOrder objects (3 Objects):
-	(*$ (order\_by\_id).\texttt{PUT}$(...)*); #new row is created from known values
-	(*$ (o\_info\_by\_o\_c\_id).\texttt{PUT}$(...)*); #structure of the new row should match the denormalized object
-	(*$ (no\_by\_d\_id).\texttt{PUT}$(...)*);
-	
-	FOREACH item_id IN (*item\_list*) DO
-		ix(*$= (item\_info\_by\_id).\texttt{GET}$ (id=item\_id)*)
-		#Retrieve Stock information by PK (from 3 objects):
-		socx(*$= (s\_orderCnt\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
-		sqx(*$= (s\_quant\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
-		six(*$= (s\_info\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
-		IF ((*sqx - ol\_quant $<$ 10*))
-			(*$
-			(s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant$\mapsto$(s\_quant-ol\_quant+91)])*);		
-			olx(*$= (ol\_by\_s\_id).\texttt{GET}$ (s\_id=(item\_id))*) #All OL using this stock
-			FOREACH o_id IN (*ol\_x*) DO
-				(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...,sqx[s\_quant $\mapsto$(s\_quant - ol\_quant+91)],...)*);
-			END;
-		ELSE
-			(*$ (s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant $\mapsto$s\_quant - ol\_quant])*);		
-			olx(*$= (ol\_by\_s\_id).\texttt{GET}$ (s\_id=(item\_id))*) #All OL using this stock
-			FOREACH o_id IN (*ol\_x*) DO #update the denormalized join object
-				(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...,sqx[s\_quant $\mapsto$(s\_quant - ol\_quant)],...)*);
-			END;
-	
-		#Enter a new order line (4 objects):
-		(*$ (ol\_info\_by\_id).\texttt{PUT}$(...)*); #insert a new row from known values
-		(*$ (ol\_number+info\_by\_ol\_o\_id).\texttt{PUT}$(...)*);#same values; dnrmlz'd object
-		(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...)*); #known values; insert in join object
-		(*$ (ol\_by\_s\_id).\texttt{PUT}$(...)*); #insert in the denormalized join object
-	END;
-	
-
-}(*$_{SER}$*)
-\end{lstlisting}
-
-
-\vspace{10mm}
-\paragraph{Payment}:
-%--------- Payment
-\begin{lstlisting}[language=Python, caption=Payment Transaction,escapeinside={(*}{*)}]
-Payment((*wh\_id,dist\_id,cust\_id,cust\_name,amnt*)) := {
-	wx(*$= (warehouse\_by\_id).\texttt{GET}$ (id=wh\_id)*) #Retrieve warehouse by PK
-	(*$ (warehouse\_by\_id).\texttt{PUT}$(wx[w\_ytd $\mapsto$w\_ytd+1])*); #Update the ytd of the wrhs
-	dx(*$= (d\_ytd\_by\_id).\texttt{GET}$ (id=dist\_id)*) #Retrieve d_ytd by PK
-	(*$ (d\_ytd\_by\_id).\texttt{PUT}$(dx[d\_ytd $\mapsto$d\_ytd+1])*); #Update the ytd of the district
-	
-	# Retrive customer info (except c_balance):
-	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
-	THEN cx1(*$ = (c\_info\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
-	     cx = (*$\texttt{CHOOSE}\; cx1 $*) # pick the middle customer;
-	ELSE cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customers by PK
-	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx*)
-						(*[c\_ytd\_payment$\mapsto$c\_ytd\_payment+amnt]*)
-						(*[c\_payment\_cnt$\mapsto$c\_payment\_cnt+1])*);
-	
-	# Retrive and update customer's balance:
-	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
-	THEN cbx1(*$ = (c\_balance\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
-	     cbx = (*$\texttt{CHOOSE}\; cbx1 $*) # pick the middle customer;
-	     #Update both customer objects:
-	     (*$ (c\_balance\_by\_id).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
-	     (*$ (c\_balance\_by\_name).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
-	ELSE cbx(*$= (c\_balance\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*)#Retrieve customers by PK
-	     #Retrieve the same customer's info
-	     cix(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*)#Retrieve customer by PK
-			 # Update both objects:
-	     (*$ (c\_balance\_by\_id).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
-			 (*$ (c\_balance\_by\_name).\texttt{PUT}$((cix.name,cust\_id,cbx.c\_balance-amnt))*);
-	(*$ (h\_info\_by\_id).\texttt{PUT}$(wh\_id,dist\_id,...)*);		 
-}(*$_{SER}$*)
-\end{lstlisting}
-
-
-
-
-\vspace{5mm}
-\paragraph{Order Status}:
-%--------- Order Status
-\begin{lstlisting}[language=Python, caption=OrderStatus
-Transaction,escapeinside={(*}{*)}]
-OrderStatus((*cust\_id,cust\_name*)) := {
-	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
-	THEN cx1(*$ = (c\_info\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
-	     cx = (*$\texttt{CHOOSE}\; cx1 $*) # pick the middle customer;
-	ELSE cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customers by PK
-	ox1(*$ = (o\_info\_by\_o\_c\_id).\texttt{GET}$(o\_c\_id=cx.id)*); #Retrieve orders by non-PK
-	ox =  (*$\texttt{CHOOSE}\;$ ox1 *);	# pick the largest order o_id
-	olx(*$=(ol\_info\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=ox.o\_id)*); #Retrieve OrdLn by non-PK
-	print olx  
-}(*$_{SER}$*)
-\end{lstlisting}
-
-
-
-\vspace{10mm}
-\paragraph{Stock Level}:
-%--------- Stock Level
-\begin{lstlisting}[language=Python, caption=StockLevel Transaction, escapeinside={(*}{*)}]
-StockLevel((*dist\_id,wh\_id*)) := {
-	#Retrieve d_next_o_id by PK:
-	dnox(*$=(d\_next\_o\_id\_by\_id).\texttt{GET}$ (id=(wh\_id,dist\_id))*)
-	sqx1 (*$ = (s\_quant\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=dnox.next\_o\_id)*)
-	sqx = (*$\texttt{FILTER}$ sqx1 *) #Filter by w_id and d_id and by s_quant
-	print sqx 
-}(*$_{SER}$*)
-\end{lstlisting}
-
-
-
-
-\vspace{10 mm}
-\paragraph{Delivery}:
-%--------- Delivery
-\begin{lstlisting}[language=Python, caption=Delivery Transaction,escapeinside={(*}{*)}]
-Delivery(*(dist\_id, carr\_num, curr\_time)*) := {
-	nox2(*$ = (no\_by\_d\_id).\texttt{GET}$(no\_d\_id=dist\_id)*); #Retrive by partial key
-	nox1 = (*$\texttt{FILTER}$*)(nox2); #Filter records by W_id 
-	nox = (*$\texttt{CHOOSE}$*)(nox1); #Pick the record with the lowest o_id
-	(*$(no\_by\_d\_id).\texttt{DELETE}$(id=(nox.o\_id,...))*); #Delete by PK 
-	ox (*$ = (order\_by\_id).\texttt{GET}$(id=(nox.o\_id,...))*); #Retrive order by PK
-	(*$ (order\_by\_id).\texttt{PUT}$(ox[o\_carier\_id $\mapsto$carr\_num])*); #Update the carrier ID
-	(*$ (o\_id+...\_by\_o\_c\_id).\texttt{PUT}$(ox'[o\_carier\_id $\mapsto$carr\_num])*); #Update the carrier ID
-	# ox' only includes interesting columns from ox
-	olx1(*$=(ol\_info\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=nox.o\_id)*);
-	olx = (*$\texttt{FILTER}\;$ olx1 *); #Filter by w_id and d_id 
-	s = 0;
-	FOREACH olr IN olx DO
-		(*$ (ol\_info\_by\_ol\_o\_id).\texttt{PUT}$(olr[ol\_info$\mapsto$curr\_time])*);
-		(*$ (ol\_info\_by\_id).\texttt{PUT}$(olr[ol\_info$\mapsto$curr\_time])*);
-		(*$ s = s +$ olr.ol\_info *)
-	END;
-	cx(*$ \leftarrow (c\_info\_by\_id).\texttt{GET}$ (id=ox.c\_id)*) #Retrive customer by PK
-	#Update c_info_by_id and c_balance_by_id:
-	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx[c\_delivery\_cnt $\mapsto$ c\_delivery\_cnt + 1])*);#update deliveryCnt
-	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx[c\_balance $\mapsto$ c\_balance - s])*); #update delivery cnt
-	#Update c_info_by_name and c_balance_by_name:
-	(*$ (c\_info\_by\_name).\texttt{PUT}$(cx'[c\_delvry\_cnt$\mapsto$c\_delvry\_cnt+1])*);#update deliveryCnt
-	(*$ (c\_info\_by\_name).\texttt{PUT}$(cx'[c\_balance $\mapsto$ c\_balance - s])*); #update delivery cnt
-}(*$_{SER}$*)
-\end{lstlisting}
-\section{Soundness of the Translation}
 \section{Optimization}
-Either by strengthening (using Kartik's analysis and program patches) or weakening (how?), 
-from "an" initial version of the kvSQL program we create a more optimized version.
+We create a more optimized version of the initial kvSQL program, either by
+incrementally strengthening the weakest isolation level
+(using Kartik's analysis and program patches) or by weakening the SER version
+(how?).
 \textcolor{red}{//TODO}
+
+
+\subsection{Example: Optimized TPC-C}
+\textcolor{red}{//TODO}
+
 \subsection{Soundness of the Optimizer}
 \textcolor{red}{//TODO}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

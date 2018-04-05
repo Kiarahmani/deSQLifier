@@ -1,0 +1,280 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%%%%%%%% NEW ORDER
+\paragraph{New Order}:
+\lstset{style=simpSQLstyle}
+%% SIMP
+\begin{lstlisting}[language=Python, caption=simpSQL,escapeinside={(*}{*)}]
+NewOrder((*wh\_id,dist\_id,cust\_id,item\_list*)) :=
+	(*$ \;\texttt{SELECT}\; w\_tax \;\texttt{AS}\; wx \;\texttt{WHERE}\; w\_id = wh\_id $*)
+	(*$ \;\texttt{SELECT}\; (d\_tax,d\_next\_o\_id) \;\texttt{AS}\; dtx \;\texttt{WHERE}\; d\_id=dist\_id \wedge  d\_w\_id = wh\_id$*)
+	(*$ \;\texttt{UPDATE SET}\; d\_next\_o\_id=dtx^{2}+1 \;\texttt{WHERE}\; d\_id=dist\_id \wedge  d\_w\_id = wh\_id$*)
+	(*$ \;\texttt{SELECT}\; (c\_discount,...) \;\texttt{AS}\; cx \;\texttt{WHERE}\; c\_id = cust\_id \wedge c\_d\_id=dist\_id \wedge ...$*)
+	(*$ \;\texttt{INSERT VALUES}\; (o\_id,o\_c\_id,...)=(dtx^2,cust\_id,...)$*)
+	(*$ \;\texttt{INSERT VALUES}\; (no\_o\_id,no\_d\_id,no\_w\_id)=(dtx^2,dist\_id,wh\_id)$*)
+	(*$ \;\texttt{FOREACH}\; i \;\texttt{IN}\; item\_list \;\texttt{DO}\;  $*)
+		(*$ \;\texttt{SELECT}\; i\_info \;\texttt{AS}\; ix \;\texttt{WHERE}\; i\_id = i $*)
+		(*$ \;\texttt{SELECT}\; (s\_quant,s\_orderCnt,...) \;\texttt{AS}\; sx \;\texttt{WHERE}\; s\_i\_id = i \wedge s\_w\_id = wh\_id $*)
+		(*$ \;\texttt{IF}\; sx^1 - i^{quant} < 10 $*)
+		(*$ \;\texttt{THEN}\; $*) (*$sqx = sx^1 - i^{quant} + 91$*)
+		(*$ \;\texttt{ELSE}\; $*) (*$sqx = sx^1 - i^{quant}$*)
+		(*$ \;\texttt{UPDATE SET}\; (s\_orderCnt,s\_quant,...)=(sx^2+1,sqx,...) \;\texttt{WHERE}\; s\_i\_id = i \wedge ...$*)
+		(*$ \;\texttt{INSERT VALUES}\; (...,ol\_number,...)=(...,unique,...)$*)
+	(*$ \;\texttt{END}$*)
+	
+
+	
+\end{lstlisting}
+%%%%
+
+\lstset{style=kvSQLstyle}
+\begin{lstlisting}[language=Python, caption=kvSQL,escapeinside={(*}{*)}]
+# some non-interesting updates are eliminated
+NewOrder((*wh\_id,dist\_id,cust\_id,item\_list,ol\_quant*)) := {	
+	wx(*$= (warehouse\_by\_id).\texttt{GET}$ (id=wh\_id)*) #Retrieve warehouse by PK
+	dtx(*$= (d\_tax\_by\_id).\texttt{GET}$ (id=dist\_id)*) #Retrieve d_tax by PK
+	#Update d_next_o_id by PK:
+	dnoix(*$= (d\_next\_o\_id\_by\_id).\texttt{GET}$ (id=dist\_id)*) 
+	(*$ (d\_next\_o\_id\_by\_id).\texttt{PUT}$(dnoix[d\_next\_o\_id $\mapsto$d\_next\_o\_id+1])*);
+	cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customer by PK
+	#Enter new rows into Order and NewOrder objects (3 Objects):
+	(*$ (order\_by\_id).\texttt{PUT}$(...)*); #new row is created from known values
+	(*$ (o\_info\_by\_o\_c\_id).\texttt{PUT}$(...)*); #structure of the new row should match the denormalized object
+	(*$ (no\_by\_d\_id).\texttt{PUT}$(...)*);
+	
+	FOREACH item_id IN (*item\_list*) DO
+		ix(*$= (item\_info\_by\_id).\texttt{GET}$ (id=item\_id)*)
+		#Retrieve Stock information by PK (from 3 objects):
+		socx(*$= (s\_orderCnt\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
+		sqx(*$= (s\_quant\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
+		six(*$= (s\_info\_by\_id).\texttt{GET}$ (id=(item\_id,...))*)
+		IF ((*sqx - ol\_quant $<$ 10*))
+			(*$
+			(s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant$\mapsto$(s\_quant-ol\_quant+91)])*);		
+			olx(*$= (ol\_by\_s\_id).\texttt{GET}$ (s\_id=(item\_id))*) #All OL using this stock
+			FOREACH o_id IN (*ol\_x*) DO
+				(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...,sqx[s\_quant $\mapsto$(s\_quant - ol\_quant+91)],...)*);
+			END;
+		ELSE
+			(*$ (s\_quant\_by\_id).\texttt{PUT}$(sqx[s\_quant $\mapsto$s\_quant - ol\_quant])*);		
+			olx(*$= (ol\_by\_s\_id).\texttt{GET}$ (s\_id=(item\_id))*) #All OL using this stock
+			FOREACH o_id IN (*ol\_x*) DO #update the denormalized join object
+				(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...,sqx[s\_quant $\mapsto$(s\_quant - ol\_quant)],...)*);
+			END;
+	
+		#Enter a new order line (4 objects):
+		(*$ (ol\_info\_by\_id).\texttt{PUT}$(...)*); #insert a new row from known values
+		(*$ (ol\_number+info\_by\_ol\_o\_id).\texttt{PUT}$(...)*);#same values; dnrmlz'd object
+		(*$ (s\_quant\_by\_ol\_o\_id).\texttt{PUT}$(...)*); #known values; insert in join object
+		(*$ (ol\_by\_s\_id).\texttt{PUT}$(...)*); #insert in the denormalized join object
+	END;
+
+}(*$_{SER}$*)
+\end{lstlisting}
+\vspace{14mm}
+
+
+
+\hrule
+\hrule
+\hrule
+\hrule
+\hrule
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+\vspace{2mm}
+
+
+\paragraph{Payment}:
+%--------- Payment
+\lstset{style=simpSQLstyle}
+\begin{lstlisting}[language=Python, caption=simpSQL,escapeinside={(*}{*)}]
+Payment((*wh\_id,dist\_id,cust\_id,cust\_name,amnt*)) :=
+	(*$ \;\texttt{SELECT}\; (w\_ytd) \;\texttt{AS}\; wx \;\texttt{WHERE}\; w\_id = wh\_id$*)
+	(*$ \;\texttt{UPDATE SET}\; w\_ytd=wx^1+1 \;\texttt{WHERE}\; w\_id = wh\_id$*)
+	(*$ \;\texttt{SELECT}\; (d\_ytd) \;\texttt{AS}\; dx \;\texttt{WHERE}\; d\_id = dist\_id \wedge w\_id = wh\_id$ *)
+	(*$ \;\texttt{UPDATE SET}\; d\_ytd=dx^1+1 \;\texttt{WHERE}\; d\_id = dist\_id \wedge w\_id = wh\_id$ *)
+	(*$ \;\texttt{IF}\; cust\_id = \texttt{NULL} $*) (*$ \;\texttt{THEN}\; $*) 
+		(*$\texttt{SELECT}\; (c\_id,c\_balance,c\_ytd\_payment...) \;\texttt{AS}\; cx1 \;\texttt{WHERE}\; c\_name = cust\_name \wedge ...$*)
+		(*$cx = \texttt{CHOOSE}\; cx1 $*) 
+		(*$\texttt{UPDATE SET}\; (c\_balance,c\_ytd\_payment,...)=(cx^2-amnt,cx^3+amnt,...) $*)
+			(*$\texttt{WHERE}\; c\_id = cx^1)$ *)
+	(*$ \;\texttt{ELSE}\; $*)
+		(*$\texttt{SELECT}\; (c\_balance,c\_ytd\_payment...) \;\texttt{AS}\; cx \;\texttt{WHERE}\; c\_id = cust\_id \wedge ...$*)
+		(*$\texttt{UPDATE SET}\; (c\_balance,c\_ytd\_payment,...)=(cx^2-amnt,cx^3+amnt,...) $*)
+			(*$\texttt{WHERE}\; c\_id = cust\_id)$ *)
+	(*$ \;\texttt{INSERT VALUES}\; (h\_id,h\_info)=(unique,...)$*)
+\end{lstlisting}
+%%%%%
+
+\lstset{style=kvSQLstyle}
+%--------- Payment
+\begin{lstlisting}[language=Python, caption=kvSQL,escapeinside={(*}{*)}]
+Payment((*wh\_id,dist\_id,cust\_id,cust\_name,amnt*)) := {
+	wx(*$= (warehouse\_by\_id).\texttt{GET}$ (id=wh\_id)*) #Retrieve warehouse by PK
+	(*$ (warehouse\_by\_id).\texttt{PUT}$(wx[w\_ytd $\mapsto$w\_ytd+1])*); #Update the ytd of the wrhs
+	dx(*$= (d\_ytd\_by\_id).\texttt{GET}$ (id=dist\_id)*) #Retrieve d_ytd by PK
+	(*$ (d\_ytd\_by\_id).\texttt{PUT}$(dx[d\_ytd $\mapsto$d\_ytd+1])*); #Update the ytd of the district
+	
+	# Retrive customer info (except c_balance):
+	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
+	THEN cx1(*$ = (c\_info\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
+	     cx = (*$\texttt{CHOOSE}\; cx1 $*) # pick the middle customer;
+	ELSE cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customers by PK
+	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx*)
+						(*[c\_ytd\_payment$\mapsto$c\_ytd\_payment+amnt]*)
+						(*[c\_payment\_cnt$\mapsto$c\_payment\_cnt+1])*);
+	
+	# Retrive and update customer's balance:
+	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
+	THEN cbx1(*$ = (c\_balance\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
+	     cbx = (*$\texttt{CHOOSE}\; cbx1 $*) # pick the middle customer;
+	     #Update both customer objects:
+	     (*$ (c\_balance\_by\_id).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
+	     (*$ (c\_balance\_by\_name).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
+	ELSE cbx(*$= (c\_balance\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*)#Retrieve customers by PK
+	     #Retrieve the same customer's info
+	     cix(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*)#Retrieve customer by PK
+			 # Update both objects:
+	     (*$ (c\_balance\_by\_id).\texttt{PUT}$(cbx [c\_balance$\mapsto$c\_balance-amnt])*);
+			 (*$ (c\_balance\_by\_name).\texttt{PUT}$((cix.name,cust\_id,cbx.c\_balance-amnt))*);
+	(*$ (h\_info\_by\_id).\texttt{PUT}$(wh\_id,dist\_id,...)*);		 
+}(*$_{SER}$*)
+\end{lstlisting}
+
+
+\hrule
+\hrule
+\hrule
+\hrule
+\hrule
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+
+\vspace{5mm}
+\lstset{style=simpSQLstyle}
+\paragraph{Order Status}:
+%--------- Order Status
+\begin{lstlisting}[language=Python, caption=simpSQL,escapeinside={(*}{*)}]
+OrderStatus((*cust\_id,cust\_name*)) := 
+	(*$ \;\texttt{IF}\; cust\_id = \texttt{NULL} $*) (*$\;\texttt{THEN}\; $*) 
+		(*$\texttt{SELECT}\; (c\_id,c\_info,...) \;\texttt{AS}\; cx1 \;\texttt{WHERE}\; c\_name = cust\_name \wedge ...$*)
+		(*$cx = \texttt{CHOOSE}\; cx1 $*) 
+	(*$ \;\texttt{ELSE}\; $*) (*$\texttt{SELECT}\; (c\_id,c\_info,...) \;\texttt{AS}\; cx \;\texttt{WHERE}\; c\_id = cust\_id \wedge ...$*)
+		(*$\texttt{SELECT}\; (o\_id,...) \;\texttt{AS}\; ox1 \;\texttt{WHERE}\; o\_c\_id = cx^1 \wedge o\_d\_id = dist\_id \wedge ...$ *)
+		(*$ox = \texttt{CHOOSE}\; ox1 $*) 
+	(*$ \;\texttt{SELECT}\; (ol\_info,...) \;\texttt{AS}\; olx \;\texttt{WHERE}\; ol\_o\_id = ox^1 \wedge ol\_d\_id = dist\_id \wedge ...$ *)
+	print olx  
+	
+\end{lstlisting}
+
+\lstset{style=kvSQLstyle}
+%--------- Order Status
+\begin{lstlisting}[language=Python, caption=kvSQL,escapeinside={(*}{*)}]
+OrderStatus((*cust\_id,cust\_name*)) := {
+	IF ((*cust\_id*) = NULL) #Retrieve by id or name?
+	THEN cx1(*$ = (c\_info\_by\_name).\texttt{GET}$ (c\_name=cust\_name)*);
+	     cx = (*$\texttt{CHOOSE}\; cx1 $*) # pick the middle customer;
+	ELSE cx(*$= (c\_info\_by\_id).\texttt{GET}$ (id=(cust\_id,...))*) #Retrieve customers by PK
+	ox1(*$ = (o\_info\_by\_o\_c\_id).\texttt{GET}$(o\_c\_id=cx.id)*); #Retrieve orders by non-PK
+	ox =  (*$\texttt{CHOOSE}\;$ ox1 *);	# pick the largest order o_id
+	olx(*$=(ol\_info\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=ox.o\_id)*); #Retrieve OrdLn by non-PK
+	print olx  
+}(*$_{SER}$*)
+\end{lstlisting}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\hrule
+\hrule
+\hrule
+\hrule
+\hrule
+
+\vspace{10mm}
+\lstset{style=simpSQLstyle}
+\paragraph{Stock Level}:
+%--------- Stock Level
+\begin{lstlisting}[language=Python, caption=simpSQL, escapeinside={(*}{*)}]
+StockLevel((*dist\_id,wh\_id,thrshld*)) := 
+	(*$ \;\texttt{SELECT}\; (d\_next\_o\_id) \;\texttt{AS}\; dnox \;\texttt{WHERE}\; d\_id=dist\_id \wedge  d\_w\_id = wh\_id$*)
+	(*$ \;\texttt{SELECT}_{ol\_i\_id\bowtie s\_i\_id}\; (s\_info) \;\texttt{AS}\; sx$*)
+		(*$\;\texttt{WHERE}\; (ol\_o\_id < dnox^1) \wedge (ol\_o\_id > dnox^1-20) \wedge (s\_quant < thrshld) \wedge ... $*)
+	print sx
+\end{lstlisting}
+
+\lstset{style=kvSQLstyle}
+\paragraph{Stock Level}:
+%--------- Stock Level
+\begin{lstlisting}[language=Python, caption=kvSQL, escapeinside={(*}{*)}]
+StockLevel((*dist\_id,wh\_id*)) := {
+	#Retrieve d_next_o_id by PK:
+	dnox(*$=(d\_next\_o\_id\_by\_id).\texttt{GET}$ (id=(wh\_id,dist\_id))*)
+	sqx1 (*$ = (s\_quant\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=dnox.next\_o\_id)*)
+	sqx = (*$\texttt{FILTER}$ sqx1 *) #Filter by w_id and d_id and by s_quant
+	print sqx 
+}(*$_{SER}$*)
+\end{lstlisting}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\hrule
+\hrule
+\hrule
+\hrule
+\hrule
+
+\vspace{10 mm}
+\lstset{style=simpSQLstyle}
+\paragraph{Delivery}:
+%--------- Delivery
+\begin{lstlisting}[language=Python, caption=simpSQL,escapeinside={(*}{*)}]
+Delivery(*(dist\_id,wh\_id, carr\_num, curr\_time)*) := 
+	(*$ \;\texttt{SELECT}\; (no\_o\_id) \;\texttt{AS}\; nox1 \;\texttt{WHERE}\; no\_d\_id=dist\_id \wedge  no\_w\_id = wh\_id$*)
+	(*$ \;nox = \texttt{CHOOSE}\;(nox1)$*)
+	(*$ \;\texttt{DELETE}\; NewOrder \;\texttt{WHERE}\; (no\_o\_id=nox^1) \wedge (no\_d\_id=dist\_id) \wedge (no\_w\_id = wh\_id$)*)
+	(*$ \;\texttt{SELECT}\; (o\_c\_id)  \;\texttt{AS}\; ocx \;\texttt{WHERE}\; (o\_id = nox^1) \wedge (o\_d\_id=dist\_id) \wedge...$*)
+	(*$ \;\texttt{UPDATE SET}\; (o\_carrier\_id)=(carr\_num) \;\texttt{WHERE}\; (o\_id = nox^1) \wedge (o\_d\_id=dist\_id) \wedge...$*)
+	(*$ \;\texttt{SELECT}\; ol\_amount \;\texttt{AS}\; olx \;\texttt{WHERE}\; ol\_o\_id=nox^1 \wedge ol\_d\_id=dist\_id \wedge ...$*)
+	(*$ \;\texttt{UPDATE SET}\; ol\_delivery\_d=curr\_time \;\texttt{WHERE}\; ol\_o\_id=nox^1 \wedge ol\_d\_id=dist\_id \wedge ...$*)
+	(*$ \;sumx = \texttt{CHOOSE}\;(olx)$*)
+	(*$ \;\texttt{SELECT}\; (c\_balance,c\_deliveryCnt) \;\texttt{AS}\; cx \;\texttt{WHERE}\; o\_id = ocx^1 \wedge c\_d\_id=dist\_id \wedge...$*)
+	(*$ \;\texttt{UPDATE SET}\; (c\_balance,c\_deliveryCnt)=(cx^1+sumx,cx^2+1) \;\texttt{WHERE}\; o\_id = ocx^1 \wedge...$*)
+\end{lstlisting}
+
+
+\lstset{style=kvSQLstyle}
+%--------- Delivery
+\begin{lstlisting}[language=Python, caption=kvSQL,escapeinside={(*}{*)}]
+Delivery(*(dist\_id, carr\_num, curr\_time)*) := {
+	nox2(*$ = (no\_by\_d\_id).\texttt{GET}$(no\_d\_id=dist\_id)*); #Retrive by partial key
+	nox1 = (*$\texttt{FILTER}$*)(nox2); #Filter records by W_id 
+	nox = (*$\texttt{CHOOSE}$*)(nox1); #Pick the record with the lowest o_id
+	(*$(no\_by\_d\_id).\texttt{DELETE}$(id=(nox.o\_id,...))*); #Delete by PK 
+	ox (*$ = (order\_by\_id).\texttt{GET}$(id=(nox.o\_id,...))*); #Retrive order by PK
+	(*$ (order\_by\_id).\texttt{PUT}$(ox[o\_carier\_id $\mapsto$carr\_num])*); #Update the carrier ID
+	(*$ (o\_id+...\_by\_o\_c\_id).\texttt{PUT}$(ox'[o\_carier\_id $\mapsto$carr\_num])*); #Update the carrier ID
+	# ox' only includes interesting columns from ox
+	olx1(*$=(ol\_info\_by\_ol\_o\_id).\texttt{GET}$(ol\_o\_id=nox.o\_id)*);
+	olx = (*$\texttt{FILTER}\;$ olx1 *); #Filter by w_id and d_id 
+	s = 0;
+	FOREACH olr IN olx DO
+		(*$ (ol\_info\_by\_ol\_o\_id).\texttt{PUT}$(olr[ol\_info$\mapsto$curr\_time])*);
+		(*$ (ol\_info\_by\_id).\texttt{PUT}$(olr[ol\_info$\mapsto$curr\_time])*);
+		(*$ s = s +$ olr.ol\_info *)
+	END;
+	cx(*$ \leftarrow (c\_info\_by\_id).\texttt{GET}$ (id=ox.c\_id)*) #Retrive customer by PK
+	#Update c_info_by_id and c_balance_by_id:
+	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx[c\_delivery\_cnt $\mapsto$ c\_delivery\_cnt + 1])*);#update deliveryCnt
+	(*$ (c\_info\_by\_id).\texttt{PUT}$(cx[c\_balance $\mapsto$ c\_balance - s])*); #update delivery cnt
+	#Update c_info_by_name and c_balance_by_name:
+	(*$ (c\_info\_by\_name).\texttt{PUT}$(cx'[c\_delvry\_cnt$\mapsto$c\_delvry\_cnt+1])*);#update deliveryCnt
+	(*$ (c\_info\_by\_name).\texttt{PUT}$(cx'[c\_balance $\mapsto$ c\_balance - s])*); #update delivery cnt
+}(*$_{SER}$*)
+\end{lstlisting}
+
