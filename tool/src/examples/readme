@@ -1,1 +1,0 @@
-./acidify -c utils.ml bankaccount_app.ml
