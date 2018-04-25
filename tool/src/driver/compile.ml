@@ -76,7 +76,7 @@ let implementation ppf sourcefile outputprefix =
       ++ print_if ppf Clflags.dump_typedtree
         Printtyped.implementation_with_coercion in
     let app = Extract.doIt ppf typedtree in
-    Nosqler.doIt app 
+    EncodeIR.doIt app 
     (*
     let module KE = Specelab.KE in 
     let module TE = Specelab.TE in

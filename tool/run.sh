@@ -1,0 +1,7 @@
+#/bin/bash
+# This script will run the deSQLer on the given test benchmark
+
+TEST=$1
+./bin/deSQLer.opt -w -20 -c ./tests/$TEST/$TEST.ml
+z3 z3-encoding.smt2
+rm z3-encoding.smt2

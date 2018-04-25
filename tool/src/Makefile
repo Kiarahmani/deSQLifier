@@ -16,7 +16,7 @@ LINKFLAGS=
 OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
 OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 
-INCLUDES=-I utils -I parsing -I typing -I examples/bankaccount -I nosqler -I vcgen -I driver 
+INCLUDES=-I utils -I parsing -I typing -I  desqler -I desqler -I driver 
 
 UTILS=utils/config.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
@@ -56,33 +56,25 @@ COMP=driver/pparse.cmo driver/main_args.cmo \
 # Top-level
 ALLOBJS=$(UTILS) $(PARSING) $(TYPING)
 
-default: acidify.opt
-	cp acidify.opt ./examples/acidify
+default: deSQLer.opt
 
-MYFILES=vcgen/utils.cmx vcgen/light_env.cmi vcgen/light_env.cmx \
-				vcgen/speclang.cmx vcgen/spec.cmi \
-				vcgen/astutils.cmi vcgen/astutils.cmx \
-				examples/bankaccount/spec.cmx \
-				vcgen/app.cmx vcgen/extract.cmi vcgen/extract.cmx \
-				vcgen/specelab.cmi vcgen/specelab.cmx \
-				vcgen/z3encode.cmi vcgen/z3encode.cmx \
-				nosqler/nosqler.cmi nosqler/nosqler.cmx \
-				vcgen/verify.cmi vcgen/verify.cmx \
+MYFILES=desqler/utils.cmx  \
+				desqler/speclang.cmx desqler/spec.cmi \
+				desqler/astutils.cmi desqler/astutils.cmx \
+				desqler/app.cmx desqler/extract.cmi desqler/extract.cmx \
+				desqler/encodeIR.cmi desqler/encodeIR.cmx \
 				
 
-MYCMX=vcgen/utils.cmx vcgen/light_env.cmx vcgen/speclang.cmx \
-			vcgen/astutils.cmx examples/bankaccount/spec.cmx vcgen/app.cmx \
-			vcgen/extract.cmx \
-			vcgen/specelab.cmx \
-			nosqler/nosqler.cmx \
-			vcgen/z3encode.cmx \
-			vcgen/verify.cmx
+MYCMX=desqler/utils.cmx  desqler/speclang.cmx \
+			desqler/astutils.cmx  desqler/app.cmx \
+			desqler/extract.cmx \
+			desqler/encodeIR.cmx \
 
-acidify.byte: $(ALLOBJS)
-	$(CAMLC) $(LINKFLAGS) -custom -o acidify.byte str.cma unix.cma nums.cma $(ALLOBJS)
+deSQLer.byte: $(ALLOBJS)
+	$(CAMLC) $(LINKFLAGS) -custom -o deSQLer.byte str.cma unix.cma nums.cma $(ALLOBJS)
 
-acidify.opt: $(ALLOBJS:.cmo=.cmx) $(MYFILES) $(COMP:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -I `opam config var lib`/Z3 -cclib -L/Users/gowtham/git/z3/build/lib -o acidify.opt str.cmxa unix.cmxa nums.cmxa z3ml.cmxa $(ALLOBJS:.cmo=.cmx) $(MYCMX) $(COMP:.cmo=.cmx)
+deSQLer.opt: $(ALLOBJS:.cmo=.cmx) $(MYFILES) $(COMP:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -I `opam config var lib`/Z3  -o deSQLer.opt str.cmxa unix.cmxa nums.cmxa z3ml.cmxa $(ALLOBJS:.cmo=.cmx) $(MYCMX) $(COMP:.cmo=.cmx)
 
 reconfigure:
 	./configure $(CONFIGURE_ARGS)
@@ -99,12 +91,12 @@ depend: beforedepend
 alldepend:: depend
 
 clean: partialclean
-	(for d in utils parsing typing driver vcgen nosqler; \
-	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done);
+	(for d in utils parsing typing driver desqler desqler ../tests/*/ ../bin/ ./; \
+	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~ $$d/*.smt2 $$d/*.opt; done);
 	rm -f *~
 
 localclean:
-	(for d in vcgen examples/bankaccount nosqler; \
+	(for d in desqler  desqler; \
 	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done);
 
 distclean:
@@ -188,6 +180,7 @@ beforedepend:: parsing/lexer.ml
 .ml.cmx:
 	ocamlfind $(CAMLOPT) $(COMPFLAGS) -package Z3 -c $<
 
-world: acidify.byte acidify.opt
+world: deSQLer.byte deSQLer.opt
+	cp deSQLer.opt ../bin/
 
 include .depend
