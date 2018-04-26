@@ -1,24 +1,13 @@
 open App
 open Sql
 open Speclang
+open Rules
 module M = Misc
 
 
 
 
 (*----------------------------------------------------------------------------------------------------*)
-module Rule =
-struct
-  type rule_type = WR_Update_Select | RW_Update_Select
-  type t = T of {name: rule_type}
-  let make ~name  = T {name=name}
-  let name (T{name}) = name
-  let to_string (T{name}) = match name with 
-                            |WR_Update_Select -> "ᴡʀ-ᴜᴩᴅᴀᴛᴇ-ꜱᴇʟᴇᴄᴛ"
-                            |RW_Update_Select -> "ʀᴡ-ᴜᴩᴅᴀᴛᴇ-ꜱᴇʟᴇᴄᴛ"
-                            | _ -> "ᴜɴᴋɴᴏᴡɴ ʀᴜʟᴇ"
-                            
-end
 
 
 (*----------------------------------------------------------------------------------------------------*)
@@ -120,7 +109,7 @@ struct
 
 
 
-  let apply_rules: (Statement.t * Statement.t * Rule.t list)-> string -> string =
+  let apply_rules: (Statement.t * Statement.t * Rules.t list)-> string -> string =
     fun (st1,st2,rlist) -> fun file_text ->  
       let apply_rule rule = 
       let open Rule in let open Statement in
@@ -138,21 +127,21 @@ struct
 
 
 
-  let applicable_rules: Statement.t -> Statement.t -> Rule.t list = 
+  let applicable_rules: Statement.t -> Statement.t -> Rules.t list = 
     fun st1 -> fun st2 -> let open Statement in 
                           match (get_type st1,get_type st2) with
-                           |(UPDATE,SELECT) -> [Rule.make WR_Update_Select;Rule.make RW_Update_Select]
-                           |(SELECT,UPDATE) -> [Rule.make WR_Update_Select;Rule.make RW_Update_Select]
+                           |(UPDATE,SELECT) -> [Rules.make WR_Update_Select;Rules.make RW_Update_Select]
+                           |(SELECT,UPDATE) -> [Rules.make WR_Update_Select;Rules.make RW_Update_Select]
                            |_ -> []
 
-  let analyze_stmt: Statement.t -> Statement.t -> Rule.t list  =
+  let analyze_stmt: Statement.t -> Statement.t -> Rules.t list  =
     fun st1 -> fun st2 -> printf "\n";
                           Statement.print st1;
                           printf " ⁘";
                           Statement.print st2;
                           printf " ⇢  Applicable Rules: ";
                           let rules = applicable_rules st1 st2 in
-                            List.iter (fun r -> printf "%s  " (Rule.to_string r)) rules;
+                            List.iter (fun r -> printf "%s  " (Rules.to_string r)) rules;
                             rules
 
   let analyze_txn: Transaction.t -> Transaction.t -> string = 

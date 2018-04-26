@@ -63,8 +63,9 @@ MYFILES=desqler/utils.cmx  \
 				desqler/astutils.cmi desqler/astutils.cmx \
 				desqler/app.cmx desqler/extract.cmi desqler/extract.cmx \
 			  desqler/sql.cmx \
-				desqler/encodeZ3.cmi desqler/encodeZ3.cmx \
 				desqler/encodeIR.cmi desqler/encodeIR.cmx \
+				desqler/rules.cmx \
+				desqler/encodeZ3.cmi desqler/encodeZ3.cmx \
 				desqler/verify.cmi desqler/verify.cmx \
 				
 
@@ -73,6 +74,7 @@ MYCMX=desqler/utils.cmx  desqler/speclang.cmx \
 			desqler/extract.cmx \
 			desqler/sql.cmx \
 			desqler/encodeIR.cmx \
+			desqler/rules.cmx \
 			desqler/encodeZ3.cmx \
 			desqler/verify.cmx \
 
@@ -98,7 +100,7 @@ alldepend:: depend
 
 clean: partialclean
 	(for d in utils parsing typing driver desqler desqler ../tests/*/ ../bin/ ./; \
-	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~ $$d/*.smt2 $$d/*.opt; done);
+	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~ $$d/*.smt2 $$d/*.opt $$d/*.byte; done);
 	rm -f *~
 
 localclean:
