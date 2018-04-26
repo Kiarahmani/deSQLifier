@@ -62,13 +62,19 @@ MYFILES=desqler/utils.cmx  \
 				desqler/speclang.cmx desqler/spec.cmi \
 				desqler/astutils.cmi desqler/astutils.cmx \
 				desqler/app.cmx desqler/extract.cmi desqler/extract.cmx \
+			  desqler/sql.cmx \
+				desqler/encodeZ3.cmi desqler/encodeZ3.cmx \
 				desqler/encodeIR.cmi desqler/encodeIR.cmx \
+				desqler/verify.cmi desqler/verify.cmx \
 				
 
 MYCMX=desqler/utils.cmx  desqler/speclang.cmx \
 			desqler/astutils.cmx  desqler/app.cmx \
 			desqler/extract.cmx \
+			desqler/sql.cmx \
 			desqler/encodeIR.cmx \
+			desqler/encodeZ3.cmx \
+			desqler/verify.cmx \
 
 deSQLer.byte: $(ALLOBJS)
 	$(CAMLC) $(LINKFLAGS) -custom -o deSQLer.byte str.cma unix.cma nums.cma $(ALLOBJS)

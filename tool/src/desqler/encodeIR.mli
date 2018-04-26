@@ -1,5 +1,5 @@
 (*
  * Author: KR
  *)
-
-val doIt : App.t -> unit
+open Sql
+val extract_txn:Speclang.Fun.t -> Transaction.t 
