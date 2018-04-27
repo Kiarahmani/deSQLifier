@@ -35,13 +35,13 @@ struct
     fun exp -> Statement.make_empty
 
   (*EXTRACTING THE WHERE CLAUSE*)
-  let extract_where_fun: Typedtree.expression -> FOL.t = 
+  let extract_where_fun: Typedtree.expression -> Fol.t = 
     fun exp -> match exp.exp_desc with
                  |Texp_apply ({exp_desc=Texp_ident (Pdot (Pident id,"=",_),_,_)},
                                       [(Asttypes.Nolabel,Some e1);(Asttypes.Nolabel,Some e2)]) -> 
                                         match (e1.exp_desc,e2.exp_desc )with 
                                         |(Texp_field (l1,l2,l3) , Texp_ident (Pident r,_,_))->
-                                            FOL.T{name_l=l3.lbl_name;name_r=r.name}
+                                            Fol.T{cond=Bool true} (*TODO*)
 
   let rec extract_exps_rec: (Statement.t list) -> Typedtree.expression -> (Statement.t list) =
     fun st_list exp -> match exp.exp_desc with
@@ -62,7 +62,7 @@ struct
                                                   let ([arg_id],body) = Astutils.extract_lambda case in 
                                                   let where = extract_where_fun body in 
                                                   let this = [Statement.T{stmt_tp=SELECT; acc_table=table_cons.cstr_name; acc_fields=[" field"]; 
-                                                             phi=where; psi=(FOL.T{name_l="true";name_r="true"})}] in
+                                                             phi=where; psi=(Fol.T{cond=Bool true})}] in (*TODO*)
                                           				List.append this st_list
 
 																							| (Texp_construct (_,{cstr_name="::"},args), _) ->
@@ -81,7 +81,7 @@ struct
                                          let ([arg_id],body) = Astutils.extract_lambda w_case in 
                                          let where = extract_where_fun body in 
                                          let this = [Statement.T{stmt_tp=UPDATE; acc_table=table_cons.cstr_name; acc_fields=[" field"]; 
-                                                         phi=where; psi=(FOL.T{name_l="true";name_r="true"})}] in
+                                                         phi=where; psi=(Fol.T{cond=Bool true})}] in (*TODO*)
                                          List.append this st_list
 																				 end
                           
@@ -101,7 +101,7 @@ end
 			  	  				  	print_txn_name app; in
 			    		  				let Speclang.Fun.T {name; rec_flag; args_t ; body} = app in
 													printf " ---> ✅ \n";
-                          Transaction.make (name.name) (Extract.extract_exps body)
+                          Transaction.make (name.name) [](*(Extract.extract_exps body)*) (*TODO*)
 
 
 

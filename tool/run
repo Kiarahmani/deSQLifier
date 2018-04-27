@@ -4,4 +4,4 @@
 TEST=$1
 ./bin/deSQLer.opt -w -20 -c ./tests/$TEST/$TEST.ml
 z3 z3-encoding.smt2
-rm z3-encoding.smt2
+#rm z3-encoding.smt2

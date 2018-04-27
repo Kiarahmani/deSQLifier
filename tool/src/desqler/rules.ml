@@ -1,6 +1,5 @@
 open App
 open Sql
-open EncodeIR
 open Speclang
 module M = Misc
 

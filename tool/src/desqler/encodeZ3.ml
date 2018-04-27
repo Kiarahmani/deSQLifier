@@ -5,64 +5,80 @@ open Rules
 module M = Misc
 
 
+(*----------------------------------------------------------------------------------------------------*)
+module Guarantees =
+  struct
+    type g = SER | CC | PSI
+  end
+
+(*----------------------------------------------------------------------------------------------------*)
+module Constants = 
+  struct
+    let options =  "(set-option :produce-unsat-cores true)"
+ 
+    let basic_relations =        "(declare-fun WR (T T) Bool)
+(declare-fun RW (T T) Bool)
+(declare-fun WW (T T) Bool)
+(declare-fun vis (T T) Bool)
+(declare-fun ar (T T) Bool)"
+
+    let basic_assertions= "(assert (! (forall ((t T))       (not (or (WR t t) (RW t t) (WW t t))))     :named no_loops))
+(assert (! (forall ((t1 T) (t2 T))   (=> (vis t1 t2) (not (vis t2 t1))))      :named acyc_vis))
+(assert (! (forall ((t1 T) (t2 T) (t3 T))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
+(assert (! (forall ((t1 T) (t2 T))   (=> (not (= t1 t2)) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
+(assert (! (forall ((t1 T) (t2 T))   (=> (vis t1 t2) (ar t1 t2)))       :named vis_in_ar))
+(assert (! (forall ((t1 T) (t2 T))   (=> (WR t1 t2) (vis t1 t2)))       :named wr_then_vis))
+(assert (! (forall ((t1 T) (t2 T))   (=> (WW t1 t2) (ar t1 t2)))        :named ww->ar))
+(assert (! (forall ((t1 T) (t2 T))   (=> (RW t1 t2) (not (vis t2 t1))))     :named rw_then_not_vis))
+(assert (! (forall ((t T))     (not (ar t t)))          :named irreflx_ar))"
+
+		(*reruens (P1) (P2) (P3)...*)
+		let rec gen_all_Ps : int -> string -> string = 
+			fun i -> fun old_s -> if i == 0
+														then old_s
+														else  let curr_i = string_of_int i in 
+																	let curr_s = (String.concat "" [old_s;" (P";curr_i;")"]) in
+																	gen_all_Ps (i-1) curr_s
+	
+
+   	let primitive_types : int -> string = fun count -> 
+			let pr = (gen_all_Ps count "") in 
+			String.concat "" ["(declare-datatypes () ((TType ";pr;"))) 
+    										 (declare-sort T)
+                         (declare-fun type (T) TType)"] 
+
+
+
+		let cycles_to_check = "  (assert (exists ((t1 T) (t2 T)) (and (not (= t1 t2)) (RW t1 t2) (RW t2 t1))))"
+  
+    let guarantee : Guarantees.g -> string = 
+      fun g -> match g with
+        |SER -> "(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser )) ;SER"
+        |PSI ->  "(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi)) ;CC"
+        |CC -> "(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc)) ;PSI"
+    
+    let requests = "(check-sat)"
+end
+
+
+
+
+
 
 
 (*----------------------------------------------------------------------------------------------------*)
-
-
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
 module Encode =
 struct
 
-(*TODO: This is mildly hard-coded for the given application*)
-  
-  let z3_init_text = "(set-option :produce-unsat-cores true)
-  ;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-    ; Primitive types
-    (declare-datatypes () ((TType (P1)))) ;all extracted programs
-    (declare-sort T)
-    (declare-fun type (T) TType)
-    
-    ; Basic Relations 
-    (declare-fun WR (T T) Bool)
-    (declare-fun RW (T T) Bool)
-    (declare-fun WW (T T) Bool)
-    (declare-fun vis (T T) Bool)
-    (declare-fun ar (T T) Bool)
-    
-    ; Basic Assertions on Basic Relations
-    (assert (! (forall ((t T))       (not (or (WR t t) (RW t t) (WW t t))))     :named no_loops))
-    (assert (! (forall ((t1 T) (t2 T))   (=> (vis t1 t2) (not (vis t2 t1))))      :named acyc_vis))
-    (assert (! (forall ((t1 T) (t2 T) (t3 T))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
-    (assert (! (forall ((t1 T) (t2 T))   (=> (not (= t1 t2)) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
-    (assert (! (forall ((t1 T) (t2 T))   (=> (vis t1 t2) (ar t1 t2)))       :named vis_in_ar))
-    (assert (! (forall ((t1 T) (t2 T))   (=> (WR t1 t2) (vis t1 t2)))       :named wr_then_vis))
-    (assert (! (forall ((t1 T) (t2 T))   (=> (WW t1 t2) (ar t1 t2)))        :named ww->ar))
-    (assert (! (forall ((t1 T) (t2 T))   (=> (RW t1 t2) (not (vis t2 t1))))     :named rw_then_not_vis))
-    (assert (! (forall ((t T))     (not (ar t t)))          :named irreflx_ar))"
+  let z3_init_text = let open Constants in 
+											String.concat "\n\n" [options; primitive_types 5; basic_relations; basic_assertions]
 
 
-
-
-  let z3_end_text = ";---------------------------------------------------------------------------------------------------- 
-  ; Cycles to Check
-  (assert (exists ((t1 T) (t2 T))
-      (and (not (= t1 t2)) (RW t1 t2) (RW t2 t1))))
-  
-  
-  ;---------------------------------------------------------------------------------------------------- 
-  ; Consistency and Isolation Guarantees
-  
-  
-  ;(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser )) ;SER
-  (assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi)) ;PSI
-  ;(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc)) ;CC
-  
-  
-  
-  (check-sat)
-  ;(get-unsat-core)
-  ;(get-model)"
+  let z3_end_text = let open Constants in
+											String.concat "\n\n" [cycles_to_check;guarantee PSI; requests]
 
 
 
@@ -150,13 +166,13 @@ struct
                               let st_list1 = stmts txn1 in
                               let st_list2 = stmts txn2 in
                               (*return all possibilities of (Statement.t,Statement.t,Rule.t)*)
-                              let st_rule_list = List.fold_left 
+                              let st_rule_list = [] in (*List.fold_left 
                                                   (fun old_list -> fun st1 ->
                                                     List.append old_list 
                                                     (List.fold_left (fun old_list_in -> fun st2 -> 
                                                       let rules = analyze_stmt st1 st2 in
                                                       List.append old_list_in [(st1,st2,rules)]) [] st_list2)) 
-                                                  []  st_list1 in   
+                                                  []  st_list1 in   *)
 
                               printf "\n\n⓶ Z3 Encodings:\n";
                               printf "Env\n---------------------------------\n%s\n---------------------------------\n" (env_init "BankAccount"); (*TODO*)
@@ -166,7 +182,6 @@ struct
 
 
 end 
-  
   
   
   let encode_txns: (Transaction.t list) -> unit = 

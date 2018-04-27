@@ -3,11 +3,12 @@ open Speclang
 
 module Coltype = 
 struct
-  type t = Id | String | Int | Bool | Date | Option of t
+  type t = String | Int | Bool 
   let rec to_string = function
-    | Id -> "id" | String -> "string" | Int -> "int" | Bool -> "bool"
-    | Date -> "date" | Option t -> (to_string t)^" option"
+    | String -> "string" | Int -> "int" | Bool -> "bool"
 end
+
+
 module Tableschema = 
 struct
   type t = T of {name: string;
