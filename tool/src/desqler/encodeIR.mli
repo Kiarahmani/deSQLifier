@@ -2,4 +2,4 @@
  * Author: KR
  *)
 open Sql
-val extract_txn:Speclang.Fun.t -> Transaction.t 
+val extract_program: App.t -> Var.Table.t list 

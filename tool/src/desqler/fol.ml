@@ -22,7 +22,7 @@ struct
 
 	type condition = |Bool: bool -> condition 
 									 |GT: expr*expr -> condition
-
+end
 
 
 module Record = 

@@ -4,7 +4,10 @@ let print x = ()
 module U = Unix
 
 type table_name = 
-  | BankAccount
+  | Bankaccount
+  | Student
+  | Department
+  | Habiba
 
 (* Definition of SimpSQL *)
 module SQL : 
@@ -34,13 +37,15 @@ end
 
 
 (*Tabel Definitions*)
-type id = int
-type bankaccount = {mutable accID: id; mutable accBal: int}
+type bankaccount = {mutable accID: int; mutable accBal: int}
+type student = {mutable studentID: int; mutable studentName: string; mutable studentGrade: int; mutable studentIsNew: bool}
+type department = {mutable departmentID: int; mutable departmentName: string; mutable departmentCode: int; mutable departmentAddress: string}
+type habiba = {mutable habibaID: int; mutable habibaName: string; mutable habibaIsCute: bool; mutable habibaLevelofCuteness: int}
 
 (*TXN1*)
 let deposit_txn b_id amount =  
-           let bal = SQL.select1 [BankAccount]  (fun u -> u.accID = b_id) in
-           SQL.update BankAccount
+           let bal = SQL.select1 [Bankaccount]  (fun u -> u.accID = b_id) in
+           SQL.update Bankaccount
            (fun u -> begin u.accBal <- (bal.accBal+amount); end)
            (fun u -> u.accID = b_id)
 
