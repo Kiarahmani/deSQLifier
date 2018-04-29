@@ -26,7 +26,6 @@ struct
 end
 
 
-
 (*----------------------------------------------------------------------------------------------------*)
 
 module Tables = 
@@ -41,7 +40,7 @@ struct
   let convert : App.Tableschema.t -> Var.Table.t =
     fun table -> 
       Var.Table.make  (App.Tableschema.name table)
-      (List.map (fun (col_name, SomeType col_type) -> (col_name,(convert_type_to_IR  col_type))) 
+      (List.map (fun (col_name, SomeType col_type, col_pk) -> (col_name,(convert_type_to_IR  col_type), col_pk)) 
                 (App.Tableschema.cols table))
 
 end

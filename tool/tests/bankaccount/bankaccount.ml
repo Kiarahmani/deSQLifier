@@ -6,8 +6,7 @@ module U = Unix
 type table_name = 
   | Bankaccount
   | Student
-  | Department
-  | Habiba
+  | Desk
 
 (* Definition of SimpSQL *)
 module SQL : 
@@ -37,10 +36,9 @@ end
 
 
 (*Tabel Definitions*)
-type bankaccount = {mutable accID: int; mutable accBal: int}
-type student = {mutable studentID: int; mutable studentName: string; mutable studentGrade: int; mutable studentIsNew: bool}
-type department = {mutable departmentID: int; mutable departmentName: string; mutable departmentCode: int; mutable departmentAddress: string}
-type habiba = {mutable habibaID: int; mutable habibaName: string; mutable habibaIsCute: bool; mutable habibaLevelofCuteness: int}
+type bankaccount = {accID: int; mutable accBal: int}
+type student = {studentID: int; mutable studentName: string; mutable studentIsNew: bool}
+type desk = {deskID: int; deskType: string; mutable deskIsUgly: bool}
 
 (*TXN1*)
 let deposit_txn b_id amount =  

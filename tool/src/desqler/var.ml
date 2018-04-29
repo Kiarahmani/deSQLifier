@@ -13,7 +13,7 @@ end
 
 module Table = 
 struct
-  type col = (string*Type.t)
+  type col = (string*Type.t*bool)
   type t = T of {name: string; cols: col list}
   let name (T{name}) = name
   let cols (T{cols}) = cols

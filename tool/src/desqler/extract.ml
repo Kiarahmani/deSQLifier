@@ -5,6 +5,7 @@ open Utils
 open Speclang
 module M = Misc
 
+
 (* 
  * Extract table names (from table_name type). 
  *)
@@ -29,25 +30,33 @@ let extract_table_schemas ttype_names str_items
   let rec doIt_core_type_desc (ctyp_desc) : some_type = 
     match ctyp_desc with
       | Ttyp_constr (path,longident,_) -> 
+          begin
+          match longident with
+          | x -> 
           let path_str = Printtyp.string_of_path path in
           let some t = SomeType t in
             begin
               match path_str with 
                 | "string" -> some @@ Type.String 
                 | "int" -> some @@ Type.Int
-                | "id" -> some @@ Type.Id 
-                | "Unix.tm" -> some @@ Type.Date
                 | "bool" -> some @@ Type.Bool
                 | _ -> failwith "doIt_core_type_desc: Unimpl."
-            end
+              end
+          end
+
       | Ttyp_poly (_,core_t) -> doIt_core_type_desc core_t.ctyp_desc
       | _ -> failwith "doIt_core_type_desc: Unimpl." in
-  let doIt_label_dec ({ld_name; ld_type = {ctyp_desc}}) 
-        : (string*some_type) = 
+  let doIt_label_dec ({ld_name; ld_type = {ctyp_desc};ld_mutable}) 
+        : (string*some_type*bool) = 
     let col_name = ld_name.txt in
-    (* let _ = Printf.printf "arg_id: %s\n" @@ Ident.name arg_id in *)
+    let col_pk = 
+      begin
+      match ld_mutable with
+        |Immutable -> true
+        |Mutable -> false
+      end in 
     let col_t = doIt_core_type_desc ctyp_desc in
-       (col_name,col_t) in
+       (col_name,col_t,col_pk) in
   let doIt_item_desc = function 
     | Tstr_type (Recursive, 
                  [{typ_name={txt};

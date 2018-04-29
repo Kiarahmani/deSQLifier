@@ -59,6 +59,14 @@ end
 
 
 
+module PrintUtils = 
+struct
+  let mkCond_equal x1 x2 = "(= ("^x1^") ("^x2^"))"  
+  let mkCond_and : string list -> string = fun s_list ->
+  let conds = String.concat "" s_list in
+    "(and "^conds^")"
+end
+
 
 
 
@@ -80,12 +88,21 @@ struct
 
   let table_initialize: Var.Table.t -> string =
     fun table -> let open Var.Table in
-    let tname = name table in
-    let tcols = List.fold_left (fun s_prev -> fun (s_col,t_col) -> 
-      let s_dec = String.concat "" ["(declare-fun ";s_col;" (";(String.capitalize_ascii tname);") "; (Var.Type.to_string t_col) ; ")"] in
+    let tname = String.capitalize_ascii @@ name table in
+    (*the pk conditions*)
+    let cond_pk =  let open PrintUtils in 
+      mkCond_and @@ List.map (fun (s,_,c) ->
+        if c
+        then (mkCond_equal (s^" r1")(s^" r2")) 
+        else "") @@ cols table  in
+    (*the assertion line regaring the PKs*)
+    let dec_pk = "(assert (forall ((r1 "^tname^")(r2 "^
+                 tname^")) (=>\n  "^cond_pk^"(= r1 r2))))" in
+    let tcols = List.fold_left (fun s_prev -> fun (s_col,t_col,pk_col) -> 
+      let s_dec = String.concat "" ["(declare-fun ";s_col;" (";tname;") "; (Var.Type.to_string t_col) ; ")"] in
       (String.concat "" [s_prev;"\n";s_dec])) ""  
       @@ cols table in
-    String.concat "" ["\n(declare-sort ";(String.capitalize_ascii tname);")";tcols]
+    String.concat "" ["\n(declare-sort ";tname;")";tcols;"\n";dec_pk]
  
   let all_table_initialize: Var.Table.t list -> string = 
     fun table_list -> List.fold_left (fun s -> fun t -> 
