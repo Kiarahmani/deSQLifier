@@ -23,7 +23,9 @@ end
 
 module Variable = 
 struct
-  type k = PARAM | LCOAL | FIELD
-  type t = T of {name: string; tp: Type.t; kind: k}
+  type kind = PARAM | LCOAL 
+  type t = T of {name: string; tp: Type.t; kn: kind}
+  let make ~name ~tp ~kn = T{name; tp; kn}
+  let name (T{name}) = name
 end
 

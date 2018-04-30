@@ -4,13 +4,16 @@ open Var
 open Speclang
 open Rules
 module M = Misc
-
+module V = Var.Variable
+module L = Sql.Transaction
 
 (*----------------------------------------------------------------------------------------------------*)
 module Constants = 
   struct
     type g = SER | CC | PSI
     
+    let line = "\n;"^(String.make 100 '-')
+
     let options =  "(set-option :produce-unsat-cores true)"
  
     let basic_relations =        "(declare-fun WR (T T) Bool)
@@ -61,6 +64,13 @@ end
 
 module PrintUtils = 
 struct
+  let comment_header x1 = let open Constants in 
+    let top = ";"^line in
+    let bottom = ";"^line in 
+    let empty_count = (100 - (String.length x1))/2 in 
+    let empty_space = (String.make empty_count ' ') in
+line^"\n;"^empty_space^x1^empty_space^""^line^"\n"
+
   let mkCond_equal x1 x2 = "(= ("^x1^") ("^x2^"))"  
   let mkCond_and : string list -> string = fun s_list ->
   let conds = String.concat "" s_list in
@@ -73,13 +83,11 @@ end
 
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
-(*----------------------------------------------------------------------------------------------------*)
-(*----------------------------------------------------------------------------------------------------*)
 module Encode =
 struct
 
   let z3_init  = let open Constants in 
-											String.concat "\n\n" [options; primitive_types 5; basic_relations; basic_assertions]
+String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types 5; basic_relations; basic_assertions]
 
 
   let z3_final = let open Constants in
@@ -105,18 +113,27 @@ struct
     String.concat "" ["\n(declare-sort ";tname;")";tcols;"\n";dec_pk]
  
   let all_table_initialize: Var.Table.t list -> string = 
-    fun table_list -> List.fold_left (fun s -> fun t -> 
-      String.concat "\n" [s; table_initialize t]) "" table_list
+    fun table_list -> (PrintUtils.comment_header"Table Declarations")^
+      (List.fold_left (fun s -> fun t -> 
+        String.concat "\n" [s; table_initialize t]) "" table_list)
 
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
 
-  let txn_initialize record= 
-    let p1_read_acc = "P1_read_acc" in
-    String.concat "" ["
-(declare-fun ";p1_read_acc;" (T) Int)
-(declare-fun ";p1_read_acc;" (T ";record;") Bool)"]
+  let declare_param tname vname vtype = let txn_cap = String.capitalize_ascii tname in
+     "(declare-fun "^txn_cap^"_Param_"^vname^" (T) "^vtype^")"
 
+  let txn_declare_param: (L.t * V.t list) -> string = fun (txn,var_list) ->
+        List.fold_left (fun prev_s -> fun (V.T{name;tp;_}) -> 
+          let var_t = Var.Type.to_string tp in
+          let txn_name = L.name txn in
+          prev_s^"\n"^(declare_param txn_name name var_t)) "" var_list
 
-
+  let all_txn_initialize txn_list = 
+    List.fold_left (fun prev_s -> fun curr_txn -> 
+    let L.T{name; params; stmts} = curr_txn in 
+    let curr_s = txn_declare_param (curr_txn,params) in   
+    prev_s^curr_s) "" txn_list
 
 end 
 
@@ -137,16 +154,34 @@ end
     close_out oc
 
 
-  let encode: Var.Table.t list -> Transaction.t list ->unit = 
+  let encode: Var.Table.t list -> L.t list -> unit = 
     fun table_list -> 
-    fun txn_list1 -> 
+    fun txn_list -> 
       let myInt = Var.Type.String in 
-      let final_enc = "" in (*where the result of rule application goes*)
-      write_to_file  @@ String.concat "\n\n" [Encode.z3_init;Encode.all_table_initialize table_list;
-                                              Encode.txn_initialize "Bankaccount";
-                                              final_enc;Encode.z3_final]
+      let final_enc = "" in 
+      let open Encode in
+      write_to_file  @@ String.concat "\n\n" [z3_init;
+                                              all_table_initialize table_list;
+                                              all_txn_initialize txn_list;
+                                              final_enc;z3_final]
 
 (*----------------------------------------------------------------------------------------------------*)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
