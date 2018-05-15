@@ -23,9 +23,13 @@ end
 
 module Variable = 
 struct
-  type kind = PARAM | LCOAL 
+  type kind = PARAM | LOCAL | FIELD
   type t = T of {name: string; tp: Type.t; kn: kind}
   let make ~name ~tp ~kn = T{name; tp; kn}
   let name (T{name}) = name
+  let test_var = make "test_var" Type.Int FIELD
 end
+
+let my_col:Table.col = ("test_col", Type.Int ,true) 
+
 

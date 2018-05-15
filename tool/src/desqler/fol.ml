@@ -33,6 +33,6 @@ end
 
 
 type t = T of {cond: L.condition}
-
-
-
+let make ~cond = T{cond}
+let my_true = make (L.Bool true)
+let my_const = L.Cons 0

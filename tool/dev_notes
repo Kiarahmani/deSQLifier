@@ -1,4 +1,8 @@
 extractin of the parameters is done -> z3 projection is done
 however when the number of paramteres in the input program (bankaccount.ml) is changed some error (I guess related to list lengths) appears
+----------------------------------------------------------------------------------------------------
+Useful Commands:
+alias m='cd src || make localclean && make world && cd ../ && ./run bankaccount'
+watch -n 1 cat z3-encoding.smt2
 
 

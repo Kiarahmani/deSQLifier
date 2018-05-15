@@ -71,6 +71,7 @@ let extract_table_schemas ttype_names str_items
 (*
  * Extract transactions
  *)
+
 let extract_txns (str_items) = 
   let txns  = ref []  in
   let open Asttypes in
@@ -83,12 +84,13 @@ let extract_txns (str_items) =
             let arrow_t = vb_expr.exp_type.desc in
             let (arg_ts,res_t) = Astutils.uncurry_arrow arrow_t in
               Fun.make ~name: (Ident.create loc.txt) 
-                   ~rec_flag: rec_flag
-                   ~args_t: (List.zip args arg_ts) 
-                   ~res_t: res_t ~body: body in
-            if String.length loc.txt >= 4 && 
-               Str.last_chars loc.txt 4 = "_txn" then
-              txns:= (mk_fun ())::!txns
+                       ~rec_flag: rec_flag
+                       ~args_t: (List.zip args arg_ts) 
+                       ~res_t: res_t ~body: body in
+            if String.length loc.txt >= 4 && Str.last_chars loc.txt 4 = "_txn" 
+            then txns:= (mk_fun ())::!txns
+     
+      
       | _ -> () in
     begin
       List.iter (fun {str_desc} -> match str_desc with

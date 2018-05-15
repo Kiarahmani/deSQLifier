@@ -34,16 +34,19 @@ end
 
 
 (*Tabel Definitions*)
-type bankaccount = {accID: int; mutable accBal: int}
-(*type student = {studentID: int; mutable studentName: string; mutable studentIsNew: bool}*)
-(*type desk = {deskID: int; deskType: string; mutable deskIsUgly: bool}*)
+type bankaccount = {b_id: int; mutable b_bal: int}
 
 (*TXN1*)
-let deposit_txn b_id amount =  
-           let bal = SQL.select1 [Bankaccount]  (fun u -> u.accID = b_id) in
+let deposit_txn (src_id:int) (dst_id:int) amount =  
+           let acc_src = SQL.select1 [Bankaccount]  (fun u -> u.b_id = src_id) in
+           let acc_dst = SQL.select1 [Bankaccount]  (fun u -> u.b_id = dst_id) in
            SQL.update Bankaccount
-           (fun u -> begin u.accBal <- (bal.accBal+amount); end)
-           (fun u -> u.accID = b_id)
+            (*do:*)    (fun u -> begin u.b_bal <- (acc_src.b_bal - amount); end)
+            (*where:*) (fun u -> u.b_id = src_id);
+           SQL.update Bankaccount
+            (*do:*)    (fun u -> begin u.b_bal <- (acc_dst.b_bal + amount); end)
+            (*where:*) (fun u -> u.b_id = dst_id)
+
 
 
         

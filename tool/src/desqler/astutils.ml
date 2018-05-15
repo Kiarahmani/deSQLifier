@@ -3,16 +3,24 @@ open Types
 open Typedtree
 open Speclang
 
-let rec uncurry_arrow = function 
-  (Tarrow (_,typ_expr1,typ_expr2,_)) ->
+
+
+let rec uncurry_arrow = fun e ->
+  match e with
+  |Tarrow (_,typ_expr1,typ_expr2,_) ->
     let (ty1,ty2) = (typ_expr1.desc, typ_expr2.desc) in 
       begin
         match ty2 with 
-            Tarrow _ -> (fun (x,y) -> (ty1::x,y)) (uncurry_arrow ty2)
-          | _ -> ([ty1],ty2)
+          |Tarrow _ ->(fun (x,y) -> (ty1::x,y)) (uncurry_arrow ty2)
+          |Tlink x -> begin 
+                        match x.desc with 
+                        |Tarrow _ -> (fun (x,y) -> (ty1::x,y)) (uncurry_arrow x.desc) 
+                        |_ ->  ([ty1],ty2)
+                      end
+          |_ -> ([ty1],ty2)
       end
-| Tlink typ_expr -> uncurry_arrow @@ typ_expr.desc
-| _ -> failwith "uncurry_arrow called on non-arrow type"
+  | Tlink typ_expr -> uncurry_arrow @@ typ_expr.desc 
+  | _ -> failwith "uncurry_arrow called on non-arrow type"
 
 let to_tye tyd = let open Types in
   {desc=tyd; level=0; id=0}

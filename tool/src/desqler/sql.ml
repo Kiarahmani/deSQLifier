@@ -3,22 +3,6 @@ open Speclang
 open Fol
 open Var
 
-(*helping function to determine the case to catch*)
-let exp_to_stirng: Typedtree.expression -> unit = 
-		fun exp -> let desc = exp.exp_desc in
-			match desc with 
-                        |Texp_ident (_,_,_) -> printf "Texp_ident"
-                        |Texp_constant _ -> printf "Texp_constant"
-                        |Texp_let (_,_,_) -> printf "Texp_let"
-                        |Texp_function (_,_,_) -> printf "Texp_function"
-                        |Texp_apply (_,_) -> printf "Texp_apply"
-                        |Texp_match (_,_,_,_) -> printf "Texp_match"
-                        |Texp_try (_,_) -> printf "Texp_try"
-                        |Texp_tuple _ -> printf "Texp_try"
-                        |Texp_construct (_,_,_) -> printf "Texp_try"
-                        |Texp_variant (_,_) -> printf "Texp_try"
-                        |_ -> printf "ERROR: Print Expression - case not implemented yet"
-
 let printf = Printf.printf
 let print_txn_name (Speclang.Fun.T app) = print_string app.name.name
 let print_ident : Ident.t -> unit = fun ident -> print_string ident.name
@@ -33,6 +17,10 @@ struct
             |INSERT: Var.Table.t *  Fol.Record.t * Fol.t -> st
             |UPDATE: Var.Table.col * Fol.L.expr * Fol.t  -> st
             |DELETE: Var.Table.t * Fol.t * Fol.t -> st
+
+  let sample_stmt = SELECT (("test_col", Var.Type.Int ,true),Var.Variable.test_var,Fol.my_true,Fol.my_true)
+  let sample_stmt2 = DELETE (Var.Table.make "test_table" [("test_col", Var.Type.Int ,true)],Fol.my_true,Fol.my_true)
+
 end
 
 

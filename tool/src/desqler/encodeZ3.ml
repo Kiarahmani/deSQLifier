@@ -6,6 +6,7 @@ open Rules
 module M = Misc
 module V = Var.Variable
 module L = Sql.Transaction
+module S = Sql.Statement
 
 (*----------------------------------------------------------------------------------------------------*)
 module Constants = 
@@ -87,11 +88,11 @@ module Encode =
 struct
 
   let z3_init  = let open Constants in 
-String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types 5; basic_relations; basic_assertions]
+    String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types 5; basic_relations; basic_assertions]
 
 
   let z3_final = let open Constants in
-											String.concat "\n\n" [cycles_to_check;guarantee PSI; requests]
+    String.concat "\n\n" [PrintUtils.comment_header "Finalization";cycles_to_check;guarantee PSI; requests]
 
 
   let table_initialize: Var.Table.t -> string =
@@ -119,7 +120,31 @@ String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_
 
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
+(* vars *)
+  
+  let declare_vars tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
+     "(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^vtype^")"
 
+
+  let txn_declare_vars : (L.t * V.t list) -> string = 
+    fun (txn,var_list) -> 
+      List.fold_left (fun prev_s -> fun  (V.T{name;tp;_}) -> 
+        let var_t = Var.Type.to_string tp in
+        let txn_name = L.name txn in
+        prev_s^"\n"^(declare_vars txn_name name var_t)) "" var_list
+
+
+  let stmt_extract_var : Sql.Statement.st -> V.t option = 
+    fun stmt -> match stmt with 
+      |S.SELECT (_,v,_,_) -> Some v
+      |_ -> None
+  
+  let txn_extract_vars : L.t -> V.t list = fun (L.T{name;params;stmts}) -> 
+    List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
+                                                |Some curr_var -> prev_l@[curr_var]
+                                                |None -> prev_l) [] stmts
+
+(*params*)
   let declare_param tname vname vtype = let txn_cap = String.capitalize_ascii tname in
      "(declare-fun "^txn_cap^"_Param_"^vname^" (T) "^vtype^")"
 
@@ -130,18 +155,18 @@ String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_
           prev_s^"\n"^(declare_param txn_name name var_t)) "" var_list
 
   let all_txn_initialize txn_list = 
-    List.fold_left (fun prev_s -> fun curr_txn -> 
-    let L.T{name; params; stmts} = curr_txn in 
-    let curr_s = txn_declare_param (curr_txn,params) in   
-    prev_s^curr_s) "" txn_list
+    let params = 
+      List.fold_left (fun prev_s -> fun curr_txn -> 
+        let L.T{name; params; stmts} = curr_txn in 
+        let curr_s = txn_declare_param (curr_txn,params) in   
+          prev_s^curr_s) "" txn_list in
+    let vars = 
+      List.fold_left (fun prev_s -> fun curr_txn -> 
+        let curr_s = txn_declare_vars @@ (curr_txn,txn_extract_vars curr_txn) in
+          prev_s^curr_s) "" txn_list
+    in params^"\n\n"^vars
 
 end 
-
-
-
-
-
-
 
 
 
