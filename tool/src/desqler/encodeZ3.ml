@@ -5,15 +5,18 @@ open Speclang
 open Rules
 module M = Misc
 module V = Var.Variable
-module L = Sql.Transaction
+module T = Sql.Transaction
 module S = Sql.Statement
+module RW = Rules.RW
+let _HEADER_SIZE = 120
+let to_cap = String.capitalize_ascii
 
 (*----------------------------------------------------------------------------------------------------*)
 module Constants = 
   struct
     type g = SER | CC | PSI
     
-    let line = "\n;"^(String.make 100 '-')
+    let line = "\n;"^(String.make _HEADER_SIZE '-')
 
     let options =  "(set-option :produce-unsat-cores true)"
  
@@ -33,21 +36,15 @@ module Constants =
 (assert (! (forall ((t1 T) (t2 T))   (=> (RW t1 t2) (not (vis t2 t1))))     :named rw_then_not_vis))
 (assert (! (forall ((t T))     (not (ar t t)))          :named irreflx_ar))"
 
-		(*reruens (P1) (P2) (P3)...*)
-		let rec gen_all_Ps : int -> string -> string = 
-			fun i -> fun old_s -> if i == 0
-														then old_s
-														else  let curr_i = string_of_int i in 
-																	let curr_s = (String.concat "" [old_s;" (P";curr_i;")"]) in
-																	gen_all_Ps (i-1) curr_s
-	
 
-   	let primitive_types : int -> string = fun count -> 
-			let pr = (gen_all_Ps count "") in 
-			String.concat "" ["(declare-datatypes () ((TType ";pr;"))) 
-    										 (declare-sort T)
-                         (declare-fun type (T) TType)"] 
+    let  gen_all_Types : string list -> string = 
+      fun s_list ->
+        List.fold_left (fun old_s -> fun curr_t -> old_s^" ("^(String.capitalize_ascii curr_t)^")") "" s_list
 
+
+   	let primitive_types : string list -> string = fun s_list -> 
+      let pr = (gen_all_Types s_list) in 
+			String.concat "" ["(declare-datatypes () ((TType";pr;"))) \n(declare-sort T)\n(declare-fun type (T) TType)"] 
 
 
 		let cycles_to_check = "(assert (exists ((t1 T) (t2 T)) (and (not (= t1 t2)) (RW t1 t2) (RW t2 t1))))"
@@ -62,13 +59,12 @@ module Constants =
 end
 
 
-
 module PrintUtils = 
 struct
   let comment_header x1 = let open Constants in 
     let top = ";"^line in
     let bottom = ";"^line in 
-    let empty_count = (100 - (String.length x1))/2 in 
+    let empty_count = (_HEADER_SIZE - (String.length x1))/2 in 
     let empty_space = (String.make empty_count ' ') in
 line^"\n;"^empty_space^x1^empty_space^""^line^"\n"
 
@@ -80,15 +76,13 @@ end
 
 
 
-
-
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
 module Encode =
 struct
 
-  let z3_init  = let open Constants in 
-    String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types 5; basic_relations; basic_assertions]
+  let z3_init  = fun s_list -> let open Constants in 
+    String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types s_list; basic_relations; basic_assertions]
 
 
   let z3_final = let open Constants in
@@ -100,15 +94,16 @@ struct
     let tname = String.capitalize_ascii @@ name table in
     (*the pk conditions*)
     let cond_pk =  let open PrintUtils in 
-      mkCond_and @@ List.map (fun (s,_,c) ->
+      mkCond_and @@ List.map (fun (_,s,_,c) ->
         if c
-        then (mkCond_equal (s^" r1")(s^" r2")) 
+        then  let proj_of_s = tname^"_Proj_"^s in
+              (mkCond_equal (proj_of_s^" r1")(proj_of_s^" r2")) 
         else "") @@ cols table  in
     (*the assertion line regaring the PKs*)
     let dec_pk = "(assert (forall ((r1 "^tname^")(r2 "^
                  tname^")) (=>\n  "^cond_pk^"(= r1 r2))))" in
-    let tcols = List.fold_left (fun s_prev -> fun (s_col,t_col,pk_col) -> 
-      let s_dec = String.concat "" ["(declare-fun ";s_col;" (";tname;") "; (Var.Type.to_string t_col) ; ")"] in
+    let tcols = List.fold_left (fun s_prev -> fun (_,s_col,t_col,pk_col) -> 
+      let s_dec = String.concat "" ["(declare-fun ";(tname^"_Proj_"^s_col);" (";tname;") "; (Var.Type.to_string t_col) ; ")"] in
       (String.concat "" [s_prev;"\n";s_dec])) ""  
       @@ cols table in
     String.concat "" ["\n(declare-sort ";tname;")";tcols;"\n";dec_pk]
@@ -126,11 +121,11 @@ struct
      "(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^vtype^")"
 
 
-  let txn_declare_vars : (L.t * V.t list) -> string = 
+  let txn_declare_vars : (T.t * V.t list) -> string = 
     fun (txn,var_list) -> 
       List.fold_left (fun prev_s -> fun  (V.T{name;tp;_}) -> 
         let var_t = Var.Type.to_string tp in
-        let txn_name = L.name txn in
+        let txn_name = T.name txn in
         prev_s^"\n"^(declare_vars txn_name name var_t)) "" var_list
 
 
@@ -139,7 +134,7 @@ struct
       |S.SELECT (_,v,_,_) -> Some v
       |_ -> None
   
-  let txn_extract_vars : L.t -> V.t list = fun (L.T{name;params;stmts}) -> 
+  let txn_extract_vars : T.t -> V.t list = fun (T.T{name;params;stmts}) -> 
     List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
                                                 |Some curr_var -> prev_l@[curr_var]
                                                 |None -> prev_l) [] stmts
@@ -148,16 +143,16 @@ struct
   let declare_param tname vname vtype = let txn_cap = String.capitalize_ascii tname in
      "(declare-fun "^txn_cap^"_Param_"^vname^" (T) "^vtype^")"
 
-  let txn_declare_param: (L.t * V.t list) -> string = fun (txn,var_list) ->
+  let txn_declare_param: (T.t * V.t list) -> string = fun (txn,var_list) ->
         List.fold_left (fun prev_s -> fun (V.T{name;tp;_}) -> 
           let var_t = Var.Type.to_string tp in
-          let txn_name = L.name txn in
+          let txn_name = T.name txn in
           prev_s^"\n"^(declare_param txn_name name var_t)) "" var_list
 
   let all_txn_initialize txn_list = 
     let params = 
       List.fold_left (fun prev_s -> fun curr_txn -> 
-        let L.T{name; params; stmts} = curr_txn in 
+        let T.T{name; params; stmts} = curr_txn in 
         let curr_s = txn_declare_param (curr_txn,params) in   
           prev_s^curr_s) "" txn_list in
     let vars = 
@@ -168,6 +163,29 @@ struct
 
 end 
 
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
+(*Rules*)
+
+let txns_to_wr = ""
+let txns_to_ww = ""
+
+let txns_to_rw: T.t -> T.t -> string = fun txn1 -> fun txn2 -> 
+  RW.extract_rules txn1 txn2 
+
+(*TODO*)
+(*TODO*)
+
+let all_rw: T.t list -> string = fun txn_list -> 
+    List.fold_left (fun old_s -> fun curr_t -> 
+      List.fold_left (fun old_s2 -> fun curr_t2 -> 
+        old_s2^(txns_to_rw curr_t curr_t2)) old_s txn_list) "" txn_list
+
+
+let all_wr = ""
+let all_ww = "" 
+let all_txns_all_rules: T.t list -> string = fun txn_list ->
+    PrintUtils.comment_header "Rules"^"\n;~~~~RW\n"^all_rw txn_list^"\n;~~~~WR\n"^all_wr^"\n;~~~~WW\n"^all_ww
 
 
 (*----------------------------------------------------------------------------------------------------*)
@@ -179,43 +197,15 @@ end
     close_out oc
 
 
-  let encode: Var.Table.t list -> L.t list -> unit = 
+  let encode: Var.Table.t list -> T.t list -> unit = 
     fun table_list -> 
     fun txn_list -> 
-      let myInt = Var.Type.String in 
-      let final_enc = "" in 
       let open Encode in
-      write_to_file  @@ String.concat "\n\n" [z3_init;
+      let txn_name_list = List.map T.name txn_list in
+      write_to_file  @@ String.concat "\n\n" [z3_init txn_name_list;
                                               all_table_initialize table_list;
                                               all_txn_initialize txn_list;
-                                              final_enc;z3_final]
+                                              all_txns_all_rules txn_list;
+                                              z3_final]
 
 (*----------------------------------------------------------------------------------------------------*)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

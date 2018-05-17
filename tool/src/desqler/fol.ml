@@ -1,6 +1,7 @@
 open Typedtree
 open Speclang
 open Var
+module V = Var.Variable
 
 
 (*----------------------------------------------------------------------------------------------------*)
@@ -21,7 +22,8 @@ struct
 
 
 	type condition = |Bool: bool -> condition 
-									 |GT: expr*expr -> condition
+									 |Gt: expr*expr -> condition
+                   |Eq:  expr*expr -> condition
 end
 
 
@@ -34,5 +36,7 @@ end
 
 type t = T of {cond: L.condition}
 let make ~cond = T{cond}
+let cond (T{cond}) = cond
 let my_true = make (L.Bool true)
-let my_const = L.Cons 0
+let my_const = L.Var V.test_field
+let my_test_equal = make (L.Eq (my_const,my_const))

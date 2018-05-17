@@ -9,12 +9,25 @@ module V = Var.Variable
 module T = Var.Type
 module G = Speclang.Fun
 module S = Sql.Statement
-
+module F = Fol
 
 (*----------------------------------------------------------------------------------------------------*)
 
 module Utils = 
 struct
+
+  let test_print: string -> unit = 
+    fun s -> 
+      printf "\n\n==================\n       %s     \n==================\n\n" s
+
+    
+  let print_asttypes_arg_label: Asttypes.arg_label -> string = fun x  ->
+    match x with 
+      | Nolabel -> "Nolabel"
+      | Labelled s -> "label: "^s
+      | Optional s -> "optional: "^s
+ 
+
 
   let rec print_helpful_type_desc : type_desc -> unit =
   fun x -> 
@@ -79,18 +92,26 @@ let print_helpful_pattern_desc : pattern_desc -> unit =
 
 
 
+(*helping print functions to see the extraction process*)
 let print_stmt : S.st -> unit = fun st -> 
   let open S in 
   match st with
-  |SELECT ((col_name,_,_),_,_,_) -> printf "\n SELECT %s" col_name   
-  |INSERT _ -> printf "\n INSERT"   
-  |UPDATE _ -> printf "\n UPDATE"   
-  |DELETE _ -> printf "\n DELETE"   
+  |SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ %s" col_name   
+  |INSERT _ -> printf "\n ɪɴꜱᴇʀᴛ"   
+  |UPDATE _ -> printf "\n ᴜᴩᴅᴀᴛᴇ"   
+  |DELETE _ -> printf "\n ᴅᴇʟᴇᴛᴇ"   
   |_ -> failwith "ERROR print_stmt: unexpected sql operation"
 
+let print_var: V.t -> unit = let open V in 
+      fun x -> printf "\n %s" @@ name x
+
+let print_var_list:  V.t list -> unit = fun var_list -> 
+  let _ = print_string "\nExtracted VARS:\n########";
+          List.iter print_var var_list in
+  print_string "\n########\n\n\n"
 
 let print_stmts_list : S.st list -> unit = fun st_list -> 
-  let _ = print_string "\nExtracted TXN:\n#########";
+  let _ = print_string "\nExtracted TXN:\n########";
           List.iter print_stmt st_list in
   print_string "\n########\n\n\n"
 
@@ -112,8 +133,11 @@ struct
 
   let convert : App.Tableschema.t -> Var.Table.t =
     fun table -> 
+      let t_name = App.Tableschema.name table in
       Var.Table.make  (App.Tableschema.name table)
-      (List.map (fun (col_name, SomeType col_type, col_pk) -> (col_name,(convert_type_to_IR  col_type), col_pk)) 
+      (List.map (fun (col_name, SomeType col_type, col_pk) -> 
+                     (t_name,col_name,(convert_type_to_IR col_type), col_pk)
+                ) 
                 (App.Tableschema.cols table))
 
 end
@@ -121,7 +145,6 @@ end
 
 module Txn = 
 struct
-
 let remove_txn_tail s = 
   String.sub s 0 ((String.length s) - 4)
 
@@ -143,58 +166,124 @@ let convert_param: (Ident.t * type_desc) -> V.t  =
   fun (id,tp) ->  V.make id.name (convert_types tp) V.PARAM
 
 
-let rec convert_body_rec: S.st list -> Typedtree.expression -> S.st list = 
-fun old_stmts -> fun {exp_desc;exp_loc;exp_extra;exp_type;exp_env;exp_attributes} ->
+let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L.expr = 
+  fun var_list -> fun desc -> match desc with
+    |Texp_field (_,_,{lbl_name}) ->  F.L.Var (V.make lbl_name T.Int FIELD) 
+    |Texp_ident (Pident {name},_,_) -> let open List in
+                                       if mem name  @@ fst @@ split var_list
+                                       then F.L.Var (V.make name T.Int LOCAL)
+                                       else F.L.Var (V.make name T.Int PARAM)
+    |Texp_constant (Const_int i) -> F.L.Cons i
+    |Texp_apply ({exp_desc=Texp_ident (Pdot (_,op,_),_,_)},[(Nolabel,Some l);(Nolabel,Some r)]) ->
+      let lhs = extract_operands var_list (l.exp_desc) in 
+      let rhs = extract_operands var_list (r.exp_desc) in
+      match op with
+        |"-" -> F.L.MINUS (lhs,rhs)
+        |"+" -> F.L.PLUS (lhs,rhs)
+    |_ -> let _ = Utils.print_helpful_expression_desc desc in failwith "ERROR extract_operands: case not handled yet"  
+  
+
+let extract_where_clause: (string*V.t) list -> Typedtree.expression_desc -> Typedtree.expression_desc -> string -> Fol.t =
+  fun var_list -> fun desc_l -> fun desc_r ->  fun op ->
+    let l_var = extract_operands var_list desc_l in
+    let r_var = extract_operands var_list desc_r in
+      match op with 
+        |"=" -> F.make (F.L.Eq (l_var,r_var))
+        |_ -> failwith "ERROR extract_where_clause: the operation not handled yet"
+
+
+(*handle the rhs of select*)
+let extract_select: (string*V.t) list -> Typedtree.expression -> string*Fol.t  =  
+  fun var_list -> fun body -> match body.exp_desc with
+    |Texp_apply (e0,[(arg1,Some exp1);(arg2,Some exp2)]) -> 
+      let open Utils in
+      let Texp_construct (_,tc2,_) = exp1.exp_desc in (*table name is extracted here*) (*the rest are not used for this case but I'm gonna keep them for future*)
+      let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the rest contains the where funtion some where...*)
+        let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
+        let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
+                        [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*) 
+      let Texp_ident (sql_select,_,_) = e0.exp_desc in (*not used so far*)
+      let wh_c = extract_where_clause var_list exp1 exp2 op in
+      (tc2.cstr_name,wh_c)
+    |_ -> failwith "ERROR extract_select_table_name: unexpected case for handling select"
+
+
+
+(*handle the rhs of update*)
+let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> string*Fol.t = 
+  fun [(_,Some exp1);(_,Some exp2);(_,Some exp3)] ->
+        let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*already extracted... keeping the rest for the future*)
+        let Texp_function (_,tf2,_) = exp2.exp_desc in (*the updating function*)
+        let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp3.exp_desc in (*the where clause*)
+          let Tpat_var ({name},_) = c_lhs.pat_desc in 
+          let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
+                           [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*)
+        let wh_c = extract_where_clause [] exp1 exp2 op in
+        (table_name,wh_c)
+
+
+let extract_variable: Typedtree.pattern_desc -> (string*V.t) =
+  fun pat_desc ->
+    let Tpat_var ({name},_) = pat_desc in
+    (name,(V.make name T.Int V.LOCAL)) (*TODO types must be extracted*)
+
+
+
+
+let rec convert_body_rec: (string*V.t) list -> S.st list -> 
+                            Typedtree.expression -> S.st list*(string*V.t) list = 
+  fun old_vars -> fun old_stmts -> 
+  fun {exp_desc;exp_loc;exp_extra;exp_type;exp_env;exp_attributes} ->
     match exp_desc with 
     (*select case*)
-    |Texp_let (_,[{vb_pat;vb_expr}],body) ->  (*vb_expr contains the left hand side of the let --> its a Tepx_apply which I should create a function to handle*)
-      let Tpat_var ({name},_) = vb_pat.pat_desc in 
-      let new_stmt = S.SELECT (("test_col", T.Int ,true),(V.make name T.Int V.LOCAL),Fol.my_true,Fol.my_true) in
-      convert_body_rec (old_stmts@[new_stmt]) body
+    |Texp_let (_,[{vb_pat;vb_expr}],body) ->  
+      let (name,curr_var) = extract_variable @@ vb_pat.pat_desc in 
+      let (accessed_table,wh_clause) = extract_select old_vars vb_expr in
+      let new_stmt_col = (accessed_table,"test_col", T.Int ,true) in 
+      let new_stmt = S.SELECT (new_stmt_col,(V.make name T.Int V.LOCAL),wh_clause,Fol.my_true) in
+      convert_body_rec (old_vars@[(name,curr_var)])  
+                       (old_stmts@[new_stmt]) 
+                        body
     (*final delete/update/insert cases*)
-    |Texp_apply (app_exp,_) -> 
+    |Texp_apply (app_exp,ae_list) -> 
       let Texp_ident (app_path,_,_) = app_exp.exp_desc in
       let Path.Pdot (_,op,_) = app_path in 
       let new_stmt = match op with
                       |"insert" -> failwith "ERROR convert_body_rec: insert is not handled yet"
-                      |"update" ->  S.UPDATE (Var.my_col,Fol.my_const,Fol.my_true)
+                      |"update" ->  let (accessed_table,wh_c) = extract_update ae_list in
+                                    let accessed_col = (accessed_table,"test_col", T.Int ,true) in 
+                                    S.UPDATE (accessed_col,Fol.my_const,wh_c,Fol.my_true)
                       |"delete" -> failwith "ERROR convert_body_rec :delete is not handled yet!"
                       |_ -> failwith "ERROR convert_body_rec: unexpected SQL operation"
-      in old_stmts@[new_stmt]
+    in (old_stmts@[new_stmt],old_vars)
     (*intermediate del/upt/ins*)
     |Texp_sequence (app_exp1,body_exps) -> 
-        (convert_body_rec (convert_body_rec old_stmts app_exp1) app_exp1)
+        (convert_body_rec old_vars (fst @@ convert_body_rec old_vars old_stmts app_exp1) body_exps)
     |_ -> failwith "ERROR convert_body_rec: unexpected case"
 
 (*TODO*)
 (*TODO*)
 
 
-
-let convert_body_stmts: Typedtree.expression -> S.st list =
-  fun body -> let output = convert_body_rec [] body in
-  let _ = Utils.print_stmts_list output in 
-  output
+let convert_body_stmts: Typedtree.expression -> (S.st list*(string*V.t) list) =
+  fun body -> 
+  let (output_st,output_var) = convert_body_rec [] [] body in
+  (*testing*)
+  let _ = Utils.print_stmts_list output_st in 
+  let _ = Utils.print_var_list @@ snd @@ List.split output_var in 
+  (output_st,output_var)
 
 
 let convert : G.t -> L.t = 
   fun (G.T {name;rec_flag;args_t;res_t;body}) -> 
     let t_name = remove_txn_tail name.name in
     let t_params = List.map convert_param args_t in
-    L.make t_name t_params (convert_body_stmts body) 
+    let (stmts,vars) = convert_body_stmts body in
+    L.make t_name t_params stmts vars  
 
 end
 	
-
 (*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
-let sample_txns = [
-L.make "deposit" [V.make "amount" T.Int V.PARAM] []; 
-L.make "withdraw" [V.make "accID" T.String V.PARAM; V.make "amount" T.Int V.PARAM] [S.sample_stmt]
-] 
-
-
-
-
 
 let extract_program: App.t -> (Var.Table.t list * L.t list) = 
     fun (App.T {schemas; txns}) -> 
