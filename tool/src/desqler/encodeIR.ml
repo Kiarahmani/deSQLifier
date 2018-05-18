@@ -159,7 +159,7 @@ let rec convert_types: type_desc -> T.t =
 						begin match name with "int" -> T.Int | "string" -> T.String | "bool" -> T.Bool  end
 					end
 			| Tlink {desc;level;id} -> convert_types desc
-			| _ -> failwith "encodeIR: convert_types error"
+      | _ -> Utils.print_helpful_type_desc tp;  failwith "encodeIR: convert_types error"
 
 
 let convert_param: (Ident.t * type_desc) -> V.t  = 
@@ -259,7 +259,8 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
     (*intermediate del/upt/ins*)
     |Texp_sequence (app_exp1,body_exps) -> 
         (convert_body_rec old_vars (fst @@ convert_body_rec old_vars old_stmts app_exp1) body_exps)
-    |_ -> failwith "ERROR convert_body_rec: unexpected case"
+    |Texp_construct _ -> (old_stmts,old_vars)
+    |_ -> Utils.print_helpful_expression_desc exp_desc;  failwith "ERROR convert_body_rec: unexpected case"
 
 (*TODO*)
 (*TODO*)
@@ -277,7 +278,7 @@ let convert_body_stmts: Typedtree.expression -> (S.st list*(string*V.t) list) =
 let convert : G.t -> L.t = 
   fun (G.T {name;rec_flag;args_t;res_t;body}) -> 
     let t_name = remove_txn_tail name.name in
-    let t_params = List.map convert_param args_t in
+let t_params = List.map convert_param args_t in
     let (stmts,vars) = convert_body_stmts body in
     L.make t_name t_params stmts vars  
 

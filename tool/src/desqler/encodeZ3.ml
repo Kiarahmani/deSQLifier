@@ -3,18 +3,22 @@ open Sql
 open Var
 open Speclang
 open Rules
+open Constants
 module M = Misc
 module V = Var.Variable
 module T = Sql.Transaction
 module S = Sql.Statement
 module RW = Rules.RW
+module WW = Rules.WW
+module WR = Rules.WR
+let _MAX_CYCLE_LENGTH = Constants._MAX_CYCLE_LENGTH
+let _GUARANTEE = Constants._GUARANTEE
 let _HEADER_SIZE = 120
 let to_cap = String.capitalize_ascii
 
 (*----------------------------------------------------------------------------------------------------*)
-module Constants = 
+module Cons = 
   struct
-    type g = SER | CC | PSI | EC
     
     let line = "\n;"^(String.make _HEADER_SIZE '-')
 
@@ -37,6 +41,8 @@ module Constants =
 (assert (! (forall ((t T))     (not (ar t t)))          :named irreflx_ar))"
 
 
+    let gen_deps = "(declare-fun D (T T) Bool)\n(assert (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))))"
+
     let  gen_all_Types : string list -> string = 
       fun s_list ->
         List.fold_left (fun old_s -> fun curr_t -> old_s^" ("^(String.capitalize_ascii curr_t)^")") "" s_list
@@ -45,11 +51,31 @@ module Constants =
    	let primitive_types : string list -> string = fun s_list -> 
       let pr = (gen_all_Types s_list) in 
 			String.concat "" ["(declare-datatypes () ((TType";pr;"))) \n(declare-sort T)\n(declare-fun type (T) TType)"] 
-
-
-		let cycles_to_check = "(assert (exists ((t1 T) (t2 T)) (and (not (= t1 t2)) (RW t1 t2) (RW t2 t1))))"
+    
   
-    let guarantee : g -> string = 
+    
+    (*creating the general form of cycles of length less than _MAX_CYCLE_LENGTH*)
+    (*just helping to create a range list*)
+    let range i j = let rec aux n acc = 
+      if n < i then acc else aux (n-1) (n :: acc)
+      in aux j []
+    let max = string_of_int _MAX_CYCLE_LENGTH 
+    let all_ts = List.fold_left (fun old_s -> fun curr_i -> old_s^" (t"^(string_of_int curr_i)^" T)") "" (range 1 _MAX_CYCLE_LENGTH)
+    let all_ands = List.fold_left (fun old_s -> fun curr_i -> old_s^
+                                              " (D t"^(string_of_int curr_i)^
+                                              " t"^(string_of_int @@ curr_i+1)^
+                                              ")") "" (range 1 (_MAX_CYCLE_LENGTH-1)) 
+    let cycles_to_check = gen_deps^"\n(assert (exists ("^all_ts^") (and (not (= t1 t"^max^")) "^all_ands^" (D t"^max^" t1))))"
+  
+ 
+
+
+
+
+
+
+
+    let guarantee : Constants.g -> string = 
       fun g -> match g with
         |SER -> "(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser )) ;SER"
         |PSI ->  "(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi)) ;PSI"
@@ -62,7 +88,7 @@ end
 
 module PrintUtils = 
 struct
-  let comment_header x1 = let open Constants in 
+  let comment_header x1 = let open Cons in 
     let top = ";"^line in
     let bottom = ";"^line in 
     let empty_count = (_HEADER_SIZE - (String.length x1))/2 in 
@@ -82,12 +108,12 @@ end
 module Encode =
 struct
 
-  let z3_init  = fun s_list -> let open Constants in 
+  let z3_init  = fun s_list -> let open Cons in 
     String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types s_list; basic_relations; basic_assertions]
 
 
-  let z3_final = let open Constants in
-    String.concat "\n\n" [PrintUtils.comment_header "Finalization";cycles_to_check;guarantee EC; requests]
+  let z3_final = let open Cons in
+    String.concat "\n\n" [PrintUtils.comment_header "Finalization";cycles_to_check;guarantee _GUARANTEE; requests]
 
   let table_phi_deps :  string -> string = 
     fun table_name ->
@@ -190,30 +216,33 @@ end
 (*----------------------------------------------------------------------------------------------------*)
 (*Rules*)
 
-let txns_to_ww = "" (*TODO*)
 
 let txns_to_wr: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
-  RW.extract_rules txn1 txn2
+  WR.extract_rules txn1 txn2
 
 let txns_to_rw: T.t -> T.t -> string = fun txn1 -> fun txn2 -> 
   RW.extract_rules txn1 txn2 
 
+let txns_to_ww: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
+  WW.extract_rules txn1 txn2
 
 let all_rw: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
         old_s2^(txns_to_rw curr_t curr_t2)) old_s txn_list) "" txn_list
 
-
 let all_wr: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
         old_s2^(txns_to_wr curr_t curr_t2)) old_s txn_list) "" txn_list
 
-let all_ww = ""
+let all_ww: T.t list -> string = fun txn_list -> 
+    List.fold_left (fun old_s -> fun curr_t -> 
+      List.fold_left (fun old_s2 -> fun curr_t2 -> 
+        old_s2^(txns_to_ww curr_t curr_t2)) old_s txn_list) "" txn_list
 
 let all_txns_all_rules: T.t list -> string = fun txn_list ->
-    PrintUtils.comment_header "RW Rules"^all_rw txn_list^(PrintUtils.comment_header "WR Rules")^all_wr txn_list^(PrintUtils.comment_header "WW Rules")^all_ww
+    PrintUtils.comment_header "RW Rules"^all_rw txn_list^(PrintUtils.comment_header "WR Rules")^all_wr txn_list^(PrintUtils.comment_header "WW Rules")^all_ww txn_list
 
 
 (*----------------------------------------------------------------------------------------------------*)

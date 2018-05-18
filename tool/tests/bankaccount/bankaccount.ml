@@ -36,7 +36,7 @@ end
 
 (*Tabel Definitions*)
 type bankaccount = {b_id: int; mutable b_bal: int}
-type student = {b_id: int; mutable b_bal: int}
+(*type student = {b_id: int; mutable b_bal: int}*)
 
 (*TXN1*)
 let deposit_txn (src_id:int) (dst_id:int) amount =  
@@ -51,9 +51,8 @@ let deposit_txn (src_id:int) (dst_id:int) amount =
 
 
 (*TXN2*)
-let withdraw_txn (src_id:int) amount =  
+let withdraw_txn (src_id:int) (amount:int) =  
     let acc_src = SQL.select1 Bankaccount  (fun u -> u.b_id = src_id) in
     SQL.update Bankaccount
     (*do:*)    (fun u -> begin u.b_bal <- (acc_src.b_bal - amount); end)
     (*where:*) (fun u -> u.b_id = src_id);
-
