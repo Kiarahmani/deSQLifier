@@ -14,7 +14,7 @@ let to_cap = String.capitalize_ascii
 (*----------------------------------------------------------------------------------------------------*)
 module Constants = 
   struct
-    type g = SER | CC | PSI
+    type g = SER | CC | PSI | EC
     
     let line = "\n;"^(String.make _HEADER_SIZE '-')
 
@@ -54,6 +54,7 @@ module Constants =
         |SER -> "(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser )) ;SER"
         |PSI ->  "(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi)) ;PSI"
         |CC -> "(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc)) ;CC"
+        |EC -> ""
     
     let requests = "(check-sat)"
 end
@@ -86,10 +87,24 @@ struct
 
 
   let z3_final = let open Constants in
-    String.concat "\n\n" [PrintUtils.comment_header "Finalization";cycles_to_check;guarantee PSI; requests]
+    String.concat "\n\n" [PrintUtils.comment_header "Finalization";cycles_to_check;guarantee EC; requests]
+
+  let table_phi_deps :  string -> string = 
+    fun table_name ->
+    "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
+         (=> (and (WR_"^table_name^" r t2 t1)(RW_"^table_name^" r t1 t3))(WW_"^table_name^" r t2 t3))))"
+  
+  
+  let table_deps_gen_deps : string -> string -> string = 
+    fun dep_type -> fun table_name ->
+      "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))))"
 
 
-  let table_initialize: Var.Table.t -> string =
+  let table_deps_funcs : string -> string -> string = 
+    fun dep_type -> fun table_name ->
+      "\n(declare-fun "^dep_type^"_"^table_name^" ("^table_name^" T T) Bool)"
+
+   let table_initialize: Var.Table.t -> string =
     fun table -> let open Var.Table in
     let tname = String.capitalize_ascii @@ name table in
     (*the pk conditions*)
@@ -106,8 +121,15 @@ struct
       let s_dec = String.concat "" ["(declare-fun ";(tname^"_Proj_"^s_col);" (";tname;") "; (Var.Type.to_string t_col) ; ")"] in
       (String.concat "" [s_prev;"\n";s_dec])) ""  
       @@ cols table in
-    String.concat "" ["\n(declare-sort ";tname;")";tcols;"\n";dec_pk]
+    (*the specific per table deps relations*)
+    let deps = (table_deps_funcs "RW" tname)^(table_deps_funcs "WR" tname)^(table_deps_funcs "WW" tname) in
+    let gen_deps = (table_deps_gen_deps "RW" tname)^(table_deps_gen_deps "WR" tname)^( table_deps_gen_deps "WW" tname) in
+    let phi_deps = table_phi_deps tname in
+    String.concat "" ["\n(declare-sort ";tname;")";tcols;"\n";dec_pk;deps;gen_deps;phi_deps]
  
+  
+
+
   let all_table_initialize: Var.Table.t list -> string = 
     fun table_list -> (PrintUtils.comment_header"Table Declarations")^
       (List.fold_left (fun s -> fun t -> 
@@ -118,7 +140,8 @@ struct
 (* vars *)
   
   let declare_vars tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
-     "(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^vtype^")"
+    "(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
+    "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^vtype^")"
 
 
   let txn_declare_vars : (T.t * V.t list) -> string = 
@@ -167,14 +190,14 @@ end
 (*----------------------------------------------------------------------------------------------------*)
 (*Rules*)
 
-let txns_to_wr = ""
-let txns_to_ww = ""
+let txns_to_ww = "" (*TODO*)
+
+let txns_to_wr: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
+  RW.extract_rules txn1 txn2
 
 let txns_to_rw: T.t -> T.t -> string = fun txn1 -> fun txn2 -> 
   RW.extract_rules txn1 txn2 
 
-(*TODO*)
-(*TODO*)
 
 let all_rw: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
@@ -182,10 +205,15 @@ let all_rw: T.t list -> string = fun txn_list ->
         old_s2^(txns_to_rw curr_t curr_t2)) old_s txn_list) "" txn_list
 
 
-let all_wr = ""
-let all_ww = "" 
+let all_wr: T.t list -> string = fun txn_list -> 
+    List.fold_left (fun old_s -> fun curr_t -> 
+      List.fold_left (fun old_s2 -> fun curr_t2 -> 
+        old_s2^(txns_to_wr curr_t curr_t2)) old_s txn_list) "" txn_list
+
+let all_ww = ""
+
 let all_txns_all_rules: T.t list -> string = fun txn_list ->
-    PrintUtils.comment_header "Rules"^"\n;~~~~RW\n"^all_rw txn_list^"\n;~~~~WR\n"^all_wr^"\n;~~~~WW\n"^all_ww
+    PrintUtils.comment_header "RW Rules"^all_rw txn_list^(PrintUtils.comment_header "WR Rules")^all_wr txn_list^(PrintUtils.comment_header "WW Rules")^all_ww
 
 
 (*----------------------------------------------------------------------------------------------------*)

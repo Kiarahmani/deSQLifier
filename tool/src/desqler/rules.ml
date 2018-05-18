@@ -44,7 +44,8 @@ module RW =
     let rw_rule_wrapper (table_name,rw_s_cond,rw_u_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
-                        (and "^rw_s_cond^"
+                        (and (RW_"^table_name^" r t1 t2)
+                             "^rw_s_cond^"
                              "^rw_u_cond^"))"
 
 (*auxiliary function to find the common accessed table*)
@@ -88,6 +89,7 @@ module RW =
 (*check for applicability of RW and perform the anlysis*)
     let analyze_stmts: string ->  string -> S.st -> S.st -> string option = 
       fun txn_name1 -> fun txn_name2 -> fun stmt1 -> fun stmt2 -> 
+        (*t1 and t2 are the same if the txns are the same*)
         match (stmt1,stmt2) with
           |(S.SELECT _,S.UPDATE _) -> 
             begin
@@ -99,10 +101,6 @@ module RW =
               |None -> None
             end
           |_ -> None
-
- 
-
-
 
 
 
@@ -126,20 +124,6 @@ module RW =
           rw_final_wrapper (name1,name2,all_conds)
           
 
-
-
-
-(*
-"
-(assert (forall ((t1 T) (t2 T))
-        (=> (and (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^"))
-            (=> (and (RW t1 t2) (not (= t1 t2)))
-                (exists ((r "^(to_cap table_name)^"))
-                          (and "^rw_s_cond^"
-                               "^rw_u_cond^"))))))"
-
-
-*)
   end
 
 
