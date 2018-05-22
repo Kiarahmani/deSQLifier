@@ -3,7 +3,6 @@
 Created from OCaml 4.03 compiler frontend. 
 
 ### Building ###
-a
 
 1. `cd src/`
 2. `./configure`
