@@ -146,7 +146,8 @@ struct
     let deps = (table_deps_funcs "RW" tname)^(table_deps_funcs "WR" tname)^(table_deps_funcs "WW" tname) in
     let gen_deps = (table_deps_gen_deps "RW" tname)^(table_deps_gen_deps "WR" tname)^( table_deps_gen_deps "WW" tname) in
     let phi_deps = table_phi_deps tname in
-    String.concat "" ["\n(declare-sort ";tname;")";tcols;"\n";dec_pk;deps;gen_deps;phi_deps]
+    let is_alive = "\n(declare-fun IsAlive_"^tname^" ("^tname^" T) Bool)" in
+    String.concat "" ["\n(declare-sort ";tname;")";tcols;"\n";dec_pk;deps;is_alive;gen_deps;phi_deps]
  
   
 

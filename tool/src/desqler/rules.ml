@@ -30,6 +30,12 @@ module Utils =
   end
 
 
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------------------------------*)
 module RW = 
   struct 
     
@@ -44,7 +50,8 @@ module RW =
     let rw_rule_wrapper (table_name,rw_s_cond,rw_u_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
-                        (and (RW_"^table_name^" r t1 t2)
+                        (and (IsAlive_"^table_name^" r t2)
+                             (RW_"^table_name^" r t1 t2)
                              "^rw_s_cond^"
                              "^rw_u_cond^"))"
 
@@ -148,7 +155,8 @@ struct
     let wr_rule_wrapper (table_name,wr_s_cond,wr_u_cond,wr_null_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
-                        (and (WR_"^table_name^" r t1 t2)
+                        (and (IsAlive_"^table_name^" r t1)
+                             (WR_"^table_name^" r t1 t2)
                              "^wr_null_cond^"
                              "^wr_s_cond^"
                              "^wr_u_cond^"))"
@@ -254,11 +262,12 @@ struct
                         (or (WW t1 t2) (WW t2 t1)) ))))"
 
 
-
     let ww_rule_wrapper (table_name,ww_s_cond,ww_u_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
-                        (and "^ww_s_cond^"
+                        (and (IsAlive_"^table_name^" r t1)
+                             (IsAlive_"^table_name^" r t2)
+                             "^ww_s_cond^"
                              "^ww_u_cond^"))"
 
 (*auxiliary function to find the common accessed table*)
@@ -349,7 +358,9 @@ struct
     let ww_rule_wrapper (table_name,ww_s_cond,ww_u_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
-                        (and "^ww_s_cond^"
+                        (and (IsAlive_"^table_name^" r t1)
+                             (IsAlive_"^table_name^" r t2)
+                             "^ww_s_cond^"
                              "^ww_u_cond^"))"
 
 (*auxiliary function to find the common accessed table*)
