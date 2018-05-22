@@ -9,7 +9,8 @@ module V = Var.Variable
 module T = Sql.Transaction
 module S = Sql.Statement
 module RW = Rules.RW
-module WW = Rules.WW
+module TWW = Rules.Then_WW
+module WWT = Rules.WW_Then
 module WR = Rules.WR
 let _MAX_CYCLE_LENGTH = Constants._MAX_CYCLE_LENGTH
 let _GUARANTEE = Constants._GUARANTEE
@@ -68,12 +69,6 @@ module Cons =
     let cycles_to_check = gen_deps^"\n(assert (exists ("^all_ts^") (and (not (= t1 t"^max^")) "^all_ands^" (D t"^max^" t1))))"
   
  
-
-
-
-
-
-
 
     let guarantee : Constants.g -> string = 
       fun g -> match g with
@@ -223,8 +218,12 @@ let txns_to_wr: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
 let txns_to_rw: T.t -> T.t -> string = fun txn1 -> fun txn2 -> 
   RW.extract_rules txn1 txn2 
 
-let txns_to_ww: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
-  WW.extract_rules txn1 txn2
+let txns_to_ww1: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
+  TWW.extract_rules txn1 txn2
+
+let txns_to_ww2: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
+  WWT.extract_rules txn1 txn2
+
 
 let all_rw: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
@@ -236,13 +235,19 @@ let all_wr: T.t list -> string = fun txn_list ->
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
         old_s2^(txns_to_wr curr_t curr_t2)) old_s txn_list) "" txn_list
 
-let all_ww: T.t list -> string = fun txn_list -> 
+let all_ww1: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
-        old_s2^(txns_to_ww curr_t curr_t2)) old_s txn_list) "" txn_list
+        old_s2^(txns_to_ww1 curr_t curr_t2)) old_s txn_list) "" txn_list
+let all_ww2: T.t list -> string = fun txn_list -> 
+    List.fold_left (fun old_s -> fun curr_t -> 
+      List.fold_left (fun old_s2 -> fun curr_t2 -> 
+        old_s2^(txns_to_ww2 curr_t curr_t2)) old_s txn_list) "" txn_list
 
 let all_txns_all_rules: T.t list -> string = fun txn_list ->
-    PrintUtils.comment_header "RW Rules"^all_rw txn_list^(PrintUtils.comment_header "WR Rules")^all_wr txn_list^(PrintUtils.comment_header "WW Rules")^all_ww txn_list
+    PrintUtils.comment_header "RW Rules"^all_rw txn_list^(PrintUtils.comment_header "WR Rules")^all_wr txn_list^
+    (PrintUtils.comment_header "->WW Rules")^all_ww1 txn_list^
+    (PrintUtils.comment_header "WW-> Rules")^all_ww2 txn_list
 
 
 (*----------------------------------------------------------------------------------------------------*)

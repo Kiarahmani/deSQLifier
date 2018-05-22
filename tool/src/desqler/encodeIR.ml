@@ -193,33 +193,42 @@ let extract_where_clause: (string*V.t) list -> Typedtree.expression_desc -> Type
 
 
 (*handle the rhs of select*)
-let extract_select: (string*V.t) list -> Typedtree.expression -> string*Fol.t  =  
+let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*string*Fol.t  =  
   fun var_list -> fun body -> match body.exp_desc with
-    |Texp_apply (e0,[(arg1,Some exp1);(arg2,Some exp2)]) -> 
+    |Texp_apply (e0,[(arg1,Some exp1);(arg3,Some exp3);(arg2,Some exp2)]) -> (*this is old version: before adding column support. should be eventually removed*)
       let open Utils in
-      let Texp_construct (_,tc2,_) = exp1.exp_desc in (*table name is extracted here*) (*the rest are not used for this case but I'm gonna keep them for future*)
+      let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*table name is extracted here*) (*the rest are not used for this case but I'm gonna keep them for future*)
+      let Texp_construct (_,{cstr_name=column_name},_) = exp3.exp_desc in (*column name is extracted here*) 
       let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the rest contains the where funtion some where...*)
         let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
         let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
                         [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*) 
-      let Texp_ident (sql_select,_,_) = e0.exp_desc in (*not used so far*)
+      let Texp_ident (Pdot (_,select_kind,_) ,_,_) = e0.exp_desc in 
       let wh_c = extract_where_clause var_list exp1 exp2 op in
-      (tc2.cstr_name,wh_c)
-    |_ -> failwith "ERROR extract_select_table_name: unexpected case for handling select"
+      (select_kind,table_name,column_name,wh_c)
+    
+    |_ -> Utils.print_helpful_expression_desc  body.exp_desc; 
+          failwith "ERROR extract_select_table_name: unexpected case for handling select"
 
 
 
 (*handle the rhs of update*)
-let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> string*Fol.t = 
+let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> string*string*Fol.t = 
   fun [(_,Some exp1);(_,Some exp2);(_,Some exp3)] ->
         let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*already extracted... keeping the rest for the future*)
-        let Texp_function (_,tf2,_) = exp2.exp_desc in (*the updating function*)
+        let Texp_function (_,[{c_lhs=fun_lhs;c_guard=None;c_rhs={exp_desc=Texp_setfield(u_in_fun,{txt=Lident field_name},_,right_of_arrow)}}],_) = exp2.exp_desc in (*the updating function*)
+        let Texp_ident (Pident uu,_,{val_type=record_type}) = u_in_fun.exp_desc in 
         let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp3.exp_desc in (*the where clause*)
           let Tpat_var ({name},_) = c_lhs.pat_desc in 
           let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
                            [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*)
-        let wh_c = extract_where_clause [] exp1 exp2 op in
-        (table_name,wh_c)
+        let wh_c = extract_where_clause [] exp1 exp2 op in 
+        let column_name = let open String in 
+                          let prefix_size = index field_name '_' in
+                          let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
+                          let postfix_name = sub field_name (prefix_size+1) (length field_name - prefix_size - 1) 
+                          in prefix_name^"_"^postfix_name
+        in (table_name,column_name,wh_c)
 
 
 let extract_variable: Typedtree.pattern_desc -> (string*V.t) =
@@ -238,20 +247,30 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
     (*select case*)
     |Texp_let (_,[{vb_pat;vb_expr}],body) ->  
       let (name,curr_var) = extract_variable @@ vb_pat.pat_desc in 
-      let (accessed_table,wh_clause) = extract_select old_vars vb_expr in
-      let new_stmt_col = (accessed_table,"test_col", T.Int ,true) in 
-      let new_stmt = S.SELECT (new_stmt_col,(V.make name T.Int V.LOCAL),wh_clause,Fol.my_true) in
-      convert_body_rec (old_vars@[(name,curr_var)])  
-                       (old_stmts@[new_stmt]) 
-                        body
+      let (select_kind,accessed_table,accessed_col,wh_clause) = extract_select old_vars vb_expr in
+      begin match select_kind with
+      |"select1" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
+                    let new_stmt = S.SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
+                      convert_body_rec (old_vars@[(name,curr_var)])  
+                                       (old_stmts@[new_stmt]) 
+                                       body
+      |"select" -> failwith "ERROR convert_body_rec: unhandled select kind (select)" 
+      |"select_max" -> failwith "ERROR convert_body_rec: unhandled select kind (select_max)" 
+      |"select_min" -> failwith "ERROR convert_body_rec: unhandled select kind (select min)" 
+      |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 
+      |_ -> failwith "(encodeIR.ml) ERROR  convert_body_rec: unexpected select kind" 
+      end
+    
+
+
     (*final delete/update/insert cases*)
     |Texp_apply (app_exp,ae_list) -> 
       let Texp_ident (app_path,_,_) = app_exp.exp_desc in
       let Path.Pdot (_,op,_) = app_path in 
       let new_stmt = match op with
                       |"insert" -> failwith "ERROR convert_body_rec: insert is not handled yet"
-                      |"update" ->  let (accessed_table,wh_c) = extract_update ae_list in
-                                    let accessed_col = (accessed_table,"test_col", T.Int ,true) in 
+                      |"update" ->  let (accessed_table,accessed_col_name,wh_c) = extract_update ae_list in
+                                    let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
                                     S.UPDATE (accessed_col,Fol.my_const,wh_c,Fol.my_true)
                       |"delete" -> failwith "ERROR convert_body_rec :delete is not handled yet!"
                       |_ -> failwith "ERROR convert_body_rec: unexpected SQL operation"

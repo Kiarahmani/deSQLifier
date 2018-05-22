@@ -4,9 +4,12 @@ struct
     | Int
     | Bool
     | String
-  let to_string tp =
+    | List of t
+
+  let rec to_string tp =
     match tp with
     |Int -> "Int" |String -> "String" |Bool -> "Bool"
+    |List x -> "List of "^(to_string x)
 
 end
 

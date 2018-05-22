@@ -14,9 +14,14 @@ let print_ident : Ident.t -> unit = fun ident -> print_string ident.name
 module Statement =
 struct
   type st = |SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
+            |RANGE_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
+            |MAX_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
+            |MIN_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
+            |COUNT_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
             |INSERT: Var.Table.t *  Fol.Record.t * Fol.t -> st
             |UPDATE: Var.Table.col * Fol.L.expr * Fol.t * Fol.t -> st
             |DELETE: Var.Table.t * Fol.t * Fol.t -> st
+      
 
   let sample_stmt = SELECT (Var.my_col,Var.Variable.test_var,Fol.my_true,Fol.my_true)
   let sample_stmt2 = DELETE (Var.Table.make "test_table" [Var.my_col],Fol.my_true,Fol.my_true)
