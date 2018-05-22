@@ -6,7 +6,7 @@
 
 (set-option :produce-unsat-cores true)
 
-(declare-datatypes () ((TType (Withdraw) (Deposit)))) 
+(declare-datatypes () ((TType (Withdraw)))) 
 (declare-sort T)
 (declare-fun type (T) TType)
 
@@ -66,17 +66,8 @@
 
 (declare-fun Withdraw_Param_src_id (T) Int)
 (declare-fun Withdraw_Param_amount (T) Int)
-(declare-fun Deposit_Param_src_id (T) Int)
-(declare-fun Deposit_Param_dst_id (T) Int)
-(declare-fun Deposit_Param_amount (T) Int)
 
 
-(declare-fun Withdraw_isN_acc_src (T) Bool)
-(declare-fun Withdraw_Var_acc_src (T) Int)
-(declare-fun Deposit_isN_acc_src (T) Bool)
-(declare-fun Deposit_Var_acc_src (T) Int)
-(declare-fun Deposit_isN_acc_dst (T) Bool)
-(declare-fun Deposit_Var_acc_dst (T) Int)
 
 
 ;------------------------------------------------------------------------------------------------------------------------
@@ -87,37 +78,7 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw))
                     (=> (and (RW t1 t2) (not (= t1 t2)))
-                        (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t2)
-                             (RW_Employee r t1 t2)
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t1))
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t2))))) ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Deposit))
-                    (=> (and (RW t1 t2) (not (= t1 t2)))
                         false ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Withdraw))
-                    (=> (and (RW t1 t2) (not (= t1 t2)))
-                        (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t2)
-                             (RW_Employee r t1 t2)
-                             (= (Employee_Proj_e_id r) (Deposit_Param_dst_id t1))
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t2))))) ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
-                    (=> (and (RW t1 t2) (not (= t1 t2)))
-                        (or false
-                        (exists ((r Bankaccount))
-                        (and (IsAlive_Bankaccount r t2)
-                             (RW_Bankaccount r t1 t2)
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t1))
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t2))))) ))))
 ;------------------------------------------------------------------------------------------------------------------------
 ;                                                        WR Rules                                                        
 ;------------------------------------------------------------------------------------------------------------------------
@@ -126,40 +87,7 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw))
                     (=> (and (WR t1 t2) (not (= t1 t2)))
-                        (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (WR_Employee r t1 t2)
-                             (not (Withdraw_isN_acc_src t2))
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t2))
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t1))))) ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Deposit))
-                    (=> (and (WR t1 t2) (not (= t1 t2)))
                         false ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Withdraw))
-                    (=> (and (WR t1 t2) (not (= t1 t2)))
-                        (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (WR_Employee r t1 t2)
-                             (not (Deposit_isN_acc_dst t2))
-                             (= (Employee_Proj_e_id r) (Deposit_Param_dst_id t2))
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t1))))) ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
-                    (=> (and (WR t1 t2) (not (= t1 t2)))
-                        (or false
-                        (exists ((r Bankaccount))
-                        (and (IsAlive_Bankaccount r t1)
-                             (WR_Bankaccount r t1 t2)
-                             (not (Deposit_isN_acc_src t2))
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t2))
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t1))))) ))))
 ;------------------------------------------------------------------------------------------------------------------------
 ;                                                       ->WW Rules                                                       
 ;------------------------------------------------------------------------------------------------------------------------
@@ -167,37 +95,7 @@
 
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw) (not (= t1 t2)))
-                    (=> (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (IsAlive_Employee r t2)
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t1))
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t2)))))
-                        (or (WW t1 t2) (WW t2 t1)) ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Deposit) (not (= t1 t2)))
                     (=> false
-                        (or (WW t1 t2) (WW t2 t1)) ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Withdraw) (not (= t1 t2)))
-                    (=> false
-                        (or (WW t1 t2) (WW t2 t1)) ))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
-                    (=> (or (or false
-                        (exists ((r Bankaccount))
-                        (and (IsAlive_Bankaccount r t1)
-                             (IsAlive_Bankaccount r t2)
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t1))
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t2)))))
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (IsAlive_Employee r t2)
-                             (= (Employee_Proj_e_id r) (Deposit_Param_dst_id t1))
-                             (= (Employee_Proj_e_id r) (Deposit_Param_dst_id t2)))))
                         (or (WW t1 t2) (WW t2 t1)) ))))
 ;------------------------------------------------------------------------------------------------------------------------
 ;                                                       WW-> Rules                                                       
@@ -207,37 +105,7 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw) (not (= t1 t2)))
                     (=> (and (WW t1 t2) (not (= t2 t1)))
-                        (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (IsAlive_Employee r t2)
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t1))
-                             (= (Employee_Proj_e_id r) (Withdraw_Param_src_id t2)))))))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Deposit) (not (= t1 t2)))
-                    (=> (and (WW t1 t2) (not (= t2 t1)))
                         false))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Withdraw) (not (= t1 t2)))
-                    (=> (and (WW t1 t2) (not (= t2 t1)))
-                        false))))
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
-                    (=> (and (WW t1 t2) (not (= t2 t1)))
-                        (or (or false
-                        (exists ((r Bankaccount))
-                        (and (IsAlive_Bankaccount r t1)
-                             (IsAlive_Bankaccount r t2)
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t1))
-                             (= (Bankaccount_Proj_b_id r) (Deposit_Param_src_id t2)))))
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (IsAlive_Employee r t2)
-                             (= (Employee_Proj_e_id r) (Deposit_Param_dst_id t1))
-                             (= (Employee_Proj_e_id r) (Deposit_Param_dst_id t2)))))))))
 
 
 ;------------------------------------------------------------------------------------------------------------------------

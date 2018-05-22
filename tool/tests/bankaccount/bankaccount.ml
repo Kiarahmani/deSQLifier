@@ -56,9 +56,11 @@ let deposit_txn (src_id:int) (dst_id:int) (amount:int) =
 
 (*TXN2*)
 let withdraw_txn (src_id:int) (amount:int) =  
+  SQL.insert Bankaccount {b_id=1;b_bal=1000}
+  (*
   let acc_src = SQL.select1 Employee E_sal (fun u -> u.e_id= src_id) in 
-  ()
-  (*  SQL.update Employee 
+
+    SQL.update Employee 
     (*do:*)    (fun u -> begin u.e_sal <- 9; end)
     (*where:*) (fun u -> u.e_id = src_id); 
 

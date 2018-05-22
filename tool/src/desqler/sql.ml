@@ -25,6 +25,7 @@ struct
 
   let sample_stmt = SELECT (Var.my_col,Var.Variable.test_var,Fol.my_true,Fol.my_true)
   let sample_stmt2 = DELETE (Var.Table.make "test_table" [Var.my_col],Fol.my_true,Fol.my_true)
+  let sample_stmt3 = INSERT (Var.Table.make "test_table" [Var.my_col],Fol.Record.T{name="test_record"; vars=[]} ,Fol.my_true)
 
 end
 

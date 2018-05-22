@@ -97,7 +97,7 @@ let print_stmt : S.st -> unit = fun st ->
   let open S in 
   match st with
   |SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ %s" col_name   
-  |INSERT _ -> printf "\n ɪɴꜱᴇʀᴛ"   
+  |INSERT (t,_,_)  -> print_string @@ "\nɪɴꜱᴇʀᴛ "^(Var.Table.name t)
   |UPDATE _ -> printf "\n ᴜᴩᴅᴀᴛᴇ"   
   |DELETE _ -> printf "\n ᴅᴇʟᴇᴛᴇ"   
   |_ -> failwith "ERROR print_stmt: unexpected sql operation"
@@ -239,6 +239,14 @@ let extract_variable: Typedtree.pattern_desc -> (string*V.t) =
 
 
 
+let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> string = 
+fun [(_,Some exp_cons);(_,Some exp_record)] -> 
+  let Texp_construct (_,{cstr_name=table_name},_) = exp_cons.exp_desc 
+  in table_name
+
+
+
+(*The main extraction function*)
 let rec convert_body_rec: (string*V.t) list -> S.st list -> 
                             Typedtree.expression -> S.st list*(string*V.t) list = 
   fun old_vars -> fun old_stmts -> 
@@ -267,8 +275,12 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
     |Texp_apply (app_exp,ae_list) -> 
       let Texp_ident (app_path,_,_) = app_exp.exp_desc in
       let Path.Pdot (_,op,_) = app_path in 
-      let new_stmt = match op with
-                      |"insert" -> failwith "ERROR convert_body_rec: insert is not handled yet"
+      let new_stmt = match op with 
+                      |"insert" ->  let table_name = extract_insert ae_list in 
+                                    let inserted_tabled = Var.Table.make table_name [Var.my_col] in (*for now it does not seem that I need some details*)
+                                    let inserted_record = Fol.Record.T{name="test_record"; vars=[]} in (*I'm gonna create test record for now*)
+                                    S.INSERT (inserted_tabled,inserted_record ,Fol.my_true)
+ 
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c) = extract_update ae_list in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
                                     S.UPDATE (accessed_col,Fol.my_const,wh_c,Fol.my_true)
