@@ -24,6 +24,7 @@ struct
 
 	type condition = |Bool: bool -> condition 
 									 |Gt: expr*expr -> condition
+									 |Lt: expr*expr -> condition
                    |Eq:  expr*expr -> condition
 end
 

@@ -193,6 +193,8 @@ let extract_where_clause: (string*V.t) list -> Typedtree.expression_desc -> Type
     let r_var = extract_operands var_list desc_r in
       match op with 
         |"=" -> F.make (F.L.Eq (l_var,r_var))
+        |">" -> F.make (F.L.Gt (l_var,r_var))
+        |"<" -> F.make (F.L.Lt (l_var,r_var))
         |_ -> failwith "ERROR extract_where_clause: the operation not handled yet"
 
 

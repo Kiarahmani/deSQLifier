@@ -59,14 +59,14 @@ let deposit_txn (src_id:int) (dst_id:int) (amount:int) =
 
 (*TXN2*)
 let withdraw_txn (wsrc_id:int) (wamount:int) =  
- (* let w_read_all = SQL.select Bankaccount B_all 
-                   (fun u -> u.b_id = wsrc_id) in*)
-  let w_read_bal = SQL.select1 Bankaccount B_bal
+  let w_read_all = SQL.select Bankaccount B_all 
                    (fun u -> u.b_id = wsrc_id) in
+  (*let w_read_bal = SQL.select1 Bankaccount B_bal
+                   (fun u -> u.b_id = wsrc_id) in*)
   (*SQL.insert Bankaccount {b_id=wsrc_id;b_bal=wamount}; *)
   SQL.update Bankaccount
       (*do:*)    (fun u -> begin u.b_bal <- wamount; end)    
-      (*where:*) (fun u -> u.b_id = wsrc_id); 
+      (*where:*) (fun u -> u.b_id > wsrc_id); 
 
 
 
