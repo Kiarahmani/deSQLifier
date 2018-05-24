@@ -8,6 +8,7 @@ type table_name =
   | Employee
 
 type column_name = 
+  |B_all
   |B_id
   |B_bal
   |E_id
@@ -44,27 +45,29 @@ type employee = {e_id: int; mutable e_name: string; mutable e_sal: int}
 (*
 (*TXN1*)
 let deposit_txn (src_id:int) (dst_id:int) (amount:int) =  
-    let acc_src = SQL.select1 Bankaccount B_bal (fun u -> u.b_id = src_id) in
-    let acc_dst = SQL.select1 Employee E_sal (fun u -> u.e_id = dst_id) in
+    let acc_src = SQL.select1 Bankaccount B_bal 
+                  (fun u -> u.b_id = src_id) in
+  let acc_dst = SQL.select1 Employee E_sal 
+                (fun u -> u.e_id = dst_id) in 
     SQL.update Bankaccount
-    (*do:*)    (fun u -> begin u.b_bal <- (acc_src.b_bal - amount); end)
-    (*where:*) (fun u -> u.b_id = src_id);
+    (*do:*)    (fun u -> begin u.b_bal <- amount; end)
+    (*where:*) (fun u -> u.b_id = src_id); 
     SQL.update Employee
-    (*do:*)    (fun u -> begin u.e_name <- "David"; end)
+    (*do:*)    (fun u -> begin u.e_sal <- 400; end)
     (*where:*) (fun u -> u.e_id = dst_id)
 *)
 
 (*TXN2*)
-let withdraw_txn (src_id:int) (amount:int) =  
-  SQL.insert Bankaccount {b_id=1;b_bal=1000}
-  (*
-  let acc_src = SQL.select1 Employee E_sal (fun u -> u.e_id= src_id) in 
+let withdraw_txn (wsrc_id:int) (wamount:int) =  
+  let w_read_all = SQL.select Bankaccount B_all 
+                   (fun u -> u.b_id = wsrc_id) in
+  let w_read_bal = SQL.select1 Bankaccount B_bal
+                   (fun u -> u.b_id = wsrc_id) in
+  (*SQL.insert Bankaccount {b_id=wsrc_id;b_bal=wamount}; *)
+  SQL.update Bankaccount
+      (*do:*)    (fun u -> begin u.b_bal <- wamount; end)    
+      (*where:*) (fun u -> u.b_id = wsrc_id); 
 
-    SQL.update Employee 
-    (*do:*)    (fun u -> begin u.e_sal <- 9; end)
-    (*where:*) (fun u -> u.e_id = src_id); 
-
-*)
 
 
 

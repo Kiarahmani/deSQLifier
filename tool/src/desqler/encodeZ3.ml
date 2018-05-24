@@ -21,7 +21,7 @@ let to_cap = String.capitalize_ascii
 module Cons = 
   struct
     
-    let line = "\n;"^(String.make _HEADER_SIZE '-')
+    let line = "\n;"^(String.make _HEADER_SIZE '~')
 
     let options =  "(set-option :produce-unsat-cores true)"
  
@@ -113,17 +113,20 @@ struct
   let table_phi_deps :  string -> string = 
     fun table_name ->
     "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
-         (=> (and (WR_"^table_name^" r t2 t1)(RW_"^table_name^" r t1 t3))(WW_"^table_name^" r t2 t3))))"
-  
+         (=> (and (WR_"^table_name^" r t2 t1)(RW_"^table_name^" r t1 t3))(WW_"^table_name^" r t2 t3))))"^
+    "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
+         (=> (and (WR_Alive_"^table_name^" r t2 t1)(RW_Alive_"^table_name^" r t1 t3))(WW_Alive_"^table_name^" r t2 t3))))"
   
   let table_deps_gen_deps : string -> string -> string = 
     fun dep_type -> fun table_name ->
-      "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))))"
+      "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))))"^
+      "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))))"
 
 
   let table_deps_funcs : string -> string -> string = 
     fun dep_type -> fun table_name ->
-      "\n(declare-fun "^dep_type^"_"^table_name^" ("^table_name^" T T) Bool)"
+      "\n(declare-fun "^dep_type^"_"^table_name^" ("^table_name^" T T) Bool)"^
+      "\n(declare-fun "^dep_type^"_Alive_"^table_name^" ("^table_name^" T T) Bool)"
 
    let table_initialize: Var.Table.t -> string =
     fun table -> let open Var.Table in
@@ -165,25 +168,44 @@ struct
     "(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
     "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^vtype^")"
 
+  let declare_set_vars table_name tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
+    "(declare-fun "^txn_cap^"_isI_"^vname^" (T "^table_name^") Bool)"^ 
+    "\n(declare-fun "^txn_cap^"_SVr_"^vname^" (T) (Array Int "^vtype^"))"
 
-  let txn_declare_vars : (T.t * V.t list) -> string = 
-    fun (txn,var_list) -> 
+  let txn_declare_vars : (T.t * (V.t list* (V.t*string) list)) -> string = 
+    fun (txn,(var_list,set_var_list)) -> 
+    let simple_vars = 
       List.fold_left (fun prev_s -> fun  (V.T{name;tp;_}) -> 
         let var_t = Var.Type.to_string tp in
         let txn_name = T.name txn in
-        prev_s^"\n"^(declare_vars txn_name name var_t)) "" var_list
-
-
-  let stmt_extract_var : Sql.Statement.st -> V.t option = 
-    fun stmt -> match stmt with 
-      |S.SELECT (_,v,_,_) -> Some v
-      |_ -> None
+        prev_s^"\n"^(declare_vars txn_name name var_t)) "" var_list in
+    let set_vars = 
+    List.fold_left (fun prev_s -> fun  (V.T{name;tp;_},table_name) -> 
+        let var_t = Var.Type.to_string tp in
+        let txn_name = T.name txn in
+        prev_s^"\n"^(declare_set_vars table_name txn_name name var_t)) "" set_var_list in
   
-  let txn_extract_vars : T.t -> V.t list = fun (T.T{name;params;stmts}) -> 
-    List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
-                                                |Some curr_var -> prev_l@[curr_var]
-                                                |None -> prev_l) [] stmts
+  simple_vars^set_vars
+  
 
+
+  let stmt_extract_var : Sql.Statement.st -> V.t option * string * string =  (*the var, the type of the var normal/set, the name of the table being read*)
+    fun stmt -> match stmt with 
+      |S.SELECT (_,v,_,_) -> (Some v,"v","")
+      |S.RANGE_SELECT ((s_tb_name,_,_,_),v,_,_) -> (Some v,"s",s_tb_name)
+      |_ -> (None,"","")
+
+  let txn_extract_vars : T.t -> (V.t list * ((V.t*string) list)) = fun (T.T{name;params;stmts}) ->  (*first list is for normal vars the second is for set vars (result of select range)*)
+  let simple_vars = 
+    List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
+                                                |(Some curr_var,"v",_) -> prev_l@[curr_var]
+                                                |_ -> prev_l) [] stmts
+  in let set_vars = 
+    List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
+                                                |(Some curr_var,"s",tb_name) -> prev_l@[(curr_var,tb_name)]
+                                                |_-> prev_l) [] stmts
+  in (simple_vars,set_vars)
+  
 (*params*)
   let declare_param tname vname vtype = let txn_cap = String.capitalize_ascii tname in
      "(declare-fun "^txn_cap^"_Param_"^vname^" (T) "^vtype^")"
@@ -231,10 +253,13 @@ let all_rw: T.t list -> string = fun txn_list ->
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
         old_s2^(txns_to_rw curr_t curr_t2)) old_s txn_list) "" txn_list
 
-let all_wr: T.t list -> string = fun txn_list -> 
+let all_wr1: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
         old_s2^(txns_to_wr curr_t curr_t2)) old_s txn_list) "" txn_list
+
+let all_wr2: T.t list -> string = fun txn_list -> "" (*TODO*)
+
 
 let all_ww1: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
@@ -245,9 +270,12 @@ let all_ww2: T.t list -> string = fun txn_list ->
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
         old_s2^(txns_to_ww2 curr_t curr_t2)) old_s txn_list) "" txn_list
 
+
 let all_txns_all_rules: T.t list -> string = fun txn_list ->
-    PrintUtils.comment_header "RW Rules"^all_rw txn_list^(PrintUtils.comment_header "WR Rules")^all_wr txn_list^
-    (PrintUtils.comment_header "->WW Rules")^all_ww1 txn_list^
+    PrintUtils.comment_header "RW Rules"^all_rw txn_list^"\n"^
+    (PrintUtils.comment_header "WR-> Rules")^all_wr1 txn_list^"\n"^
+    (PrintUtils.comment_header "->WR Rules")^all_wr2 txn_list^"\n"^
+    (PrintUtils.comment_header "->WW Rules")^all_ww1 txn_list^"\n"^
     (PrintUtils.comment_header "WW-> Rules")^all_ww2 txn_list
 
 

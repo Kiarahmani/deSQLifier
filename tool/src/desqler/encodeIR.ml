@@ -100,6 +100,7 @@ let print_stmt : S.st -> unit = fun st ->
   |INSERT (t,_,_)  -> print_string @@ "\nɪɴꜱᴇʀᴛ "^(Var.Table.name t)
   |UPDATE _ -> printf "\n ᴜᴩᴅᴀᴛᴇ"   
   |DELETE _ -> printf "\n ᴅᴇʟᴇᴛᴇ"   
+  |RANGE_SELECT _ -> printf "\n SELECT RANGE"
   |_ -> failwith "ERROR print_stmt: unexpected sql operation"
 
 let print_var: V.t -> unit = let open V in 
@@ -173,13 +174,16 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L
                                        if mem name  @@ fst @@ split var_list
                                        then F.L.Var (V.make name T.Int LOCAL)
                                        else F.L.Var (V.make name T.Int PARAM)
-    |Texp_constant (Const_int i) -> F.L.Cons i
+    |Texp_constant (Const_int i) -> F.L.Cons i (*integer constant*)
+    |Texp_constant (Const_string (s,_)) -> F.L.Str s (*string constant*)
     |Texp_apply ({exp_desc=Texp_ident (Pdot (_,op,_),_,_)},[(Nolabel,Some l);(Nolabel,Some r)]) ->
       let lhs = extract_operands var_list (l.exp_desc) in 
       let rhs = extract_operands var_list (r.exp_desc) in
+      begin
       match op with
         |"-" -> F.L.MINUS (lhs,rhs)
         |"+" -> F.L.PLUS (lhs,rhs)
+      end
     |_ -> let _ = Utils.print_helpful_expression_desc desc in failwith "ERROR extract_operands: case not handled yet"  
   
 
@@ -237,16 +241,19 @@ let extract_variable: Typedtree.pattern_desc -> (string*V.t) =
     (name,(V.make name T.Int V.LOCAL)) (*TODO types must be extracted*)
 
 
-
-
-let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> string = 
+(*mark*)
+let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> (string*(string*F.L.expr) list) = 
 fun [(_,Some exp_cons);(_,Some exp_record)] -> 
-  let Texp_construct (_,{cstr_name=table_name},_) = exp_cons.exp_desc 
-  in table_name
+  let Texp_construct (_,{cstr_name=table_name},_) = exp_cons.exp_desc  in
+  let Texp_record (v_list,_) = exp_record.exp_desc in
+let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(extract_operands [] e.exp_desc))) v_list in
+  (table_name,record)
 
 
 
+(**********)
 (*The main extraction function*)
+(**********)
 let rec convert_body_rec: (string*V.t) list -> S.st list -> 
                             Typedtree.expression -> S.st list*(string*V.t) list = 
   fun old_vars -> fun old_stmts -> 
@@ -262,7 +269,12 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
                       convert_body_rec (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
-      |"select" -> failwith "ERROR convert_body_rec: unhandled select kind (select)" 
+      |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
+                    let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
+                      convert_body_rec (old_vars@[(name,curr_var)])  
+                                       (old_stmts@[new_stmt]) 
+                                       body
+
       |"select_max" -> failwith "ERROR convert_body_rec: unhandled select kind (select_max)" 
       |"select_min" -> failwith "ERROR convert_body_rec: unhandled select kind (select min)" 
       |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 
@@ -276,10 +288,10 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
       let Texp_ident (app_path,_,_) = app_exp.exp_desc in
       let Path.Pdot (_,op,_) = app_path in 
       let new_stmt = match op with 
-                      |"insert" ->  let table_name = extract_insert ae_list in 
-                                    let inserted_tabled = Var.Table.make table_name [Var.my_col] in (*for now it does not seem that I need some details*)
-                                    let inserted_record = Fol.Record.T{name="test_record"; vars=[]} in (*I'm gonna create test record for now*)
-                                    S.INSERT (inserted_tabled,inserted_record ,Fol.my_true)
+                                    |"insert" ->  let (table_name,var_list) = extract_insert ae_list in 
+                                    let inserted_table = Var.Table.make table_name [Var.my_col] in (*only table name matters. The actuall columns can be retrieved later*)
+                                    let inserted_record = Fol.Record.T{name="test_record"; vars=var_list} in (*I'm gonna create test record for now*)
+                                    S.INSERT (inserted_table,inserted_record ,Fol.my_true)
  
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c) = extract_update ae_list in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 

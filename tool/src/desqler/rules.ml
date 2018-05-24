@@ -20,6 +20,7 @@ module Utils =
         | F.L.Var (V.T{name; tp; kn=V.FIELD}) -> "("^table_name^"_Proj_"^name^" r)"
         (*other cases: constants, etc*)
         | F.L.Cons c -> string_of_int c
+        | F.L.Str s -> "\""^s^"\""
         | F.L.MINUS (e1,e2) -> let lhs = expression_to_string t_i txn_name table_name e1 in
                                let rhs = expression_to_string t_i txn_name table_name e2 in  
                                "(- "^lhs^" "^rhs^")"
@@ -33,7 +34,7 @@ module Utils =
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
-(*----------------------------------------------------------------------------------------------------*)
+(*-------------------------------------------RW THEN--------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
 module RW = 
@@ -47,7 +48,7 @@ module RW =
 
 
 
-    let rw_rule_wrapper (table_name,rw_s_cond,rw_u_cond) =
+    let rw_rule_wrapper_is (table_name,rw_s_cond,rw_u_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
                         (and (IsAlive_"^table_name^" r t2)
@@ -103,7 +104,7 @@ module RW =
               match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_s_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_u_condition 2 (to_cap txn_name2) table stmt2 in
-                              Some (rw_rule_wrapper 
+                              Some (rw_rule_wrapper_is
                                         (table, s_cond , u_cond))
               |None -> None
             end
@@ -149,10 +150,8 @@ struct
                 (=> (and (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^"))
                     (=> (and (WR t1 t2) (not (= t1 t2)))
                         "^all_conds^" ))))"
-
-
-
-    let wr_rule_wrapper (table_name,wr_s_cond,wr_u_cond,wr_null_cond) =
+    (*WR-UPDATE-SELECT*)
+    let wr_rule_wrapper_su (table_name,wr_s_cond,wr_u_cond,wr_null_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
                         (and (IsAlive_"^table_name^" r t1)
@@ -160,18 +159,29 @@ struct
                              "^wr_null_cond^"
                              "^wr_s_cond^"
                              "^wr_u_cond^"))"
+    
+    (*WR-INSERT-SELECT*)
+    let wr_rule_wrapper_is (table_name,wr_s_cond,wr_i_conds,wr_null_cond) = "
+                        (exists ((r "^table_name^"))
+                        (and (IsAlive_"^table_name^" r t2)
+                             "^wr_null_cond^"
+                             "^wr_s_cond^"
+                             (WR_Alive_"^table_name^" r t1 t2)"^wr_i_conds^" ))"
+
 
 (*auxiliary function to find the common accessed table*)
     let accessed_common_table : S.st -> S.st -> string option = 
       fun stmt1 -> fun stmt2 ->
         match (stmt1,stmt2) with
-          |(S.SELECT ((t_name_s,c_name_s,_,_),_,_,_) , S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_)) -> 
+          |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_) , S.SELECT ((t_name_s,c_name_s,_,_),_,_,_)) -> 
             if t_name_s = t_name_u && c_name_s = c_name_u
             then Some t_name_s
             else None
+          |(S.INSERT (Var.Table.T{name=t_name_i},_,_), S.SELECT ((t_name_s,_,_,_),_,_,_)) -> 
+            if t_name_s = t_name_i 
+            then Some t_name_s
+            else None  
           |_ -> failwith "ERROR accessed_common_table: sql operation case not handled yet"
-
-
 
 
 (*the select case in WR*)
@@ -200,23 +210,47 @@ struct
         |_ -> failwith "ERROR extract_u_condition: the where claus case not handled yet "
        in res  
 
+(*mark*)
+(*the insert case in WR*)
+    let extract_i_expr: int -> string -> string -> (string * Fol.L.expr) -> string = 
+      let open Utils in
+      fun t_i -> fun txn_name -> fun table_name -> fun (s,exp) -> 
+        let value = expression_to_string t_i txn_name table_name exp in
+        "
+                             (= ("^table_name^"_Proj_"^s^" r) "^value^")"
+  
+
+    let extract_i_condition: int -> string -> string -> S.st -> string = 
+      fun t_i -> fun txn_name -> fun table_name -> fun (S.INSERT (_,Fol.Record.T{vars=c_list},_)) ->
+        List.fold_left (fun old_s -> fun curr_c -> 
+                        old_s^""^(extract_i_expr t_i txn_name table_name curr_c)) "" @@ c_list
 
 
-(*check for applicability of WR and perform the anlysis: SELECT/UPDATE is done so far*)
+(*check for applicability of WR and perform the anlysis: SELECT/UPDATE + SELECT/INSERT is done so far*)
     let analyze_stmts: string ->  string -> S.st -> S.st -> string option = 
       fun txn_name1 -> fun txn_name2 -> fun stmt1 -> fun stmt2 -> 
         (*t1 and t2 are the same if the txns are the same*)
         match (stmt1,stmt2) with
-          |(S.SELECT(_,v,_,_),S.UPDATE _) -> 
+          |(S.UPDATE _ , S.SELECT(_,v,_,_)) -> 
             begin
               match (accessed_common_table stmt1 stmt2)  with 
-              |Some table -> let s_cond = extract_s_condition 2  (to_cap txn_name1) table stmt1 in
-                             let u_cond  = extract_u_condition 1 (to_cap txn_name2) table stmt2 in
-                             let null_cond = "(not ("^to_cap txn_name1^"_isN_"^(V.name v)^" t2))" in
-                              Some (wr_rule_wrapper 
+              |Some table -> let s_cond = extract_s_condition 2  (to_cap txn_name2) table stmt2 in
+                             let u_cond  = extract_u_condition 1 (to_cap txn_name1) table stmt1 in
+                             let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+                              Some (wr_rule_wrapper_su
                                         (table, s_cond , u_cond, null_cond))
               |None -> None
-            end
+            end 
+          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_) )-> 
+            begin 
+              match (accessed_common_table stmt1 stmt2) with
+              |Some table ->
+                              let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+                              let s_cond =  extract_s_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              Some (wr_rule_wrapper_is (table,s_cond,i_cond,null_cond))
+              |None -> None
+              end
           |_ -> None
 
     let extract_sub_rules: T.t -> T.t -> string =
@@ -404,8 +438,6 @@ struct
             end
           |_ -> None
 
-
-
     let extract_sub_rules: T.t -> T.t -> string =
       fun txn1 -> fun txn2 -> 
         let name1 = T.name txn1 in
@@ -426,10 +458,6 @@ struct
           let all_conds = extract_sub_rules txn1 txn2 in 
           ww_final_wrapper (name1,name2,all_conds)
 end
-
-
-
-
 
 
 

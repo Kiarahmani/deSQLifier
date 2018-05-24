@@ -14,6 +14,7 @@ let print_ident : Ident.t -> unit = fun ident -> print_string ident.name
 module L = 
 struct
   type expr = |Cons: int -> expr
+              |Str: string -> expr
 							|Var: Var.Variable.t -> expr
 							|PLUS: expr * expr -> expr
 							|MINUS: expr * expr -> expr
@@ -29,7 +30,7 @@ end
 
 module Record = 
 struct
-	type t = T of {name: string; vars: L.expr list}
+	type t = T of {name: string; vars: (string*L.expr) list}
 end
 
 
