@@ -272,11 +272,11 @@ let all_ww2: T.t list -> string = fun txn_list ->
 
 
 let all_txns_all_rules: T.t list -> string = fun txn_list ->
-    PrintUtils.comment_header "RW Rules"^all_rw txn_list^"\n"^
+    (PrintUtils.comment_header "RW-> Rules")^all_rw txn_list^"\n"^
     (PrintUtils.comment_header "WR-> Rules")^all_wr1 txn_list^"\n"^
+    (PrintUtils.comment_header "WW-> Rules")^all_ww2 txn_list^"\n\n\n\n"^
     (PrintUtils.comment_header "->WR Rules")^all_wr2 txn_list^"\n"^
-    (PrintUtils.comment_header "->WW Rules")^all_ww1 txn_list^"\n"^
-    (PrintUtils.comment_header "WW-> Rules")^all_ww2 txn_list
+    (PrintUtils.comment_header "->WW Rules")^all_ww1 txn_list
 
 
 (*----------------------------------------------------------------------------------------------------*)

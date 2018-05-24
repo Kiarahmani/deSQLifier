@@ -11,6 +11,7 @@ type column_name =
   |B_all
   |B_id
   |B_bal
+  |E_all
   |E_id
   |E_name
   |E_sal
@@ -59,16 +60,15 @@ let deposit_txn (src_id:int) (dst_id:int) (amount:int) =
 
 (*TXN2*)
 let withdraw_txn (wsrc_id:int) (wamount:int) =  
-  let w_read_all = SQL.select Bankaccount B_all 
-                   (fun u -> u.b_id = wsrc_id) in
+  let w_read_all = SQL.select1 Employee E_sal
+                   (fun u -> u.e_id = wsrc_id) in 
   (*let w_read_bal = SQL.select1 Bankaccount B_bal
                    (fun u -> u.b_id = wsrc_id) in*)
-  (*SQL.insert Bankaccount {b_id=wsrc_id;b_bal=wamount}; *)
-  SQL.update Bankaccount
-      (*do:*)    (fun u -> begin u.b_bal <- wamount; end)    
-      (*where:*) (fun u -> u.b_id > wsrc_id); 
-
-
+  SQL.insert Employee {e_id=wsrc_id;e_name="David";e_sal=wamount}; 
+ (* SQL.update Employee
+      (*do:*)    (fun u -> begin u.e_sal <- wamount; end)    
+      (*where:*) (fun u -> u.e_id > wsrc_id); 
+*)
 
 
 

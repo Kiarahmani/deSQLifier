@@ -84,24 +84,19 @@
 (declare-fun Withdraw_Param_wamount (T) Int)
 
 
-(declare-fun Withdraw_isI_w_read_all (T Bankaccount) Bool)
-(declare-fun Withdraw_SVr_w_read_all (T) (Array Int Int))
+(declare-fun Withdraw_isN_w_read_all (T) Bool)
+(declare-fun Withdraw_Var_w_read_all (T) Int)
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-;                                                        RW Rules                                                        
+;                                                       RW-> Rules                                                       
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw))
                     (=> (and (RW t1 t2) (not (= t1 t2)))
-                        (or false
-                        (exists ((r Bankaccount))
-                        (and (IsAlive_Bankaccount r t2)
-                             (RW_Bankaccount r t1 t2)
-                             (= (Bankaccount_Proj_b_id r) (Withdraw_Param_wsrc_id t1))
-                             (> (Bankaccount_Proj_b_id r) (Withdraw_Param_wsrc_id t2))))) ))))
+                        false ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WR-> Rules                                                       
@@ -111,7 +106,28 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw))
                     (=> (and (WR t1 t2) (not (= t1 t2)))
-                        false ))))
+                        (or false
+                        (exists ((r Employee))
+                        (and (IsAlive_Employee r t2)
+                             (not (Withdraw_isN_w_read_all t2))
+                             (= (Employee_Proj_e_id r) (Withdraw_Param_wsrc_id t2))
+                             (WR_Alive_Employee r t1 t2)
+                             (= (Employee_Proj_e_id r) (Withdraw_Param_wsrc_id t1))
+                             (= (Employee_Proj_e_name r) "David")
+                             (= (Employee_Proj_e_sal r) (Withdraw_Param_wamount t1)) ))) ))))
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;                                                       WW-> Rules                                                       
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+(assert (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw) (not (= t1 t2)))
+                    (=> (and (WW t1 t2) (not (= t2 t1)))
+                        false))))
+
+
+
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       ->WR Rules                                                       
@@ -125,28 +141,8 @@
 
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw) (not (= t1 t2)))
-                    (=> (or false
-                        (exists ((r Bankaccount))
-                        (and (IsAlive_Bankaccount r t1)
-                             (IsAlive_Bankaccount r t2)
-                             (> (Bankaccount_Proj_b_id r) (Withdraw_Param_wsrc_id t1))
-                             (> (Bankaccount_Proj_b_id r) (Withdraw_Param_wsrc_id t2)))))
+                    (=> false
                         (or (WW t1 t2) (WW t2 t1)) ))))
-
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-;                                                       WW-> Rules                                                       
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-(assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw) (not (= t1 t2)))
-                    (=> (and (WW t1 t2) (not (= t2 t1)))
-                        (or false
-                        (exists ((r Bankaccount))
-                        (and (IsAlive_Bankaccount r t1)
-                             (IsAlive_Bankaccount r t2)
-                             (> (Bankaccount_Proj_b_id r) (Withdraw_Param_wsrc_id t1))
-                             (> (Bankaccount_Proj_b_id r) (Withdraw_Param_wsrc_id t2)))))))))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -158,6 +154,6 @@
 (assert (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))))
 (assert (exists ( (t1 T) (t2 T) (t3 T) (t4 T) (t5 T)) (and (not (= t1 t5))  (D t1 t2) (D t2 t3) (D t3 t4) (D t4 t5) (D t5 t1))))
 
-
+(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc)) ;CC
 
 (check-sat)
