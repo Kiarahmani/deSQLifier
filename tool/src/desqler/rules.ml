@@ -100,15 +100,21 @@ struct
                     (=> (and (RW t1 t2) (not (= t1 t2)))
                         "^all_conds^" ))))"
     
-    let rwt_rule_wrapper_is (table_name,rw_s_cond,rw_u_cond) =
+    let rwt_rule_wrapper_us (table_name,rw_s_cond,rw_u_cond) =
                 "
                         (exists ((r "^(to_cap table_name)^"))
                         (and (IsAlive_"^table_name^" r t2)
                              (RW_"^table_name^" r t1 t2)
                              "^rw_s_cond^"
                              "^rw_u_cond^"))"
-
-
+    
+    
+    let rwt_rule_wrapper_is (table_name,wr_s_cond,wr_i_conds,wr_null_cond) = "
+                        (exists ((r "^table_name^"))
+                        (and ((not IsAlive_"^table_name^" r t2))
+                             "^wr_null_cond^"
+                             "^wr_s_cond^"
+                             (WR_Alive_"^table_name^" r t1 t2)"^wr_i_conds^" ))"
     (*WR->*)
     let wrt_final_wrapper (txn1_name,txn2_name,all_conds)=
       "\n\n(assert (forall ((t1 T) (t2 T))
@@ -204,13 +210,13 @@ struct
                               Some (wrt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
               |None -> None end
  
-          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "WR->")-> 
+          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "RW->")-> 
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->
-                              let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+                              let null_cond = "("^to_cap txn_name2^"_isN_"^(V.name v)^" t2)" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
-                              Some (wrt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
+                              Some (rwt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
               |None -> None end
  
 
@@ -221,7 +227,7 @@ struct
               match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                              Some (rwt_rule_wrapper_is
+                              Some (rwt_rule_wrapper_us
                                         (table, s_cond , u_cond))
               |None -> None end
           
