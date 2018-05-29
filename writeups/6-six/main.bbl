@@ -1,0 +1,29 @@
+\begin{thebibliography}{1}
+
+\bibitem{Bailis:Feral}
+P.~Bailis, A.~Fekete, M.~J. Franklin, A.~Ghodsi, J.~M. Hellerstein, and
+  I.~Stoica.
+\newblock Feral concurrency control: An empirical investigation of modern
+  application integrity.
+\newblock In {\em Proceedings of the 2015 ACM SIGMOD International Conference
+  on Management of Data}, SIGMOD '15, pages 1327--1342, New York, NY, USA,
+  2015. ACM.
+
+\bibitem{Difallah:OLTP_Bench}
+D.~E. Difallah, A.~Pavlo, C.~Curino, and P.~Cudre-Mauroux.
+\newblock Oltp-bench: An extensible testbed for benchmarking relational
+  databases.
+\newblock {\em Proc. VLDB Endow.}, 7(4):277--288, Dec. 2013.
+
+\bibitem{Kaki:Alone}
+G.~Kaki, K.~Nagar, M.~Najafzadeh, and S.~Jagannathan.
+\newblock Alone together: Compositional reasoning and inference for weak
+  isolation.
+\newblock {\em Proc. ACM Program. Lang.}, 2(POPL):27:1--27:34, Dec. 2017.
+
+\bibitem{Wang:DB_equal}
+Y.~Wang, I.~Dillig, S.~K. Lahiri, and W.~R. Cook.
+\newblock Verifying equivalence of database-driven applications.
+\newblock {\em Proc. ACM Program. Lang.}, 2(POPL):56:1--56:29, Dec. 2017.
+
+\end{thebibliography}

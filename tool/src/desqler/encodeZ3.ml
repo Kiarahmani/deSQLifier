@@ -11,7 +11,8 @@ module S = Sql.Statement
 module RW = Rules.RW
 module TWW = Rules.Then_WW
 module WWT = Rules.WW_Then
-module WR = Rules.WR
+module WRT = Rules.WR_Then
+module TWR = Rules.Then_WR
 let _MAX_CYCLE_LENGTH = Constants._MAX_CYCLE_LENGTH
 let _GUARANTEE = Constants._GUARANTEE
 let _HEADER_SIZE = 120
@@ -193,6 +194,9 @@ struct
     fun stmt -> match stmt with 
       |S.SELECT (_,v,_,_) -> (Some v,"v","")
       |S.RANGE_SELECT ((s_tb_name,_,_,_),v,_,_) -> (Some v,"s",s_tb_name)
+      |S.MAX_SELECT (_,v,_,_) ->  (Some v,"v","")
+      |S.MIN_SELECT (_,v,_,_) ->  (Some v,"v","")
+      |S.COUNT_SELECT (_,v,_,_) ->  (Some v,"v","")
       |_ -> (None,"","")
 
   let txn_extract_vars : T.t -> (V.t list * ((V.t*string) list)) = fun (T.T{name;params;stmts}) ->  (*first list is for normal vars the second is for set vars (result of select range)*)
@@ -235,8 +239,11 @@ end
 (*Rules*)
 
 
-let txns_to_wr: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
-  WR.extract_rules txn1 txn2
+let txns_to_wr1: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
+  WRT.extract_rules txn1 txn2
+
+let txns_to_wr2: T.t -> T.t -> string = fun txn1 -> fun txn2 ->
+  TWR.extract_rules txn1 txn2
 
 let txns_to_rw: T.t -> T.t -> string = fun txn1 -> fun txn2 -> 
   RW.extract_rules txn1 txn2 
@@ -256,9 +263,14 @@ let all_rw: T.t list -> string = fun txn_list ->
 let all_wr1: T.t list -> string = fun txn_list -> 
     List.fold_left (fun old_s -> fun curr_t -> 
       List.fold_left (fun old_s2 -> fun curr_t2 -> 
-        old_s2^(txns_to_wr curr_t curr_t2)) old_s txn_list) "" txn_list
+        old_s2^(txns_to_wr1 curr_t curr_t2)) old_s txn_list) "" txn_list
 
-let all_wr2: T.t list -> string = fun txn_list -> "" (*TODO*)
+let all_wr2: T.t list -> string = fun txn_list -> 
+    List.fold_left (fun old_s -> fun curr_t -> 
+      List.fold_left (fun old_s2 -> fun curr_t2 -> 
+        old_s2^(txns_to_wr2 curr_t curr_t2)) old_s txn_list) "" txn_list
+
+
 
 
 let all_ww1: T.t list -> string = fun txn_list -> 

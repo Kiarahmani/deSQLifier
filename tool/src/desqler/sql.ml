@@ -13,10 +13,10 @@ let print_ident : Ident.t -> unit = fun ident -> print_string ident.name
 (*----------------------------------------------------------------------------------------------------*)
 module Statement =
 struct
-  type st = |SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
+  type st = |SELECT:       Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
             |RANGE_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
-            |MAX_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
-            |MIN_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
+            |MAX_SELECT:   Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
+            |MIN_SELECT:   Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
             |COUNT_SELECT: Var.Table.col * Var.Variable.t * Fol.t * Fol.t -> st
             |INSERT: Var.Table.t *  Fol.Record.t * Fol.t -> st
             |UPDATE: Var.Table.col * Fol.L.expr * Fol.t * Fol.t -> st

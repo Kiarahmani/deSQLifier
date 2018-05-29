@@ -97,9 +97,11 @@ let print_stmt : S.st -> unit = fun st ->
   let open S in 
   match st with
   |SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ %s" col_name   
+  |MAX_SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ MAX of %s" col_name   
+  |MIN_SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ MIN of %s" col_name   
   |INSERT (t,_,_)  -> print_string @@ "\nɪɴꜱᴇʀᴛ "^(Var.Table.name t)
   |UPDATE _ -> printf "\n ᴜᴩᴅᴀᴛᴇ"   
-  |DELETE _ -> printf "\n ᴅᴇʟᴇᴛᴇ"   
+  |DELETE (t,_,_) -> printf "\n ᴅᴇʟᴇᴛᴇ %s" (Var.Table.name t) 
   |RANGE_SELECT _ -> printf "\n SELECT RANGE"
   |_ -> failwith "ERROR print_stmt: unexpected sql operation"
 
@@ -107,14 +109,11 @@ let print_var: V.t -> unit = let open V in
       fun x -> printf "\n %s" @@ name x
 
 let print_var_list:  V.t list -> unit = fun var_list -> 
-  let _ = print_string "\nExtracted VARS:\n########";
-          List.iter print_var var_list in
-  print_string "\n########\n\n\n"
+  List.iter print_var var_list  
 
 let print_stmts_list : S.st list -> unit = fun st_list -> 
-  let _ = print_string "\nExtracted TXN:\n########";
-          List.iter print_stmt st_list in
-  print_string "\n########\n\n\n"
+  let _ = List.iter print_stmt st_list in
+    print_string "\n-------"
 
 
 
@@ -237,13 +236,26 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> s
         in (table_name,column_name,wh_c)
 
 
+
+let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list ->  string*Fol.t = 
+  fun  [(_,Some exp1);(_,Some exp2)] -> 
+    let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in 
+    let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the where clause*)
+    let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
+                           [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*)
+    let wh_c = extract_where_clause [] exp1 exp2 op in
+    (table_name,wh_c)
+
+
+
+
+
 let extract_variable: Typedtree.pattern_desc -> (string*V.t) =
   fun pat_desc ->
     let Tpat_var ({name},_) = pat_desc in
     (name,(V.make name T.Int V.LOCAL)) (*TODO types must be extracted*)
 
 
-(*mark*)
 let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> (string*(string*F.L.expr) list) = 
 fun [(_,Some exp_cons);(_,Some exp_record)] -> 
   let Texp_construct (_,{cstr_name=table_name},_) = exp_cons.exp_desc  in
@@ -271,14 +283,21 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
                       convert_body_rec (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
-      |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
+      |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  
                     let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
                       convert_body_rec (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
-
-      |"select_max" -> failwith "ERROR convert_body_rec: unhandled select kind (select_max)" 
-      |"select_min" -> failwith "ERROR convert_body_rec: unhandled select kind (select min)" 
+      |"select_max" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
+                       let new_stmt = S.MAX_SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
+                         convert_body_rec (old_vars@[(name,curr_var)])  
+                                       (old_stmts@[new_stmt]) 
+                                       body
+      |"select_min" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
+                       let new_stmt = S.MIN_SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
+                         convert_body_rec (old_vars@[(name,curr_var)])  
+                                       (old_stmts@[new_stmt]) 
+                                       body
       |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 
       |_ -> failwith "(encodeIR.ml) ERROR  convert_body_rec: unexpected select kind" 
       end
@@ -297,8 +316,12 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
  
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c) = extract_update ae_list in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
-                                    S.UPDATE (accessed_col,Fol.my_const,wh_c,Fol.my_true)
-                      |"delete" -> failwith "ERROR convert_body_rec :delete is not handled yet!"
+                                    S.UPDATE (accessed_col,Fol.my_const,wh_c,Fol.my_true) (*we have not used the actual update function yet*)
+                      |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list in
+                                    let accessed_table = Var.Table.make accessed_table_name [] in
+                                    S.DELETE (accessed_table,wh_c,Fol.my_true)
+(*mark*)
+
                       |_ -> failwith "ERROR convert_body_rec: unexpected SQL operation"
     in (old_stmts@[new_stmt],old_vars)
     (*intermediate del/upt/ins*)

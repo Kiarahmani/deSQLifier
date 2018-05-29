@@ -17,7 +17,6 @@ let doIt: (App.t) -> unit = fun a ->
         let _ = printf "                 Compilation Phase                   " in 
         let _ = printf "|\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n" in
         let (tables_IR,txns_IR) = (EncodeIR.extract_program a) in
-        printf "\n𝙴𝚗𝚌𝚘𝚍𝚒𝚗𝚐:\n";
         Rules.apply;
         EncodeZ3.encode tables_IR txns_IR
                                  

@@ -33,7 +33,11 @@ module Utils =
       fun stmt -> match stmt with
         |(S.SELECT (_,_,(wh),_)) -> wh
         |(S.RANGE_SELECT (_,_,(wh),_)) -> wh
+        |(S.MAX_SELECT (_,_,(wh),_)) -> wh
+        |(S.MIN_SELECT (_,_,(wh),_)) -> wh
+        |(S.COUNT_SELECT (_,_,(wh),_)) -> wh
         |S.UPDATE (_,_,wh,_) -> wh
+        |S.DELETE (_,wh,_) -> wh
 
     let extract_condition: int -> string -> string -> S.st -> string = 
       fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
@@ -62,7 +66,7 @@ module Utils =
             if t_name_s = t_name_u (*no need to check for the equality of columns*)
             then Some t_name_s
             else None
-          
+                    
           |( S.UPDATE ((t_name_u1,c_name_u1,_,_),_,_,_) , S.UPDATE ((t_name_u2,c_name_u2,_,_),_,_,_) ) -> 
             if t_name_u1 = t_name_u2 && c_name_u1 = c_name_u2
             then Some t_name_u1
@@ -76,6 +80,34 @@ module Utils =
             if t_name_s = t_name_i 
             then Some t_name_s
             else None  
+          |(S.DELETE (Var.Table.T{name=t_name_d},_,_), S.SELECT ((t_name_s,_,_,_),_,_,_)) -> 
+            if t_name_s = t_name_d
+            then Some t_name_s
+            else None  
+
+          |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_),S.RANGE_SELECT((t_name_s,c_name_s,_,_),_,_,_)) -> 
+            if t_name_s = t_name_u (*no need to check for the equality of columns*)
+            then Some t_name_s
+            else None
+          |(S.DELETE (Var.Table.T{name=t_name_d},_,_), S.RANGE_SELECT ((t_name_s,_,_,_),_,_,_)) -> 
+            if t_name_s = t_name_d
+            then Some t_name_s
+            else None  
+          |(S.INSERT (Var.Table.T{name=t_name_i},_,_), S.RANGE_SELECT ((t_name_s,_,_,_),_,_,_)) -> 
+            if t_name_s = t_name_i 
+            then Some t_name_s
+            else None  
+          |(S.INSERT (Var.Table.T{name=t_name_i},_,_), S.MAX_SELECT ((t_name_s,_,_,_),_,_,_)) -> 
+            if t_name_s = t_name_i 
+            then Some t_name_s
+            else None  
+          |(S.INSERT (Var.Table.T{name=t_name_i},_,_), S.MIN_SELECT ((t_name_s,_,_,_),_,_,_)) -> 
+            if t_name_s = t_name_i 
+            then Some t_name_s
+            else None  
+
+
+
       
       let extract_i_expr: int -> string -> string -> (string * Fol.L.expr) -> string = 
       fun t_i -> fun txn_name -> fun table_name -> fun (s,exp) -> 
@@ -83,11 +115,22 @@ module Utils =
         "
                              (= ("^table_name^"_Proj_"^s^" r) "^value^")"
 
-    let extract_i_condition: int -> string -> string -> S.st -> string = 
+      let extract_i_condition: int -> string -> string -> S.st -> string = 
       fun t_i -> fun txn_name -> fun table_name -> fun (S.INSERT (_,Fol.Record.T{vars=c_list},_)) ->
         List.fold_left (fun old_s -> fun curr_c -> 
                         old_s^""^(extract_i_expr t_i txn_name table_name curr_c)) "" @@ c_list
-    
+
+    let extract_agg_condition: string -> string -> S.st -> string -> S.st -> string = 
+      fun op -> fun txn_name1 -> fun (S.INSERT (_,Fol.Record.T{vars},_)) -> 
+        fun txn_name2 -> fun s_fun ->
+        match s_fun with 
+          |S.MAX_SELECT ((_,s_col,_,_),sv,_,_) ->
+            let rec_e = List.assoc (String.lowercase_ascii s_col) vars in
+            "("^op^" ("^txn_name2^"_Var_"^(V.name sv)^" t2) "^(expression_to_string 1 txn_name1 "" rec_e)^")"
+          |S.MIN_SELECT ((_,s_col,_,_),sv,_,_) ->
+            let rec_e = List.assoc (String.lowercase_ascii s_col) vars in
+            "("^op^" ("^txn_name2^"_Var_"^(V.name sv)^" t2) "^(expression_to_string 1 txn_name1 "" rec_e)^")"
+          |_ -> failwith "rules.ml: extract_mx_condition: unexpected case"
     end
 
 
@@ -108,14 +151,37 @@ struct
                              "^rw_s_cond^"
                              "^rw_u_cond^"))"
     
-    
     let rwt_rule_wrapper_is (table_name,wr_s_cond,wr_i_conds,wr_null_cond) = "
                         (exists ((r "^table_name^"))
-                        (and ((not IsAlive_"^table_name^" r t2))
+                        (and (not (IsAlive_"^table_name^" r t2))
                              "^wr_null_cond^"
                              "^wr_s_cond^"
-                             (WR_Alive_"^table_name^" r t1 t2)"^wr_i_conds^" ))"
-    (*WR->*)
+                             (RW_Alive_"^table_name^" r t1 t2)"^wr_i_conds^" ))"
+    
+    let rwt_rule_wrapper_ds (table_name,s_cond,d_conds,null_cond) = "
+                        (exists ((r "^table_name^"))
+                        (and (IsAlive_"^table_name^" r t1)
+                             "^null_cond^"
+                             "^s_cond^"
+                             "^d_conds^"
+                             (RW_Alive_"^table_name^" r t1 t2)))"
+    
+    let rwt_rule_wrapper_ismx (table_name,wr_s_cond,wr_i_conds,wr_null_cond,max_cond) = "
+                        (exists ((r "^table_name^"))
+                        (and (not (IsAlive_"^table_name^" r t2))
+                             "^wr_null_cond^wr_s_cond^wr_i_conds^"
+                             "^max_cond^"))"
+
+   (*WR->*)
+   let wrt_rule_wrapper_ds (table_name,s_cond,d_conds,null_cond) = "
+                        (exists ((r "^table_name^"))
+                        (and (IsAlive_"^table_name^" r t1)
+                             (not (IsAlive_"^table_name^" r t2))
+                             "^null_cond^"
+                             "^s_cond^"
+                             "^d_conds^"
+                             (WR_Alive_"^table_name^" r t1 t2)))"
+
     let wrt_final_wrapper (txn1_name,txn2_name,all_conds)=
       "\n\n(assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^"))
@@ -130,6 +196,25 @@ struct
                              "^wr_s_cond^"
                              "^wr_u_cond^"))"
     let wrt_rule_wrapper_is (table_name,wr_s_cond,wr_i_conds,wr_null_cond) = "
+                        (exists ((r "^table_name^"))
+                        (and (IsAlive_"^table_name^" r t2)
+                             "^wr_null_cond^"
+                             "^wr_s_cond^"
+                             (WR_Alive_"^table_name^" r t1 t2)"^wr_i_conds^" ))"
+    let wrt_rule_wrapper_ismx (table_name,wr_s_cond,wr_i_conds,wr_null_cond,max_cond) = "
+                        (exists ((r "^table_name^"))
+                        (and (IsAlive_"^table_name^" r t2)
+                             "^wr_null_cond^wr_s_cond^wr_i_conds^"
+                             "^max_cond^"))"
+
+    (*->WR*)
+    let twr_final_wrapper (txn1_name,txn2_name,all_conds)=
+      "\n\n(assert (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^") (not (= t1 t2)))
+                    (=> "^all_conds^"
+                        (WR t1 t2) ))))"
+
+    let twr_rule_wrapper_is (table_name,wr_s_cond,wr_i_conds,wr_null_cond) = "
                         (exists ((r "^table_name^"))
                         (and (IsAlive_"^table_name^" r t2)
                              "^wr_null_cond^"
@@ -166,7 +251,7 @@ struct
 
 end 
 
-
+(*analyze statements according to the rules. If applicable, return the wrapped cnoditions as strings*)
 module Analyze = 
 struct
      (*WW->*)
@@ -176,6 +261,9 @@ struct
         let open Utils in 
         let open Wrappers in
         match (stmt1,stmt2,dir) with
+          
+          (*-------------------*)
+          (*WW*)
           |(S.UPDATE _,S.UPDATE _,"->WW") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let u1_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
@@ -192,6 +280,8 @@ struct
                                         (table, u1_cond , u2_cond))
               |None -> None end
 
+          (*-------------------*)
+          (*WR->*)
           |(S.UPDATE _ , S.SELECT(_,v,_,_),"WR->") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 2  (to_cap txn_name2) table stmt2 in
@@ -200,28 +290,62 @@ struct
                               Some (wrt_rule_wrapper_su
                                         (table, s_cond , u_cond, null_cond))
               |None -> None end 
-          
           |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "WR->")-> 
             begin match (accessed_common_table stmt1 stmt2) with
-              |Some table ->
-                              let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+              |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
                               Some (wrt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
               |None -> None end
- 
-          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "RW->")-> 
+          |(S.DELETE (_,_,_) , S.SELECT (_,v,_,_), "WR->")-> 
             begin match (accessed_common_table stmt1 stmt2) with
-              |Some table ->
-                              let null_cond = "("^to_cap txn_name2^"_isN_"^(V.name v)^" t2)" in
+              |Some table ->  let null_cond = "("^to_cap txn_name2^"_isN_"^(V.name v)^" t2)" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let d_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
+                              Some (wrt_rule_wrapper_ds (table,s_cond,d_cond,null_cond))
+              |None -> None end
+           
+          |(S.UPDATE _ , S.RANGE_SELECT(_,v,_,_),"WR->") -> 
+            begin match (accessed_common_table stmt1 stmt2)  with 
+              |Some table -> let s_cond = extract_condition 2  (to_cap txn_name2) table stmt2 in
+                             let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
+                             let null_cond = "("^to_cap txn_name2^"_isI_"^(V.name v)^" t2 r)" in
+                              Some (wrt_rule_wrapper_su
+                                        (table, s_cond , u_cond, null_cond))
+              |None -> None end
+          |(S.INSERT (_,_,_) , S.RANGE_SELECT (_,v,_,_), "WR->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let  null_cond = "("^to_cap txn_name2^"_isI_"^(V.name v)^" t2 r)" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
-                              Some (rwt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
+                              Some (wrt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
               |None -> None end
- 
-
-
-
+          |(S.INSERT (_,_,_) , S.MAX_SELECT (_,v,_,_), "WR->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let  null_cond = "" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              let max_cond = extract_agg_condition "<=" (to_cap txn_name1) stmt1 (to_cap txn_name2) stmt2 in
+                              Some (wrt_rule_wrapper_ismx (table,s_cond,i_cond,null_cond,max_cond))
+              |None -> None end
+          |(S.INSERT (_,_,_) , S.MIN_SELECT (_,v,_,_), "WR->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let  null_cond = "" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              let max_cond = extract_agg_condition ">=" (to_cap txn_name1) stmt1 (to_cap txn_name2) stmt2 in
+                              Some (wrt_rule_wrapper_ismx (table,s_cond,i_cond,null_cond,max_cond))
+              |None -> None end
+          |(S.DELETE (_,_,_) , S.RANGE_SELECT (_,v,_,_), "WR->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isI_"^(V.name v)^" t2 r))" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let d_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
+                              Some (wrt_rule_wrapper_ds (table,s_cond,d_cond,null_cond))
+              |None -> None end
+          
+          (*-------------------*)
+          (*RW->*)
           |(S.SELECT _,S.UPDATE _, "RW->") -> 
             begin
               match (accessed_common_table stmt1 stmt2)  with 
@@ -230,7 +354,79 @@ struct
                               Some (rwt_rule_wrapper_us
                                         (table, s_cond , u_cond))
               |None -> None end
+          |(S.DELETE (_,_,_) , S.SELECT (_,v,_,_), "RW->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let d_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
+                              Some (rwt_rule_wrapper_ds (table,s_cond,d_cond,null_cond))
+              |None -> None end
+          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "RW->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "("^to_cap txn_name2^"_isN_"^(V.name v)^" t2)" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              Some (rwt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
+              |None -> None end
           
+          |(S.RANGE_SELECT _,S.UPDATE _, "RW->") -> 
+            begin
+              match (accessed_common_table stmt1 stmt2)  with 
+              |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
+                             let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
+                              Some (rwt_rule_wrapper_us
+                                        (table, s_cond , u_cond))
+              |None -> None end
+          |(S.INSERT (_,_,_) , S.RANGE_SELECT (_,v,_,_), "RW->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isI_"^(V.name v)^" t2 r))" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              Some (rwt_rule_wrapper_is (table,s_cond,i_cond,null_cond))
+              |None -> None end
+          |(S.DELETE (_,_,_) , S.RANGE_SELECT (_,v,_,_), "RW->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "("^to_cap txn_name2^"_isI_"^(V.name v)^" t2 r)" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let d_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
+                              Some (rwt_rule_wrapper_ds (table,s_cond,d_cond,null_cond))
+              |None -> None end
+          |(S.INSERT (_,_,_) , S.MAX_SELECT (_,v,_,_), "RW->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let  null_cond = "" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              let max_cond = extract_agg_condition ">" (to_cap txn_name1) stmt1 (to_cap txn_name2) stmt2 in
+                              Some (rwt_rule_wrapper_ismx (table,s_cond,i_cond,null_cond,max_cond))
+              |None -> None end
+          |(S.INSERT (_,_,_) , S.MIN_SELECT (_,v,_,_), "RW->")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let  null_cond = "" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              let max_cond = extract_agg_condition ">" (to_cap txn_name1) stmt1 (to_cap txn_name2) stmt2 in
+                              Some (rwt_rule_wrapper_ismx (table,s_cond,i_cond,null_cond,max_cond))
+              |None -> None end
+
+
+
+          (*-------------------*)
+          (*->WR*)
+          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "->WR")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              Some (twr_rule_wrapper_is (table,s_cond,i_cond,null_cond))
+              |None -> None end
+          |(S.INSERT (_,_,_) , S.RANGE_SELECT (_,v,_,_), "->WR")-> 
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "("^to_cap txn_name2^"_isI_"^(V.name v)^" t2 r)" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              Some (twr_rule_wrapper_is (table,s_cond,i_cond,null_cond))
+              |None -> None end
+                   
           |_ -> None
   
     let extract_sub_rules: T.t -> T.t -> string -> string =
@@ -246,15 +442,12 @@ struct
    
 end
 
-
 module Rule = 
 struct
 end
 
 
-
-
-(*-------------------------------------------RW THEN--------------------------------------------------*)
+(*------------------------------------------- RW-> --------------------------------------------------*)
 module RW = 
 struct
     let extract_rules: T.t -> T.t -> string =
@@ -266,8 +459,8 @@ struct
           let all_conds =  extract_sub_rules txn1 txn2 "RW->" in
           rwt_final_wrapper (name1,name2,all_conds)
 end
-(*------------------------------------------ WR ------------------------------------------------------*)
-module WR = 
+(*------------------------------------------ WR-> ------------------------------------------------------*)
+module WR_Then = 
 struct
      let extract_rules: T.t -> T.t -> string =
        let open Wrappers in
@@ -277,6 +470,18 @@ struct
           let name2 = T.name txn2 in 
           let all_conds = extract_sub_rules txn1 txn2 "WR->" in 
           wrt_final_wrapper (name1,name2,all_conds)
+end
+(*------------------------------------------ ->WR ------------------------------------------------------*)
+module Then_WR = 
+struct
+     let extract_rules: T.t -> T.t -> string =
+       let open Wrappers in
+       let open Analyze in 
+        fun txn1 -> fun txn2 ->
+          let name1 = T.name txn1 in
+          let name2 = T.name txn2 in 
+          let all_conds = extract_sub_rules txn1 txn2 "->WR" in 
+          twr_final_wrapper (name1,name2,all_conds)
 end
 (*------------------------------------------- ->WW ---------------------------------------------------*)
 module Then_WW = 

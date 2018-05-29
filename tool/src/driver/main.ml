@@ -222,8 +222,6 @@ let main () =
     exit 2
 
 let _ =
-  let str = "Parsing and Extracting Tables:" in
-    Printf.printf "\n%s\n" str;
   Timings.(time All) main ();
 
   let strt ="\n\n\n\n\n\n\nCompilation Stats:\n---------------------------------------------" in

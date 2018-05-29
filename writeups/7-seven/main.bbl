@@ -1,0 +1,33 @@
+\begin{thebibliography}{1}
+
+\bibitem{Bailis:Feral}
+P.~Bailis, A.~Fekete, M.~J. Franklin, A.~Ghodsi, J.~M. Hellerstein, and
+  I.~Stoica.
+\newblock Feral concurrency control: An empirical investigation of modern
+  application integrity.
+\newblock In {\em Proceedings of the 2015 ACM SIGMOD International Conference
+  on Management of Data}, SIGMOD '15, pages 1327--1342, New York, NY, USA,
+  2015. ACM.
+
+\bibitem{Vechev:Ser}
+L.~Brutschy, D.~Dimitrov, P.~M\"{u}ller, and M.~Vechev.
+\newblock Serializability for eventual consistency: Criterion, analysis, and
+  applications.
+\newblock In {\em Proceedings of the 44th ACM SIGPLAN Symposium on Principles
+  of Programming Languages}, POPL 2017, pages 458--472, New York, NY, USA,
+  2017. ACM.
+
+\bibitem{Kaki:Alone}
+G.~Kaki, K.~Nagar, M.~Najafzadeh, and S.~Jagannathan.
+\newblock Alone together: Compositional reasoning and inference for weak
+  isolation.
+\newblock {\em Proc. ACM Program. Lang.}, 2(POPL):27:1--27:34, Dec. 2017.
+
+\bibitem{Bailis:Acid}
+T.~Warszawski and P.~Bailis.
+\newblock Acidrain: Concurrency-related attacks on database-backed web
+  applications.
+\newblock In {\em Proceedings of the 2017 ACM International Conference on
+  Management of Data}, SIGMOD '17, pages 5--20, New York, NY, USA, 2017. ACM.
+
+\end{thebibliography}

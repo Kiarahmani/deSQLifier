@@ -6,15 +6,13 @@ module U = Unix
 type table_name = 
   | Bankaccount
   | Employee
+  | Department
 
 type column_name = 
-  |B_all
-  |B_id
-  |B_bal
-  |E_all
-  |E_id
-  |E_name
-  |E_sal
+ (* |B_all |B_id |B_bal*)
+  |E_all |E_id |E_name |E_sal
+ (* |DE_all|DE_id|DE_address|DE_budget *)
+
 
 (* Definition of SimpSQL *)
 module SQL : 
@@ -41,13 +39,19 @@ end
 
 
 (*Tabel Definitions*)
-type bankaccount = {b_id: int; mutable b_bal: int}
+(*type bankaccount = {b_id: int; mutable b_bal: int}
+type department = {de_id: int; mutable de_address: string; mutable de_budget: int}
+*)
 type employee = {e_id: int; mutable e_name: string; mutable e_sal: int}
 (*
 (*TXN1*)
 let deposit_txn (src_id:int) (dst_id:int) (amount:int) =  
-    let acc_src = SQL.select1 Bankaccount B_bal 
-                  (fun u -> u.b_id = src_id) in
+    
+  
+  SQL.delete Employee (fun u -> u.e_id = src_id)
+  SQL.insert Employee {e_id=src_id;e_name="David";e_sal=amount};
+  let acc_src = SQL.select1 Bankaccount B_bal 
+                  (fun u -> u.b_id = src_id) in 
   let acc_dst = SQL.select1 Employee E_sal 
                 (fun u -> u.e_id = dst_id) in 
     SQL.update Bankaccount
@@ -60,17 +64,17 @@ let deposit_txn (src_id:int) (dst_id:int) (amount:int) =
 
 (*TXN2*)
 let withdraw_txn (wsrc_id:int) (wamount:int) =  
-  let w_read_all = SQL.select1 Employee E_sal
-                   (fun u -> u.e_id = wsrc_id) in 
-  (*let w_read_bal = SQL.select1 Bankaccount B_bal
-                   (fun u -> u.b_id = wsrc_id) in*)
-  SQL.insert Employee {e_id=wsrc_id;e_name="David";e_sal=wamount}; 
- (* SQL.update Employee
+  let w_read_all = SQL.select_min Employee E_sal
+                   (fun u -> u.e_name = "Roger") in 
+   SQL.insert Employee {e_id=wsrc_id;e_name="David";e_sal=wamount};
+(*  SQL.delete Employee (fun u -> u.e_id = 100)*)
+ (*
+  let w_read_bal = SQL.select1 Bankaccount B_bal
+                   (fun u -> u.b_id = wsrc_id) in
+  SQL.update Employee
       (*do:*)    (fun u -> begin u.e_sal <- wamount; end)    
-      (*where:*) (fun u -> u.e_id > wsrc_id); 
+      (*where:*) (fun u -> u.e_id > wsrc_id)
 *)
-
-
 
 
 

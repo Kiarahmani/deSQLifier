@@ -1,0 +1,77 @@
+\title{\textrm{deSQLifier (5)}}
+\author{
+        Kia Rahmani \\
+                Department of Computer Science\\
+        Purdue University, USA
+}
+\date{\today}
+% Main Document
+\documentclass[12pt,letter]{article}
+\usepackage{xcolor,listings}
+\usepackage{graphicx}
+\usepackage[inline]{enumitem}
+\usepackage[utf8]{inputenc}
+\usepackage[english,ngerman]{babel}
+
+\begin{document}
+\selectlanguage{english}
+% \maketitle
+%\begin{abstract} \end{abstract}
+
+% ---------------------------------------------------
+% ---------------------------------------------------
+% Sections ------------------------------------------
+% ---------------------------------------------------
+% ---------------------------------------------------
+\subsection*{A Problem on Benchmarking SQL-analysis tools} 
+We are currently facing a seemingly fundamental problem on benchamrking \emph{one of
+the contributions} of the paper. Ideally, in this paper, we are going to present a new notion of
+application correctness ({\bf ES}), and \emph{emprically} show that it is sound compared to
+real-world application requirements and additionally find examples where {\bf
+ES} catches anomalies that are arguably problematic but are not specifically
+asked by developers (e.g. maybe they forgot them when designing their
+application). In other words, we must show that ES is neither too strong nor too
+weak.
+
+However, in reality, the problem is that there does not exist many real-world
+applications that use SQL queries (the input language in many other analysis
+techniques e.g. \cite{Kaki:Alone,Wang:DB_equal}) directly. In other words, real database applications
+are usually implemented
+using high-level interfaces such as ORMs and do not directly use SQL. For
+example, Rubi on Rails applications,
+which offer a vast set of database-backed web applications (used for benchmarking
+in \cite{Bailis:Feral}) cannot be trivially turned into underlying SQL queries that
+they operationally make use of. As a result, analysis tools which work directly
+on SQL (such as ours),
+are forced to either:
+\begin{enumerate}
+  \item Take real-world applications and \emph{manually} export them to their
+    version of
+    SQL language (The approach in \cite{Wang:DB_equal}). Using this approach we can
+    compare ES to the ones that such applications specify and thus offer
+    evidence for its usefulness. However, this naturally raises the question of
+    soundness of the rewritten application, in addition to the tediousness of doing such a
+    task manually.
+  \item Use (a relatively small number of) benchmark applications (such as TPC-C
+    and another handful presented in \cite{Difallah:OLTP_Bench}). These applications
+    although are based on real use cases and their detailed explanations do
+    exist, unfortunately, lack any notion of high-level correctness requirements and are
+    written assuming serializability (with the exception of TPC-C). 
+    Taking this approach, we will be forced to manually extract such high-level
+    invariants for the applications, which is not very satisfying, because we
+    would not be able to strongly argue about the practicality of our results (maybe we
+    deliberately didn't specify some invariants compared to ES, why should the reviewer believe
+    us?)
+  \end{enumerate}
+Now, what I am looking for is an approach offering the best of both worlds: The
+set of
+benchmark applications should be large and ideally derived from real-world code
+bases such as github and any manual transformation on them should be done 
+minimally.
+
+
+
+% The Biblography
+\bibliographystyle{abbrv}
+\bibliography{../kia-bib}
+\end{document}
