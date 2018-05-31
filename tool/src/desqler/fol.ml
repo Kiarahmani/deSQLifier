@@ -26,6 +26,7 @@ struct
 									 |Gt: expr*expr -> condition
 									 |Lt: expr*expr -> condition
                    |Eq:  expr*expr -> condition
+                   |Nq: expr*expr -> condition
 end
 
 

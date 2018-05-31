@@ -168,7 +168,11 @@ let convert_param: (Ident.t * type_desc) -> V.t  =
 
 let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L.expr = 
   fun var_list -> fun desc -> match desc with
-    |Texp_field (_,_,{lbl_name}) ->  F.L.Var (V.make lbl_name T.Int FIELD) 
+    |Texp_field ({exp_desc=Texp_ident (Pident before_dot,_,_)},_,{lbl_name}) ->  
+    let open List in 
+    if mem before_dot.name  @@ fst @@ split var_list
+    then F.L.Var (V.make before_dot.name T.Int LOCAL)
+    else F.L.Var (V.make lbl_name T.Int FIELD) 
     |Texp_ident (Pident {name},_,_) -> let open List in
                                        if mem name  @@ fst @@ split var_list
                                        then F.L.Var (V.make name T.Int LOCAL)
@@ -194,6 +198,7 @@ let extract_where_clause: (string*V.t) list -> Typedtree.expression_desc -> Type
         |"=" -> F.make (F.L.Eq (l_var,r_var))
         |">" -> F.make (F.L.Gt (l_var,r_var))
         |"<" -> F.make (F.L.Lt (l_var,r_var))
+        |"!=" -> F.make (F.L.Nq (l_var,r_var))
         |_ -> failwith "ERROR extract_where_clause: the operation not handled yet"
 
 
@@ -218,10 +223,13 @@ let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*s
 
 
 (*handle the rhs of update*)
-let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> string*string*Fol.t = 
-  fun [(_,Some exp1);(_,Some exp2);(_,Some exp3)] ->
+let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*string*Fol.t*F.L.expr = 
+  fun [(_,Some exp1);(_,Some exp2);(_,Some exp3)] -> fun old_var_list -> 
         let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*already extracted... keeping the rest for the future*)
-        let Texp_function (_,[{c_lhs=fun_lhs;c_guard=None;c_rhs={exp_desc=Texp_setfield(u_in_fun,{txt=Lident field_name},_,right_of_arrow)}}],_) = exp2.exp_desc in (*the updating function*)
+        let Texp_function (_,[{c_lhs=fun_lhs;c_guard=None;c_rhs=
+                  {exp_desc=Texp_setfield(u_in_fun,{txt=Lident field_name},_,
+                    {exp_desc=right_of_arrow})}}],_) = exp2.exp_desc in (*the updating function*)
+        let update_expression = extract_operands old_var_list right_of_arrow in
         let Texp_ident (Pident uu,_,{val_type=record_type}) = u_in_fun.exp_desc in 
         let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp3.exp_desc in (*the where clause*)
           let Tpat_var ({name},_) = c_lhs.pat_desc in 
@@ -233,7 +241,7 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> s
                           let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
                           let postfix_name = sub field_name (prefix_size+1) (length field_name - prefix_size - 1) 
                           in prefix_name^"_"^postfix_name
-        in (table_name,column_name,wh_c)
+        in (table_name,column_name,wh_c,update_expression)
 
 
 
@@ -309,14 +317,14 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
       let Texp_ident (app_path,_,_) = app_exp.exp_desc in
       let Path.Pdot (_,op,_) = app_path in 
       let new_stmt = match op with 
-                                    |"insert" ->  let (table_name,var_list) = extract_insert ae_list in 
+                      |"insert" ->  let (table_name,var_list) = extract_insert ae_list in 
                                     let inserted_table = Var.Table.make table_name [Var.my_col] in (*only table name matters. The actuall columns can be retrieved later*)
                                     let inserted_record = Fol.Record.T{name="test_record"; vars=var_list} in (*I'm gonna create test record for now*)
                                     S.INSERT (inserted_table,inserted_record ,Fol.my_true)
  
-                      |"update" ->  let (accessed_table,accessed_col_name,wh_c) = extract_update ae_list in
+                      |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression) = extract_update ae_list old_vars in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
-                                    S.UPDATE (accessed_col,Fol.my_const,wh_c,Fol.my_true) (*we have not used the actual update function yet*)
+                                    S.UPDATE (accessed_col,update_expression,wh_c,Fol.my_true) (*we have not used the actual update function yet*)
                       |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list in
                                     let accessed_table = Var.Table.make accessed_table_name [] in
                                     S.DELETE (accessed_table,wh_c,Fol.my_true)
