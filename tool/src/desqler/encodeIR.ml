@@ -53,22 +53,22 @@ struct
 let print_helpful_expression_desc : expression_desc -> unit = 
   fun x -> 
   let output = match x with 
-    |Texp_ident _ -> "Texp_ident"
-    |Texp_constant _ -> "Texp_constant"
-    |Texp_let _ -> "Texp_let"
-    |Texp_function _ -> "Texp_function"
-    |Texp_apply _ -> "Tepx_apply"
-    |Texp_match _ -> "Texp_match"
-    |Texp_try _ -> "Texp_try"
-    |Texp_tuple _ -> "Texp_tuple"
-    |Texp_construct _ -> "Texp_construct"
-    |Texp_variant _ -> "Texp_variant"
-    |Texp_record _ -> "Texp_record"
-    |Texp_field _ -> "Texp_field"
-    |Texp_setfield _ -> "Texp_setfield"
-    |Texp_array _ -> "Texp_array"
-    |Texp_ifthenelse _ -> "Texp_ifthenelse"
-    |Texp_sequence _ -> "Texp_sequence"
+    |Texp_ident _ -> "\nTexp_ident"
+    |Texp_constant _ -> "\nTexp_constant"
+    |Texp_let _ -> "\nTexp_let"
+    |Texp_function _ -> "\nTexp_function"
+    |Texp_apply _ -> "\nTepx_apply"
+    |Texp_match _ -> "\nTexp_match"
+    |Texp_try _ -> "\nTexp_try"
+    |Texp_tuple _ -> "\nTexp_tuple"
+    |Texp_construct _ -> "\nTexp_construct"
+    |Texp_variant _ -> "\nTexp_variant"
+    |Texp_record _ -> "\nTexp_record"
+    |Texp_field _ -> "\nTexp_field"
+    |Texp_setfield _ -> "\nTexp_setfield"
+    |Texp_array _ -> "\nTexp_array"
+    |Texp_ifthenelse _ -> "\nTexp_ifthenelse"
+    |Texp_sequence _ -> "\nTexp_sequence"
     |_ -> "ERROR: print_helpful_expression_desc not catching the case YET"
   in print_string output
 
@@ -92,17 +92,43 @@ let print_helpful_pattern_desc : pattern_desc -> unit =
 
 
 
+
+
+let rec print_expression : F.L.expr -> string = fun exp -> 
+let open F.L in
+  match exp with
+    |Cons i -> string_of_int i
+    |Str s -> s
+    |Var v -> V.name v
+    |_ -> "not printing yet...."
+
+
+let rec print_condition : F.t -> string = fun (condition) -> 
+let open F.L in 
+  match condition with 
+    |Bool b -> string_of_bool b
+    |Gt (s1,s2) -> "("^(print_expression s1)^")>("^(print_expression s2)^")"
+    |Eq (s1,s2) -> "("^(print_expression s1)^")("^(print_expression s2)^")"
+    |Lt (s1,s2) -> "("^(print_expression s1)^")=("^(print_expression s2)^")"
+    |Nq (s1,s2) -> "("^(print_expression s1)^")!=("^(print_expression s2)^")"
+    |AND (s1,s2) -> (print_condition s1)^" && "^(print_condition s2)
+    |OR (s1,s2) -> (print_condition s1)^" || "^(print_condition s2)
+    |NOT s -> "~("^(print_condition s)^")"
+    |_ -> "encodeIR.ml: print_condition ERROR: Unexpected condition"
+
+
+
 (*helping print functions to see the extraction process*)
 let print_stmt : S.st -> unit = fun st -> 
   let open S in 
   match st with
-  |SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ %s" col_name   
-  |MAX_SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ MAX of %s" col_name   
-  |MIN_SELECT ((_,col_name,_,_),_,_,_) -> printf "\n ꜱᴇʟᴇᴄᴛ MIN of %s" col_name   
-  |INSERT (t,_,_)  -> print_string @@ "\nɪɴꜱᴇʀᴛ "^(Var.Table.name t)
-  |UPDATE _ -> printf "\n ᴜᴩᴅᴀᴛᴇ"   
-  |DELETE (t,_,_) -> printf "\n ᴅᴇʟᴇᴛᴇ %s" (Var.Table.name t) 
-  |RANGE_SELECT _ -> printf "\n SELECT RANGE"
+  |SELECT ((_,col_name,_,_),_,_,x) -> printf "\n %s: ꜱᴇʟᴇᴄᴛ %s" (print_condition x) col_name   
+  |MAX_SELECT ((_,col_name,_,_),_,_,x) -> printf "\n %s: ꜱᴇʟᴇᴄᴛ MAX of %s"  (print_condition x) col_name   
+  |MIN_SELECT ((_,col_name,_,_),_,_,x) -> printf "\n %s: ꜱᴇʟᴇᴄᴛ MIN of %s"  (print_condition x) col_name   
+  |INSERT (t,_,x)  -> printf "\n %s: ɪɴꜱᴇʀᴛ %s "  (print_condition x) (Var.Table.name t) 
+  |UPDATE (_,_,_,x) -> printf "\n %s: ᴜᴩᴅᴀᴛᴇ"  (print_condition x)  
+  |DELETE (t,_,x) -> printf "\n %s: ᴅᴇʟᴇᴛᴇ %s" (print_condition x) (Var.Table.name t)  
+  |RANGE_SELECT (_,_,_,x) -> printf "\n %s: SELECT RANGE"  (print_condition x)
   |_ -> failwith "ERROR print_stmt: unexpected sql operation"
 
 let print_var: V.t -> unit = let open V in 
@@ -114,8 +140,6 @@ let print_var_list:  V.t list -> unit = fun var_list ->
 let print_stmts_list : S.st list -> unit = fun st_list -> 
   let _ = List.iter print_stmt st_list in
     print_string "\n-------"
-
-
 
 end
 
@@ -195,10 +219,10 @@ let extract_where_clause: (string*V.t) list -> Typedtree.expression_desc -> Type
     let l_var = extract_operands var_list desc_l in
     let r_var = extract_operands var_list desc_r in
       match op with 
-        |"=" -> F.make (F.L.Eq (l_var,r_var))
-        |">" -> F.make (F.L.Gt (l_var,r_var))
-        |"<" -> F.make (F.L.Lt (l_var,r_var))
-        |"!=" -> F.make (F.L.Nq (l_var,r_var))
+        |"=" ->  (F.L.Eq (l_var,r_var))
+        |">" ->  (F.L.Gt (l_var,r_var))
+        |"<" ->  (F.L.Lt (l_var,r_var))
+        |"!=" ->  (F.L.Nq (l_var,r_var))
         |_ -> failwith "ERROR extract_where_clause: the operation not handled yet"
 
 
@@ -219,7 +243,6 @@ let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*s
     
     |_ -> Utils.print_helpful_expression_desc  body.exp_desc; 
           failwith "ERROR extract_select_table_name: unexpected case for handling select"
-
 
 
 (*handle the rhs of update*)
@@ -244,7 +267,6 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
         in (table_name,column_name,wh_c,update_expression)
 
 
-
 let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list ->  string*Fol.t = 
   fun  [(_,Some exp1);(_,Some exp2)] -> 
     let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in 
@@ -253,8 +275,6 @@ let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list ->  s
                            [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*)
     let wh_c = extract_where_clause [] exp1 exp2 op in
     (table_name,wh_c)
-
-
 
 
 
@@ -272,13 +292,21 @@ let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(extract_operands [] e.
   (table_name,record)
 
 
+let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
+  fun var_list -> fun {exp_desc} ->
+    match exp_desc with
+    |Texp_construct ({txt=Lident "true"},_,_) -> F.L.Bool true
+    |Texp_construct ({txt=Lident "false"},_,_) -> F.L.Bool false
+    |(Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) },[(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})])) ->
+      extract_where_clause var_list exp1 exp2 op
+
 
 (**********)
 (*The main extraction function*)
 (**********)
-let rec convert_body_rec: (string*V.t) list -> S.st list -> 
+let rec convert_body_rec: F.t -> (string*V.t) list -> S.st list -> 
                             Typedtree.expression -> S.st list*(string*V.t) list = 
-  fun old_vars -> fun old_stmts -> 
+  fun curr_cond -> fun old_vars -> fun old_stmts -> 
   fun {exp_desc;exp_loc;exp_extra;exp_type;exp_env;exp_attributes} ->
     match exp_desc with 
     (*select case*)
@@ -287,31 +315,29 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
       let (select_kind,accessed_table,accessed_col,wh_clause) = extract_select old_vars vb_expr in
       begin match select_kind with
       |"select1" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
-                    let new_stmt = S.SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
-                      convert_body_rec (old_vars@[(name,curr_var)])  
+                    let new_stmt = S.SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
+                      convert_body_rec curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
       |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  
-                    let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
-                      convert_body_rec (old_vars@[(name,curr_var)])  
+                    let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
+                      convert_body_rec curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
       |"select_max" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
-                       let new_stmt = S.MAX_SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
-                         convert_body_rec (old_vars@[(name,curr_var)])  
+                       let new_stmt = S.MAX_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
+                         convert_body_rec curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
       |"select_min" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
-                       let new_stmt = S.MIN_SELECT (new_stmt_col,curr_var,wh_clause,Fol.my_true) in 
-                         convert_body_rec (old_vars@[(name,curr_var)])  
+                       let new_stmt = S.MIN_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
+                         convert_body_rec curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
       |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 
       |_ -> failwith "(encodeIR.ml) ERROR  convert_body_rec: unexpected select kind" 
       end
     
-
-
     (*final delete/update/insert cases*)
     |Texp_apply (app_exp,ae_list) -> 
       let Texp_ident (app_path,_,_) = app_exp.exp_desc in
@@ -320,31 +346,41 @@ let rec convert_body_rec: (string*V.t) list -> S.st list ->
                       |"insert" ->  let (table_name,var_list) = extract_insert ae_list in 
                                     let inserted_table = Var.Table.make table_name [Var.my_col] in (*only table name matters. The actuall columns can be retrieved later*)
                                     let inserted_record = Fol.Record.T{name="test_record"; vars=var_list} in (*I'm gonna create test record for now*)
-                                    S.INSERT (inserted_table,inserted_record ,Fol.my_true)
+                                    S.INSERT (inserted_table,inserted_record ,curr_cond)
  
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression) = extract_update ae_list old_vars in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
-                                    S.UPDATE (accessed_col,update_expression,wh_c,Fol.my_true) (*we have not used the actual update function yet*)
+                                    S.UPDATE (accessed_col,update_expression,wh_c,curr_cond) 
                       |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list in
                                     let accessed_table = Var.Table.make accessed_table_name [] in
-                                    S.DELETE (accessed_table,wh_c,Fol.my_true)
-(*mark*)
+                                    S.DELETE (accessed_table,wh_c,curr_cond)
 
                       |_ -> failwith "ERROR convert_body_rec: unexpected SQL operation"
     in (old_stmts@[new_stmt],old_vars)
     (*intermediate del/upt/ins*)
     |Texp_sequence (app_exp1,body_exps) -> 
-        (convert_body_rec old_vars (fst @@ convert_body_rec old_vars old_stmts app_exp1) body_exps)
+    let (s_list1,v_list1) = convert_body_rec curr_cond old_vars old_stmts  app_exp1 in
+      convert_body_rec curr_cond v_list1 s_list1  body_exps
+    (*the unit ()*)
     |Texp_construct _ -> (old_stmts,old_vars)
-    |_ -> Utils.print_helpful_expression_desc exp_desc;  failwith "ERROR convert_body_rec: unexpected case"
+    (*if then else*)
+    |Texp_ifthenelse (condition,then_cls,Some else_cls) ->
+      let then_cond = F.L.AND (curr_cond,(eaxtract_condition old_vars condition)) in
+      let then_path = convert_body_rec then_cond old_vars [] then_cls in
+      let else_cond = F.L.AND (curr_cond,F.L.NOT(eaxtract_condition old_vars condition)) in
+      let else_path =  convert_body_rec else_cond old_vars [] else_cls
+      in (old_stmts@(fst then_path)@(fst else_path),(snd then_path)@(snd else_path))
+    |Texp_ifthenelse (condition,then_cls,None) -> 
+      let then_cond = F.L.AND (curr_cond,(eaxtract_condition old_vars condition)) in
+      let then_path = convert_body_rec then_cond old_vars old_stmts then_cls
+      in then_path
 
-(*TODO*)
-(*TODO*)
+    |_ -> Utils.print_helpful_expression_desc exp_desc;  failwith "ERROR convert_body_rec: unexpected case"
 
 
 let convert_body_stmts: Typedtree.expression -> (S.st list*(string*V.t) list) =
   fun body -> 
-  let (output_st,output_var) = convert_body_rec [] [] body in
+  let (output_st,output_var) = convert_body_rec F.my_true [] [] body in
   (*testing*)
   let _ = Utils.print_stmts_list output_st in 
   let _ = Utils.print_var_list @@ snd @@ List.split output_var in 
@@ -367,35 +403,4 @@ let extract_program: App.t -> (Var.Table.t list * L.t list) =
       let cv_schemas =  List.map (fun x -> Tables.convert x) schemas in
       let cv_txns = List.map (fun x -> Txn.convert x) txns in 
       (cv_schemas,cv_txns) 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

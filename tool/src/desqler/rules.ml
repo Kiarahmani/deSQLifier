@@ -39,9 +39,50 @@ module Utils =
         |S.UPDATE (_,_,wh,_) -> wh
         |S.DELETE (_,wh,_) -> wh
 
-    let extract_condition: int -> string -> string -> S.st -> string = 
-      fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
-       match (F.cond @@ return_where stmt) with
+    let return_reach: S.st -> Fol.t =
+      fun stmt -> match stmt with
+        |S.SELECT (_,_,_,(wh)) -> wh
+        |S.RANGE_SELECT (_,_,_,(wh)) -> wh
+        |S.MAX_SELECT (_,_,_,(wh)) -> wh
+        |S.MIN_SELECT (_,_,_,(wh)) -> wh
+        |S.COUNT_SELECT (_,_,_,(wh)) -> wh
+        |S.UPDATE (_,_,_,(wh)) -> wh
+        |S.DELETE (_,_,(wh)) -> wh
+        |S.INSERT (_,_,wh) -> wh
+
+
+    let rec extract_reach: int -> string -> string -> Fol.t -> string = 
+      fun t_i -> fun txn_name -> fun table_name -> fun fol ->
+       match (fol) with
+        |F.L.Eq (e1,e2) -> let lhs = expression_to_string t_i txn_name table_name e1 in
+                           let rhs = expression_to_string t_i txn_name table_name e2 in
+                           "(= "^lhs^" "^rhs^")"
+        |F.L.Gt (e1,e2) -> let lhs = expression_to_string t_i txn_name table_name e1 in
+                           let rhs = expression_to_string t_i txn_name table_name e2 in
+                           "(> "^lhs^" "^rhs^")"
+        |F.L.Lt (e1,e2) -> let lhs = expression_to_string t_i txn_name table_name e1 in
+                           let rhs = expression_to_string t_i txn_name table_name e2 in
+                           "(< "^lhs^" "^rhs^")"
+        |F.L.Nq (e1,e2) -> let lhs = expression_to_string t_i txn_name table_name e1 in
+                           let rhs = expression_to_string t_i txn_name table_name e2 in
+                           "(not (= "^lhs^" "^rhs^"))"
+        |F.L.Bool b -> string_of_bool b
+        |F.L.AND (c1,c2) -> let lhs = extract_reach t_i txn_name table_name  c1 in
+                            let rhs = extract_reach t_i txn_name table_name  c2 in
+                           "(and "^lhs^" "^rhs^")"
+        |F.L.OR (c1,c2) -> let lhs = extract_reach t_i txn_name table_name  c1 in
+                            let rhs = extract_reach t_i txn_name table_name  c2 in
+                           "(or "^lhs^" "^rhs^")"
+        |F.L.NOT c1 -> let inner = extract_reach t_i txn_name table_name  c1 in
+                           "(not "^inner^")"
+
+        
+        |_ -> failwith "rules.ml ERROR extract_reach: the claus case not handled yet "
+ 
+
+    let extract_where: int -> string -> string -> Fol.t -> string = 
+      fun t_i -> fun txn_name -> fun table_name -> fun fol ->
+       match (fol) with
         |F.L.Eq (e1,e2) -> let lhs = expression_to_string t_i txn_name table_name e1 in
                            let rhs = expression_to_string t_i txn_name table_name e2 in
                            "(= "^lhs^" "^rhs^")"
@@ -55,9 +96,15 @@ module Utils =
                            let rhs = expression_to_string t_i txn_name table_name e2 in
                            "(not (= "^lhs^" "^rhs^"))"
 
-        |F.L.Bool b -> failwith "ERROR extract_s_condition: true/false are not accepted as the where claus"
-        |_ -> failwith "rules.ml ERROR extract_s_condition: the where claus case not handled yet "
+        |F.L.Bool b -> failwith "ERROR extract_where: true/false are not accepted as the where claus"
+        |_ -> failwith "rules.ml ERROR extract_where: the where claus case not handled yet "
  
+
+    let extract_condition: int -> string -> string -> S.st -> string =    
+       fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
+         (extract_where t_i txn_name table_name (return_where stmt))^"
+                             "^(extract_reach t_i txn_name table_name (return_reach stmt))
+
   
       let accessed_common_table : S.st -> S.st -> string option = 
       fun stmt1 -> fun stmt2 ->
@@ -140,9 +187,14 @@ module Utils =
                              (= ("^table_name^"_Proj_"^s^" r) "^value^")"
 
       let extract_i_condition: int -> string -> string -> S.st -> string = 
-      fun t_i -> fun txn_name -> fun table_name -> fun (S.INSERT (_,Fol.Record.T{vars=c_list},_)) ->
-        List.fold_left (fun old_s -> fun curr_c -> 
-                        old_s^""^(extract_i_expr t_i txn_name table_name curr_c)) "" @@ c_list
+      fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
+        let (S.INSERT (_,Fol.Record.T{vars=c_list},_)) = stmt in 
+        let reach_cond  = extract_reach t_i txn_name table_name (return_reach stmt)  in
+        let i_conds = List.fold_left (fun old_s -> fun curr_c -> 
+                        old_s^""^(extract_i_expr t_i txn_name table_name curr_c)) "" @@ c_list in
+        i_conds^"
+                             "^reach_cond
+
 
     let extract_agg_condition: string -> string -> S.st -> string -> S.st -> string = 
       fun op -> fun txn_name1 -> fun s_fun1 -> 

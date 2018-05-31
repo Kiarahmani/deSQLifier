@@ -44,12 +44,12 @@ type bankaccount = {b_id: int; mutable b_bal: int}
 *)
 type employee = {e_id: int; mutable e_name: string; mutable e_sal: int}
 
-(*
+
 (*TXN1*)
 let txn1_txn (src_id:int) (dst_id:int) (amount:int) =  
   SQL.update Employee
      (fun u -> begin u.e_sal <- amount; end)          
-     (fun u -> u.e_id != src_id)
+     (fun u -> u.e_id != src_id);
  
   SQL.delete Employee (fun u -> u.e_id = src_id);
   SQL.insert Employee {e_id=src_id;e_name="David";e_sal=amount};
@@ -63,21 +63,29 @@ let txn1_txn (src_id:int) (dst_id:int) (amount:int) =
     SQL.update Employee
     (*do:*)    (fun u -> begin u.e_sal <- 400; end)
     (*where:*) (fun u -> u.e_id = dst_id)
-*)
+
 
 
 (*shouldn't I add the minimality of the read Employee?*)
 (*TXN2*)
-let txn2_txn (input:int) =  
-  if 1>2
-  then let w_read_all = SQL.select1 Employee E_sal
-                   (fun u -> u.e_id = 12 ) in 
-       SQL.delete Employee (fun u -> u.e_id = 13);
+let txn2_txn (in_id:int) (amount:int) =  
+  let read_v = SQL.select1 Employee E_sal
+           (fun u -> u.e_id = in_id) in 
+    
 
+  if read_v.e_sal>amount
+  then SQL.update Employee
+       (*do:*)    (fun u -> begin u.e_sal <- u.e_sal - amount; end)    
+       (*where:*) (fun u -> u.e_id = in_id)
+  else SQL.delete Employee (fun u -> u.e_id = in_id); 
 
-  else
+  SQL.delete Employee (fun u -> u.e_id = in_id+200);
 
+  let w_read_all = SQL.select_min Employee E_sal
+                   (fun u -> u.e_name = "Roger") in 
 
+  SQL.insert Employee {e_id=in_id+1;e_name="David";e_sal=amount-100};
+  SQL.delete Employee (fun u -> u.e_sal < w_read_all.e_sal+400)
   (*
   let w_read_all = SQL.select_min Employee E_sal
                    (fun u -> u.e_name = "Roger") in 
@@ -96,9 +104,40 @@ let txn2_txn (input:int) =
 *)
 
 
+let txn5_txn (in_id:int) (amount:int) =  
+  let read_v = SQL.select1 Employee E_sal
+           (fun u -> u.e_id = in_id) in ()
+ 
 
 
+let txn4_txn (in_id:int) (amount:int) =  
+  let read_v = SQL.select1 Employee E_sal
+           (fun u -> u.e_id = in_id) in ()
+ 
 
+(*TXN2*)
+let txn3_txn (in_id:int) (amount:int) =  
+  let read_v = SQL.select1 Employee E_sal
+           (fun u -> u.e_id = in_id) in 
+    
+
+  if read_v.e_sal>amount
+  then SQL.update Employee
+       (*do:*)    (fun u -> begin u.e_sal <- u.e_sal - amount; end)    
+       (*where:*) (fun u -> u.e_id = in_id)
+  else SQL.delete Employee (fun u -> u.e_id = in_id); 
+
+  SQL.delete Employee (fun u -> u.e_id = in_id+200);
+  SQL.delete Employee (fun u -> u.e_id = in_id+300);
+  SQL.delete Employee (fun u -> u.e_id = in_id+400);
+  SQL.delete Employee (fun u -> u.e_id = in_id+500);
+
+  let w_read_all = SQL.select_min Employee E_sal
+                   (fun u -> u.e_name = "Roger") in 
+
+  SQL.insert Employee {e_id=in_id+1;e_name="David";e_sal=amount-100};
+  SQL.delete Employee (fun u -> u.e_sal < w_read_all.e_sal+400);
+ 
 
 
 

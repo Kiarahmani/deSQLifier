@@ -27,6 +27,9 @@ struct
 									 |Lt: expr*expr -> condition
                    |Eq:  expr*expr -> condition
                    |Nq: expr*expr -> condition
+                   |AND: condition*condition -> condition
+                   |OR: condition*condition -> condition
+                   |NOT: condition -> condition
 end
 
 
@@ -37,9 +40,7 @@ end
 
 
 
-type t = T of {cond: L.condition}
-let make ~cond = T{cond}
-let cond (T{cond}) = cond
-let my_true = make (L.Bool true)
+type t = L.condition
+let my_true = L.Bool true
 let my_const = L.Var V.test_field
-let my_test_equal = make (L.Eq (my_const,my_const))
+let my_test_equal = L.Eq (my_const,my_const)
