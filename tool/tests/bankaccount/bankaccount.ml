@@ -74,10 +74,12 @@ let txn1_txn (src_id:int) (dst_id:int) (amount:int) =
 let deposit_txn (input:int) =  
  
   
+  SQL.insert Employee {e_id=wsrc_id;e_name="Roger";e_sal=wamount};
+  (*
   let v1 = SQL.select Employee E_sal
                    (fun u -> u.e_id > 200) in 
- 
   let v2 = SQL.choose (fun u -> u.e_id <300) v1 in
+  *)
  (* SQL.foreach v1
    begin fun loop_var_1 -> 
     (*let vx = SQL.select1 Employee E_sal
