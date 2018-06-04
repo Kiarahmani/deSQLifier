@@ -26,6 +26,7 @@ sig
   val delete:       table_name  -> ('a -> bool) -> unit
   val update:       table_name  -> ('a -> unit) -> ('a -> bool) -> unit
   val choose:  ('a -> bool) -> 'a list -> 'a
+  val foreach: 'a list -> ('a -> unit) -> unit
 end = 
 struct
   let select = unimpl ()
@@ -37,8 +38,7 @@ struct
   let delete = unimpl ()
   let update = unimpl ()
   let choose = unimpl ()
-
-
+  let foreach = unimpl ()
 end
 
 
@@ -74,21 +74,18 @@ let txn1_txn (src_id:int) (dst_id:int) (amount:int) =
 let deposit_txn (input:int) =  
  
   
-  let v1 = SQL.select1 Bankaccount B_bal
-                   (fun u -> u.b_id = input) in 
+  let v1 = SQL.select Employee E_sal
+                   (fun u -> u.e_sal > 20000) in 
+ 
 
-  let v2 = SQL.select Employee E_sal
-                   (fun u -> u.e_sal > v1.b_bal) in 
-  
-  let v3 = SQL.choose (fun x -> x.e_sal = v1.b_bal) v2 in
-
-  let v4 = SQL.select1 Bankaccount B_bal
-                   (fun u -> u.b_id = v3.e_id) in 
-  
-  SQL.update Employee
-    (*do:*)    (fun u -> begin u.e_sal <- 500; end)    
-      (*where:*) (fun u -> u.e_id = input+1)
-
+  SQL.foreach v1
+   begin fun loop_var_1 -> 
+    (*let vx = SQL.select1 Employee E_sal
+                   (fun u -> u.e_id = loop_var_1.e_id) in *)
+    SQL.update Employee
+    (*do:*)    (fun u -> begin u.e_sal <- 20000; end)    
+      (*where:*) (fun u -> u.e_id = loop_var_1.e_id)
+   end
   (*
   let w_read_all = SQL.select_min Employee E_sal
                    (fun u -> u.e_name = "Roger") in 

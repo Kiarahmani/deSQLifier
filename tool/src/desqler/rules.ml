@@ -100,7 +100,7 @@ module Utils =
                            let rhs = expression_to_string t_i record_name txn_name table_name e2 in
                            "(not (= "^lhs^" "^rhs^"))"
 
-        |F.L.Bool b -> failwith "ERROR extract_where: true/false are not accepted as the where claus"
+        |F.L.Bool b -> string_of_bool b
         |_ -> failwith "rules.ml ERROR extract_where: the where claus case not handled yet "
  
 

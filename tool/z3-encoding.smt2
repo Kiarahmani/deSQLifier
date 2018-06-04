@@ -84,21 +84,13 @@
 
 
 ;v1
-(declare-fun Deposit_isN_v1 (T) Bool)
-(declare-fun Deposit_Var_v1 (T) Bankaccount)
-(assert (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Deposit_Var_v1 t0)) (Deposit_Param_input t0))))
-;v2
-(declare-fun Deposit_SVar_v2 (T Employee) Bool)
-(assert (forall ((t0 T)(r Employee)) (=> (Deposit_SVar_v2 t0 r) (> (Employee_Proj_e_sal r) (Bankaccount_Proj_b_bal (Deposit_Var_v1 t0)))) ))
-;v3
-(declare-fun Deposit_isN_v3 (T) Bool)
-(declare-fun Deposit_Var_v3 (T) Employee)
-(assert (forall ((t0 T)) (= (Employee_Proj_e_sal (Deposit_Var_v3 t0)) (Bankaccount_Proj_b_bal (Deposit_Var_v1 t0)))))
-(assert (forall ((t0 T))(Deposit_SVar_v2 t0 (Deposit_Var_v3 t0)) ))
-;v4
-(declare-fun Deposit_isN_v4 (T) Bool)
-(declare-fun Deposit_Var_v4 (T) Bankaccount)
-(assert (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Deposit_Var_v4 t0)) (Employee_Proj_e_id (Deposit_Var_v3 t0)))))
+(declare-fun Deposit_SVar_v1 (T Employee) Bool)
+(assert (forall ((t0 T)(r Employee)) (=> (Deposit_SVar_v1 t0 r) (> (Employee_Proj_e_sal r) 20000)) ))
+;loop_var_1
+(declare-fun Deposit_isN_loop_var_1 (T) Bool)
+(declare-fun Deposit_Var_loop_var_1 (T) Employee)
+(assert (forall ((t0 T)) true))
+(assert (forall ((t0 T))(Deposit_SVar_v1 t0 (Deposit_Var_loop_var_1 t0)) ))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -134,8 +126,8 @@
                                 (and 
                                 (IsAlive_Employee r t1)
                                 (IsAlive_Employee r t2)
-                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t1) 1))  true
-                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t2) 1))  true))) ))))
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true))) ))))
 
 
 
@@ -162,8 +154,8 @@
                                 (and 
                                 (IsAlive_Employee r t1)
                                 (IsAlive_Employee r t2)
-                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t1) 1))  true
-                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t2) 1))  true)))
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true)))
                         (or (WW t1 t2) (WW t2 t1)) ))))
 
 
