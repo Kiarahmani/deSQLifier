@@ -79,18 +79,19 @@
 (assert  (forall ((r Employee)(t1 T)(t2 T)(t3 T)) 
          (=> (and (WR_Alive_Employee r t2 t1)(RW_Alive_Employee r t1 t3))(WW_Alive_Employee r t2 t3))))
 
-
+;params
 (declare-fun Deposit_Param_input (T) Int)
-
 
 ;v1
 (declare-fun Deposit_SVar_v1 (T Employee) Bool)
-(assert (forall ((t0 T)(r Employee)) (=> (Deposit_SVar_v1 t0 r) (> (Employee_Proj_e_sal r) 20000)) ))
-;loop_var_1
-(declare-fun Deposit_isN_loop_var_1 (T) Bool)
-(declare-fun Deposit_Var_loop_var_1 (T) Employee)
-(assert (forall ((t0 T)) true))
-(assert (forall ((t0 T))(Deposit_SVar_v1 t0 (Deposit_Var_loop_var_1 t0)) ))
+(assert (forall ((t0 T)(r Employee)) (=> (Deposit_SVar_v1 t0 r) (> (Employee_Proj_e_id r) 200)) ))
+;v2
+(declare-fun Deposit_isN_v2 (T) Bool)
+(declare-fun Deposit_Var_v2 (T) Employee)
+(assert (forall((t0 T))(and (=> (not (Deposit_isN_v2 t0)) (exists ((r Employee))(= (Deposit_Var_v2 t0) r))) 
+                            (=> (exists ((r Employee))(= (Deposit_Var_v2 t0) r)) (not (Deposit_isN_v2 t0))))))
+(assert (forall ((t0 T)) (< (Employee_Proj_e_id (Deposit_Var_v2 t0)) 300)))
+(assert (forall ((t0 T))(Deposit_SVar_v1 t0 (Deposit_Var_v2 t0)) ))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,7 +102,14 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
                     (=> (and (RW t1 t2) (not (= t1 t2)))
-                        false ))))
+                        (or false
+                            (exists ((r Employee))
+                                (and 
+                                (IsAlive_Employee r t2)
+                                (RW_Employee r t1 t2)
+                                (not (Deposit_SVar_v1 t1 r))
+                                (> (Employee_Proj_e_id r) 200)  true
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id (Deposit_Var_v2 t2)))  true))) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WR-> Rules                                                       
@@ -111,7 +119,14 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
                     (=> (and (WR t1 t2) (not (= t1 t2)))
-                        false ))))
+                        (or false
+                            (exists ((r Employee))
+                                (and 
+                                (IsAlive_Employee r t1)
+                                (WR_Employee r t1 t2)
+                                (Deposit_SVar_v1 t2 r)
+                                (> (Employee_Proj_e_id r) 200)  true
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id (Deposit_Var_v2 t1)))  true))) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WW-> Rules                                                       
@@ -124,13 +139,11 @@
                         (or false
                             (exists ((r Employee))
                                 (and 
+                                (WW_Employee r t1 t2)
                                 (IsAlive_Employee r t1)
                                 (IsAlive_Employee r t2)
-                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true
-                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true))) ))))
-
-
-
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id (Deposit_Var_v2 t1)))  true
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id (Deposit_Var_v2 t2)))  true))) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       ->WR Rules                                                       
@@ -154,8 +167,8 @@
                                 (and 
                                 (IsAlive_Employee r t1)
                                 (IsAlive_Employee r t2)
-                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true
-                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id r))  true)))
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id (Deposit_Var_v2 t1)))  true
+                                (= (Employee_Proj_e_id r) (Employee_Proj_e_id (Deposit_Var_v2 t2)))  true)))
                         (or (WW t1 t2) (WW t2 t1)) ))))
 
 

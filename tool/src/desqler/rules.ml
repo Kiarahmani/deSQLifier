@@ -18,9 +18,9 @@ module Utils =
       fun t_i -> fun record_name -> fun txn_name -> fun table_name -> 
       fun e -> match e with
         (*vars*)
-        | F.L.Var (V.T{name;field;table=None; tp; kn=V.PARAM}) -> "("^txn_name^"_Param_"^name^" t"^(string_of_int t_i)^")"
-        | F.L.Var (V.T{name;field;table=None; tp; kn=V.LOCAL}) -> "("^txn_name^"_Var_"^name^" t"^(string_of_int t_i)^")"
-        | F.L.Var (V.T{name;field;table=None; tp; kn=V.FIELD}) -> "("^table_name^"_Proj_"^name^" "^record_name^")"
+        | F.L.Var (V.T{name;field;table=None; tp; kn=V.PARAM})               -> "("^txn_name^"_Param_"^name^" t"^(string_of_int t_i)^")"
+        | F.L.Var (V.T{name;field;table=None; tp; kn=V.LOCAL})               -> "("^txn_name^"_Var_"^name^" t"^(string_of_int t_i)^")"
+        | F.L.Var (V.T{name;field;table=None; tp; kn=V.FIELD})               -> "("^table_name^"_Proj_"^name^" "^record_name^")"
         | F.L.Var (V.T{name;field;table=Some record_table; tp; kn=V.RECORD}) ->"("^record_table^"_Proj_"^field^" ("^txn_name^"_Var_"^name^" t"^(string_of_int t_i)^"))"
         (*other cases: constants, etc*)
         | F.L.Cons c -> string_of_int c
@@ -55,36 +55,7 @@ module Utils =
         |S.INSERT (_,_,wh) -> wh
 
 
-    let rec extract_reach: int -> string -> string -> Fol.t -> string = 
-      fun t_i -> fun txn_name -> fun table_name -> fun fol ->
-       match (fol) with
-        |F.L.Eq (e1,e2) -> let lhs = expression_to_string t_i "r" txn_name table_name e1 in
-                           let rhs = expression_to_string t_i "r" txn_name table_name e2 in
-                           "(= "^lhs^" "^rhs^")"
-        |F.L.Gt (e1,e2) -> let lhs = expression_to_string t_i "r" txn_name table_name e1 in
-                           let rhs = expression_to_string t_i "r" txn_name table_name e2 in
-                           "(> "^lhs^" "^rhs^")"
-        |F.L.Lt (e1,e2) -> let lhs = expression_to_string t_i "r" txn_name table_name e1 in
-                           let rhs = expression_to_string t_i "r" txn_name table_name e2 in
-                           "(< "^lhs^" "^rhs^")"
-        |F.L.Nq (e1,e2) -> let lhs = expression_to_string t_i "r" txn_name table_name e1 in
-                           let rhs = expression_to_string t_i "r" txn_name table_name e2 in
-                           "(not (= "^lhs^" "^rhs^"))"
-        |F.L.Bool b -> string_of_bool b
-        |F.L.AND (c1,c2) -> let lhs = extract_reach t_i txn_name table_name  c1 in
-                            let rhs = extract_reach t_i txn_name table_name  c2 in
-                           "(and "^lhs^" "^rhs^")"
-        |F.L.OR (c1,c2) -> let lhs = extract_reach t_i txn_name table_name  c1 in
-                            let rhs = extract_reach t_i txn_name table_name  c2 in
-                           "(or "^lhs^" "^rhs^")"
-        |F.L.NOT c1 -> let inner = extract_reach t_i txn_name table_name  c1 in
-                           "(not "^inner^")"
-
-        
-        |_ -> failwith "rules.ml ERROR extract_reach: the claus case not handled yet "
- 
-
-    let extract_where: int -> string  -> string -> string -> Fol.t -> string = 
+    let rec extract_where: int -> string  -> string -> string -> Fol.t -> string = 
       fun t_i -> fun record_name -> fun txn_name -> fun table_name -> fun fol ->
        match (fol) with
         |F.L.Eq (e1,e2) -> let lhs = expression_to_string t_i record_name txn_name table_name e1 in
@@ -101,12 +72,21 @@ module Utils =
                            "(not (= "^lhs^" "^rhs^"))"
 
         |F.L.Bool b -> string_of_bool b
+        |F.L.AND (c1,c2) -> let lhs = extract_where t_i record_name txn_name table_name  c1 in
+                            let rhs = extract_where t_i record_name txn_name table_name  c2 in
+                           "(and "^lhs^" "^rhs^")"
+        |F.L.OR (c1,c2) -> let lhs = extract_where t_i record_name txn_name table_name  c1 in
+                            let rhs = extract_where t_i record_name txn_name table_name  c2 in
+                           "(or "^lhs^" "^rhs^")"
+        |F.L.NOT c1 -> let inner = extract_where t_i record_name txn_name table_name  c1 in
+                           "(not "^inner^")"
+
         |_ -> failwith "rules.ml ERROR extract_where: the where claus case not handled yet "
  
 
     let extract_condition: int -> string -> string -> S.st -> string =    
        fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
-         (extract_where t_i "r"  txn_name table_name (return_where stmt))^"  "^(extract_reach t_i txn_name table_name (return_reach stmt))
+         (extract_where t_i "r"  txn_name table_name (return_where stmt))^"  "^(extract_where t_i "r" txn_name table_name (return_reach stmt))
 
   
       let accessed_common_table : S.st -> S.st -> string option = 
@@ -208,7 +188,6 @@ end
 
 
 
-
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
 (*analyze statements according to the rules. If applicable, return the wrapped cnoditions as strings*)
@@ -229,7 +208,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let u1_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u2_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                Some (rule_wrapper (table, ["(IsAlive_Employee r t1)";"(IsAlive_Employee r t2)";u1_cond ; u2_cond]))
+                Some (rule_wrapper (table, ["(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
               |None -> None end
           
           (*2*)
@@ -237,7 +216,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let u1_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u2_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                             Some (rule_wrapper (table, ["(IsAlive_Employee r t1)";"(IsAlive_Employee r t2)";u1_cond ; u2_cond]))
+                             Some (rule_wrapper (table, ["(WW_"^table^" r t1 t2)";"(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
               |None -> None end
 
           (*-------------------*)
@@ -249,8 +228,18 @@ struct
                              let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
                              let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               Some (rule_wrapper
-                                      (table, ["(IsAlive_Employee r t2)";"(WR_Employee r t1 t2)";null_cond;s_cond;u_cond]))
+                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
               |None -> None end 
+          (*6*)
+          |(S.UPDATE _ , S.RANGE_SELECT(_,v,_,_),"WR->") -> 
+            begin match (accessed_common_table stmt1 stmt2)  with 
+              |Some table -> let s_cond = extract_condition 2  (to_cap txn_name2) table stmt2 in
+                             let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
+                             let null_cond = "("^(to_cap txn_name2)^"_SVar_"^(V.name v)^" t2 r)" in
+                              Some (rule_wrapper
+                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
+              |None -> None end 
+
           (*-------------------*)
           (*RW->*)
           (*12*)
@@ -259,8 +248,17 @@ struct
               match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                Some (rule_wrapper (table, ["(IsAlive_Employee r t2)";"(RW_Employee r t1 t2)";s_cond;u_cond]))
+                Some (rule_wrapper (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^" r t1 t2)";s_cond;u_cond]))
               |None -> None end
+          (*15*)
+          |(S.RANGE_SELECT(_,v,_,_),S.UPDATE _,"RW->") -> 
+            begin match (accessed_common_table stmt1 stmt2)  with 
+              |Some table -> let s_cond = extract_condition 1  (to_cap txn_name2) table stmt1 in
+                             let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
+                             let null_cond = "(not ("^(to_cap txn_name2)^"_SVar_"^(V.name v)^" t1 r))" in
+                              Some (rule_wrapper
+                                      (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
+              |None -> None end 
 
           |_ -> None
   

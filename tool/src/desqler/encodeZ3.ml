@@ -166,8 +166,11 @@ struct
 (* vars *)
   
   let declare_vars tname vname vtype table_name = let txn_cap = String.capitalize_ascii tname in 
-    ";"^vname^"\n(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
-    "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^table_name^")"
+    ";"^vname^
+    "\n(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
+    "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^table_name^")"^
+    "\n(assert (forall((t0 T))(and (=> (not ("^txn_cap^"_isN_"^vname^" t0)) (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r))) 
+                            (=> (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r)) (not ("^txn_cap^"_isN_"^vname^" t0))))))"
 
   let vars_props tname vname table_name fol = 
     let txn_cap = String.capitalize_ascii tname in 
@@ -264,7 +267,7 @@ struct
       List.fold_left (fun prev_s -> fun curr_txn -> 
         let curr_s = txn_declare_vars @@ (curr_txn,txn_extract_vars curr_txn) in
           prev_s^curr_s) "" txn_list
-    in params^"\n\n"^vars
+          in ";params"^params^"\n"^vars
 end 
 
 (*----------------------------------------------------------------------------------------------------*)
@@ -319,7 +322,7 @@ let all_ww2: T.t list -> string = fun txn_list ->
 let all_txns_all_rules: T.t list -> string = fun txn_list ->
     (PrintUtils.comment_header "RW-> Rules")^all_rw txn_list^"\n"^
     (PrintUtils.comment_header "WR-> Rules")^all_wr1 txn_list^"\n"^
-    (PrintUtils.comment_header "WW-> Rules")^all_ww2 txn_list^"\n\n\n\n"^
+    (PrintUtils.comment_header "WW-> Rules")^all_ww2 txn_list^"\n"^
     (PrintUtils.comment_header "->WR Rules")^all_wr2 txn_list^"\n"^
     (PrintUtils.comment_header "->WW Rules")^all_ww1 txn_list
 

@@ -133,7 +133,7 @@ let print_stmt : S.st -> unit = fun st ->
   |_ -> failwith "ERROR print_stmt: unexpected sql operation"
 
 let print_var: V.t -> unit = let open V in 
-      fun x -> printf "\n %s.%s of %s" (name x) (field x) (table x)
+      fun x -> printf "\n %s.%s of %s (%s)" (name x) (field x) (table x) (kind_to_string @@ kind x)
 
 let print_var_list:  V.t list -> unit = fun var_list -> 
   List.iter print_var var_list  
@@ -270,7 +270,7 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
           let Tpat_var ({name},_) = c_lhs.pat_desc in 
           let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
                            [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*)
-        let wh_c = extract_where_clause [] exp1 exp2 op in 
+        let wh_c = extract_where_clause old_var_list exp1 exp2 op in 
         let column_name = let open String in 
                           let prefix_size = index field_name '_' in
                           let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
