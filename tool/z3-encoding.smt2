@@ -6,7 +6,7 @@
 
 (set-option :produce-unsat-cores true)
 
-(declare-datatypes () ((TType (Txn2)))) 
+(declare-datatypes () ((TType (Deposit)))) 
 (declare-sort T)
 (declare-fun type (T) TType)
 
@@ -80,11 +80,14 @@
          (=> (and (WR_Alive_Employee r t2 t1)(RW_Alive_Employee r t1 t3))(WW_Alive_Employee r t2 t3))))
 
 
-(declare-fun Txn2_Param_input (T) Int)
+(declare-fun Deposit_Param_input (T) Int)
 
 
-(declare-fun Txn2_isN_select_emp (T) Bool)
-(declare-fun Txn2_Var_select_emp (T) Int)
+(declare-fun Deposit_isN_v1 (T) Bool)
+(declare-fun Deposit_Var_v1 (T) Employee)
+(assert (forall ((t0 T)) (= (Employee_Proj_e_id (Deposit_Var_v1 t0)) 100)))
+(declare-fun Deposit_SVar_v2 (T Employee) Bool)
+(assert (forall ((t0 T)(r Employee)) (=> (Deposit_SVar_v2 t0 r) (> (Employee_Proj_e_sal r) (Employee_Proj_e_id (Deposit_Var_v1 t0)))) ))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,16 +96,15 @@
 
 
 (assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Txn2) (= (type t2) Txn2))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
                     (=> (and (RW t1 t2) (not (= t1 t2)))
                         (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t2)
-                             (RW_Employee r t1 t2)
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t1))
-                             true
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t2))
-                             true))) ))))
+                            (exists ((r Employee))
+                                (and 
+                                (IsAlive_Employee r t2)
+                                (RW_Employee r t1 t2)
+                                (= (Employee_Proj_e_id r) 100)  true
+                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t2) 1))  true))) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WR-> Rules                                                       
@@ -110,17 +112,16 @@
 
 
 (assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Txn2) (= (type t2) Txn2))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
                     (=> (and (WR t1 t2) (not (= t1 t2)))
                         (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (WR_Employee r t1 t2)
-                             (not (Txn2_isN_select_emp t2))
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t2))
-                             true
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t1))
-                             true))) ))))
+                            (exists ((r Employee))
+                                (and 
+                                (IsAlive_Employee r t2)
+                                (WR_Employee r t1 t2)
+                                (not (Deposit_isN_v1 t2))
+                                (= (Employee_Proj_e_id r) 100)  true
+                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t1) 1))  true))) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WW-> Rules                                                       
@@ -128,16 +129,15 @@
 
 
 (assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Txn2) (= (type t2) Txn2) (not (= t1 t2)))
-                    (=> (and (WW t1 t2) (not (= t2 t1)))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
+                    (=> (and (WW t1 t2) (not (= t1 t2)))
                         (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (IsAlive_Employee r t2)
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t1))
-                             true
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t2))
-                             true)))))))
+                            (exists ((r Employee))
+                                (and 
+                                (IsAlive_Employee r t1)
+                                (IsAlive_Employee r t2)
+                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t1) 1))  true
+                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t2) 1))  true))) ))))
 
 
 
@@ -148,7 +148,7 @@
 
 
 (assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Txn2) (= (type t2) Txn2) (not (= t1 t2)))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
                     (=> false
                         (WR t1 t2) ))))
 
@@ -158,15 +158,14 @@
 
 
 (assert (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Txn2) (= (type t2) Txn2) (not (= t1 t2)))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
                     (=> (or false
-                        (exists ((r Employee))
-                        (and (IsAlive_Employee r t1)
-                             (IsAlive_Employee r t2)
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t1))
-                             true
-                             (= (Employee_Proj_e_id r) (Txn2_Param_input t2))
-                             true)))
+                            (exists ((r Employee))
+                                (and 
+                                (IsAlive_Employee r t1)
+                                (IsAlive_Employee r t2)
+                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t1) 1))  true
+                                (= (Employee_Proj_e_id r) (+ (Deposit_Param_input t2) 1))  true)))
                         (or (WW t1 t2) (WW t2 t1)) ))))
 
 
@@ -179,6 +178,6 @@
 (assert (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))))
 (assert (exists ( (t1 T) (t2 T) (t3 T)) (and (not (= t1 t3))  (D t1 t2) (D t2 t3) (D t3 t1))))
 
-
+(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc)) ;CC
 
 (check-sat)

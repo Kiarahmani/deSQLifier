@@ -26,13 +26,14 @@ end
 
 module Variable = 
 struct
-  type kind = PARAM | LOCAL | FIELD
-  type t = T of {name: string; tp: Type.t; kn: kind}
-  let make ~name ~tp ~kn = T{name; tp; kn}
+  type kind = PARAM | LOCAL | FIELD  | RECORD
+  type t = T of {name: string;field: string; table: string option; tp: Type.t; kn: kind}
+  let make ~name ~field ~table ~tp ~kn = T{name; field; table; tp; kn}
   let name (T{name}) = name
-  let test_var = make "acc_dst" Type.Int LOCAL
-  let test_field = make "b_id" Type.Int FIELD
-  let test_param = make "src_id" Type.Int PARAM
+  let table (T{table}) = table
+  let test_var = make "acc_dst" "" None Type.Int LOCAL
+  let test_field = make "b_id" "" None Type.Int FIELD
+  let test_param = make "src_id" "" None Type.Int PARAM
 end
 
 let my_col:Table.col = ("test_table","test_col", Type.Int ,true) 

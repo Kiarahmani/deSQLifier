@@ -67,13 +67,22 @@ let txn1_txn (src_id:int) (dst_id:int) (amount:int) =
 
 (*you cannot fix this with PSI, right?*)
 (*TXN2*)
-let txn2_txn (input:int) =  
-  let select_emp = SQL.select1 Employee E_sal
-                   (fun u -> u.e_id = input) in 
+let deposit_txn (input:int) =  
+ 
+  
+  let v1 = SQL.select1 Employee E_sal
+                   (fun u -> u.e_id = 100) in 
+
+  let v2 = SQL.select Employee E_sal
+                   (fun u -> u.e_sal > v1.e_id) in 
+
+
+
+
   
   SQL.update Employee
     (*do:*)    (fun u -> begin u.e_sal <- 500; end)    
-      (*where:*) (fun u -> u.e_id = input)
+      (*where:*) (fun u -> u.e_id = input+1)
 
   (*
   let w_read_all = SQL.select_min Employee E_sal

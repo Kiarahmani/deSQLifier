@@ -187,20 +187,21 @@ let rec convert_types: type_desc -> T.t =
 
 
 let convert_param: (Ident.t * type_desc) -> V.t  = 
-  fun (id,tp) ->  V.make id.name (convert_types tp) V.PARAM
-
+  fun (id,tp) ->  V.make id.name "salam" None (convert_types tp) V.PARAM
 
 let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L.expr = 
   fun var_list -> fun desc -> match desc with
     |Texp_field ({exp_desc=Texp_ident (Pident before_dot,_,_)},_,{lbl_name}) ->  
     let open List in 
-    if mem before_dot.name  @@ fst @@ split var_list
-    then F.L.Var (V.make before_dot.name T.Int LOCAL)
-    else F.L.Var (V.make lbl_name T.Int FIELD) 
+    let var_exists = List.filter (fun (v,_) -> before_dot.name = v) (var_list) in
+    begin match var_exists with
+      |[(v_name,v)] -> F.L.Var (V.make before_dot.name lbl_name (V.table v) T.Int RECORD)
+      |[] -> F.L.Var (V.make lbl_name "salam" None T.Int FIELD) 
+    end
     |Texp_ident (Pident {name},_,_) -> let open List in
                                        if mem name  @@ fst @@ split var_list
-                                       then F.L.Var (V.make name T.Int LOCAL)
-                                       else F.L.Var (V.make name T.Int PARAM)
+                                       then F.L.Var (V.make name "salam" None T.Int LOCAL)
+                                       else F.L.Var (V.make name "salam" None T.Int PARAM)
     |Texp_constant (Const_int i) -> F.L.Cons i (*integer constant*)
     |Texp_constant (Const_string (s,_)) -> F.L.Str s (*string constant*)
     |Texp_apply ({exp_desc=Texp_ident (Pdot (_,op,_),_,_)},[(Nolabel,Some l);(Nolabel,Some r)]) ->
@@ -278,10 +279,10 @@ let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list ->  s
 
 
 
-let extract_variable: Typedtree.pattern_desc -> (string*V.t) =
-  fun pat_desc ->
-    let Tpat_var ({name},_) = pat_desc in
-    (name,(V.make name T.Int V.LOCAL)) (*TODO types must be extracted*)
+  let extract_variable: Typedtree.pattern_desc -> string -> (string*V.t) =
+  fun pat_desc -> fun accessed_table -> 
+  let Tpat_var ({name},{txt}) = pat_desc in
+    (name,(V.make name "salam" (Some accessed_table) T.Int V.LOCAL)) (*TODO types must be extracted*)
 
 
 let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> (string*(string*F.L.expr) list) = 
@@ -311,8 +312,8 @@ let rec convert_body_rec: F.t -> (string*V.t) list -> S.st list ->
     match exp_desc with 
     (*select case*)
     |Texp_let (_,[{vb_pat;vb_expr}],body) ->  
-      let (name,curr_var) = extract_variable @@ vb_pat.pat_desc in 
       let (select_kind,accessed_table,accessed_col,wh_clause) = extract_select old_vars vb_expr in
+      let (name,curr_var) = extract_variable vb_pat.pat_desc accessed_table in 
       begin match select_kind with
       |"select1" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
                     let new_stmt = S.SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 

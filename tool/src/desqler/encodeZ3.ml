@@ -165,48 +165,67 @@ struct
 (*----------------------------------------------------------------------------------------------------*)
 (* vars *)
   
-  let declare_vars tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
+  let declare_vars tname vname vtype table_name = let txn_cap = String.capitalize_ascii tname in 
     "(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
-    "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^vtype^")"
+    "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^table_name^")"
+
+  let vars_props tname vname table_name fol = 
+    let txn_cap = String.capitalize_ascii tname in 
+    let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
+    let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
+    "(assert (forall ((t0 T)) "^inner_eq^"))"
+
+
+
+  let set_vars_props tname vname table_name fol = 
+    let txn_cap = String.capitalize_ascii tname in 
+    let inner_eq = Rules.Utils.extract_where 0 "r" txn_cap table_name fol in
+  "(assert (forall ((t0 T)(r "^table_name^")) (=> ("^txn_cap^"_SVar_"^vname^" t0 r) "^inner_eq^") ))" 
+
 
   let declare_set_vars table_name tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
-    "(declare-fun "^txn_cap^"_isI_"^vname^" (T "^table_name^") Bool)"^ 
-    "\n(declare-fun "^txn_cap^"_SVr_"^vname^" (T) (Array Int "^vtype^"))"
+    "(declare-fun "^txn_cap^"_SVar_"^vname^" (T "^table_name^") Bool)"
 
-  let txn_declare_vars : (T.t * (V.t list* (V.t*string) list)) -> string = 
+
+
+  let txn_declare_vars : (T.t * ((V.t*string*F.t) list* (V.t*string*F.t) list)) -> string = 
     fun (txn,(var_list,set_var_list)) -> 
     let simple_vars = 
-      List.fold_left (fun prev_s -> fun  (V.T{name;tp;_}) -> 
+      List.fold_left (fun prev_s -> fun  (V.T{name;tp;_},table_name,fol) -> 
         let var_t = Var.Type.to_string tp in
         let txn_name = T.name txn in
-        prev_s^"\n"^(declare_vars txn_name name var_t)) "" var_list in
+        let var_dec = declare_vars txn_name name var_t table_name in
+        let props = vars_props txn_name name table_name fol in
+        prev_s^"\n"^var_dec^"\n"^props) "" var_list in
     let set_vars = 
-    List.fold_left (fun prev_s -> fun  (V.T{name;tp;_},table_name) -> 
+    List.fold_left (fun prev_s -> fun  (V.T{name;tp;_},table_name, fol) -> 
         let var_t = Var.Type.to_string tp in
         let txn_name = T.name txn in
-        prev_s^"\n"^(declare_set_vars table_name txn_name name var_t)) "" set_var_list in
+        let var_dec = declare_set_vars table_name txn_name name var_t in
+        let props = set_vars_props txn_name name table_name fol  in
+        prev_s^"\n"^var_dec^"\n"^props) "" set_var_list in
   
   simple_vars^set_vars
   
 
 
-  let stmt_extract_var : Sql.Statement.st -> V.t option * string * string =  (*the var, the type of the var normal/set, the name of the table being read*)
+  let stmt_extract_var : Sql.Statement.st -> V.t option * string * string * F.t =  (*the var, the type of the var normal/set, the name of the table being read*)
     fun stmt -> match stmt with 
-      |S.SELECT (_,v,_,_) -> (Some v,"v","")
-      |S.RANGE_SELECT ((s_tb_name,_,_,_),v,_,_) -> (Some v,"s",s_tb_name)
-      |S.MAX_SELECT (_,v,_,_) ->  (Some v,"v","")
-      |S.MIN_SELECT (_,v,_,_) ->  (Some v,"v","")
-      |S.COUNT_SELECT (_,v,_,_) ->  (Some v,"v","")
-      |_ -> (None,"","")
+      |S.SELECT ((tb_name,_,_,_),v,f,_) -> (Some v,"v",tb_name,f)
+      |S.RANGE_SELECT ((s_tb_name,_,_,_),v,f,_) -> (Some v,"s",s_tb_name,f)
+      |S.MAX_SELECT (_,v,f,_) ->  (Some v,"v","",f)
+      |S.MIN_SELECT (_,v,f,_) ->  (Some v,"v","",f)
+      |S.COUNT_SELECT (_,v,f,_) ->  (Some v,"v","",f)
+      |_ -> (None,"","",F.my_true)
 
-  let txn_extract_vars : T.t -> (V.t list * ((V.t*string) list)) = fun (T.T{name;params;stmts}) ->  (*first list is for normal vars the second is for set vars (result of select range)*)
+  let txn_extract_vars : T.t -> ((V.t*string*F.t) list * ((V.t*string*F.t) list)) = fun (T.T{name;params;stmts}) ->  (*first list is for normal vars the second is for set vars (result of select range)*)
   let simple_vars = 
     List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
-                                                |(Some curr_var,"v",_) -> prev_l@[curr_var]
+                                                |(Some curr_var,"v",tb_name,fol) -> prev_l@[(curr_var,tb_name,fol)]
                                                 |_ -> prev_l) [] stmts
   in let set_vars = 
     List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
-                                                |(Some curr_var,"s",tb_name) -> prev_l@[(curr_var,tb_name)]
+                                                |(Some curr_var,"s",tb_name,fol) -> prev_l@[(curr_var,tb_name,fol)]
                                                 |_-> prev_l) [] stmts
   in (simple_vars,set_vars)
   
