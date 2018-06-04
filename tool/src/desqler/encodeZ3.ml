@@ -166,7 +166,7 @@ struct
 (* vars *)
   
   let declare_vars tname vname vtype table_name = let txn_cap = String.capitalize_ascii tname in 
-    "(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
+    ";"^vname^"\n(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
     "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^table_name^")"
 
   let vars_props tname vname table_name fol = 
@@ -174,7 +174,13 @@ struct
     let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
     let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
     "(assert (forall ((t0 T)) "^inner_eq^"))"
-
+  
+  let choose_vars_props tname vname table_name fol chosen_var = 
+    let txn_cap = String.capitalize_ascii tname in 
+    let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
+    let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
+    "(assert (forall ((t0 T)) "^inner_eq^"))"^
+    "\n(assert (forall ((t0 T))("^txn_cap^"_SVar_"^chosen_var^" t0 ("^txn_cap^"_Var_"^vname^" t0)) ))"
 
 
   let set_vars_props tname vname table_name fol = 
@@ -184,50 +190,59 @@ struct
 
 
   let declare_set_vars table_name tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
-    "(declare-fun "^txn_cap^"_SVar_"^vname^" (T "^table_name^") Bool)"
+    ";"^vname^"\n(declare-fun "^txn_cap^"_SVar_"^vname^" (T "^table_name^") Bool)"
 
 
 
-  let txn_declare_vars : (T.t * ((V.t*string*F.t) list* (V.t*string*F.t) list)) -> string = 
-    fun (txn,(var_list,set_var_list)) -> 
-    let simple_vars = 
-      List.fold_left (fun prev_s -> fun  (V.T{name;tp;_},table_name,fol) -> 
-        let var_t = Var.Type.to_string tp in
-        let txn_name = T.name txn in
-        let var_dec = declare_vars txn_name name var_t table_name in
-        let props = vars_props txn_name name table_name fol in
-        prev_s^"\n"^var_dec^"\n"^props) "" var_list in
-    let set_vars = 
-    List.fold_left (fun prev_s -> fun  (V.T{name;tp;_},table_name, fol) -> 
-        let var_t = Var.Type.to_string tp in
-        let txn_name = T.name txn in
-        let var_dec = declare_set_vars table_name txn_name name var_t in
-        let props = set_vars_props txn_name name table_name fol  in
-        prev_s^"\n"^var_dec^"\n"^props) "" set_var_list in
+  let txn_declare_vars : (T.t * (string*V.t*string*F.t*string) list) -> string = 
+  fun (txn,var_list) -> 
+    let vars = 
+      List.fold_left (fun prev_s -> fun v ->
+        match v with 
+          |("v",V.T{name;tp;_},table_name,fol,_) -> 
+            let var_t = Var.Type.to_string tp in
+            let txn_name = T.name txn in
+            let var_dec = declare_vars txn_name name var_t table_name in
+            let props = vars_props txn_name name table_name fol in
+            prev_s^"\n"^var_dec^"\n"^props
+
+          |("s",V.T{name;tp;_},table_name, fol,_) -> 
+            let var_t = Var.Type.to_string tp in
+            let txn_name = T.name txn in
+            let var_dec = declare_set_vars table_name txn_name name var_t in
+            let props = set_vars_props txn_name name table_name fol  in
+            prev_s^"\n"^var_dec^"\n"^props
+
+          |("c",V.T{name;tp;_},table_name, fol,chosen_var) -> 
+            let var_t = Var.Type.to_string tp in
+            let txn_name = T.name txn in
+            let var_dec = declare_vars txn_name name var_t table_name in
+            let props = choose_vars_props txn_name name table_name fol chosen_var  in
+            prev_s^"\n"^var_dec^"\n"^props) 
+          "" var_list 
+      in vars
   
-  simple_vars^set_vars
-  
 
 
-  let stmt_extract_var : Sql.Statement.st -> V.t option * string * string * F.t =  (*the var, the type of the var normal/set, the name of the table being read*)
+  let stmt_extract_var : Sql.Statement.st -> V.t option * string * string * F.t *string=  (*the var, the type of the var normal/set, the name of the table being read*)
     fun stmt -> match stmt with 
-      |S.SELECT ((tb_name,_,_,_),v,f,_) -> (Some v,"v",tb_name,f)
-      |S.RANGE_SELECT ((s_tb_name,_,_,_),v,f,_) -> (Some v,"s",s_tb_name,f)
-      |S.MAX_SELECT (_,v,f,_) ->  (Some v,"v","",f)
-      |S.MIN_SELECT (_,v,f,_) ->  (Some v,"v","",f)
-      |S.COUNT_SELECT (_,v,f,_) ->  (Some v,"v","",f)
-      |_ -> (None,"","",F.my_true)
+      |S.SELECT ((tb_name,_,_,_),v,f,_) -> (Some v,"v",tb_name,f,"")
+      |S.RANGE_SELECT ((s_tb_name,_,_,_),v,f,_) -> (Some v,"s",s_tb_name,f,"")
+      |S.MAX_SELECT (_,v,f,_) ->  (Some v,"v","",f,"")
+      |S.MIN_SELECT (_,v,f,_) ->  (Some v,"v","",f,"")
+      |S.COUNT_SELECT (_,v,f,_) ->  (Some v,"v","",f,"")
+      |S.CHOOSE (v,v2,f,_) -> (Some v, "c",(V.table v), f,(V.name v2))
+      |_ -> (None,"","",F.my_true,"")
 
-  let txn_extract_vars : T.t -> ((V.t*string*F.t) list * ((V.t*string*F.t) list)) = fun (T.T{name;params;stmts}) ->  (*first list is for normal vars the second is for set vars (result of select range)*)
-  let simple_vars = 
+  let txn_extract_vars : T.t -> (string*V.t*string*F.t*string) list = 
+  fun (T.T{name;params;stmts}) ->  (*first list is for normal vars the second is for set vars (result of select range)*)
+  let vars = 
     List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
-                                                |(Some curr_var,"v",tb_name,fol) -> prev_l@[(curr_var,tb_name,fol)]
+                                                |(Some curr_var,"v",tb_name,fol,_) -> prev_l@[("v",curr_var,tb_name,fol,"")]
+                                                |(Some curr_var,"s",tb_name,fol,_) -> prev_l@[("s",curr_var,tb_name,fol,"")]
+                                                |(Some curr_var,"c",tb_name,fol,chosen_var) -> prev_l@[("c",curr_var,tb_name,fol,chosen_var)]
                                                 |_ -> prev_l) [] stmts
-  in let set_vars = 
-    List.fold_left (fun prev_l -> fun stmt -> match stmt_extract_var stmt with
-                                                |(Some curr_var,"s",tb_name,fol) -> prev_l@[(curr_var,tb_name,fol)]
-                                                |_-> prev_l) [] stmts
-  in (simple_vars,set_vars)
+  in (vars)
   
 (*params*)
   let declare_param tname vname vtype = let txn_cap = String.capitalize_ascii tname in
@@ -250,7 +265,6 @@ struct
         let curr_s = txn_declare_vars @@ (curr_txn,txn_extract_vars curr_txn) in
           prev_s^curr_s) "" txn_list
     in params^"\n\n"^vars
-
 end 
 
 (*----------------------------------------------------------------------------------------------------*)

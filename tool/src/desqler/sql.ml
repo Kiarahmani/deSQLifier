@@ -21,6 +21,7 @@ struct
             |INSERT: Var.Table.t *  Fol.Record.t * Fol.t -> st
             |UPDATE: Var.Table.col * Fol.L.expr * Fol.t * Fol.t -> st
             |DELETE: Var.Table.t * Fol.t * Fol.t -> st
+            |CHOOSE: Var.Variable.t * Var.Variable.t * Fol.t * Fol.t -> st
       
 
   let sample_stmt = SELECT (Var.my_col,Var.Variable.test_var,Fol.my_true,Fol.my_true)

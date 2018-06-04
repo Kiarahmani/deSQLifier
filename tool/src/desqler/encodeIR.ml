@@ -129,10 +129,11 @@ let print_stmt : S.st -> unit = fun st ->
   |UPDATE (_,_,_,x) -> printf "\n %s: ᴜᴩᴅᴀᴛᴇ"  (print_condition x)  
   |DELETE (t,_,x) -> printf "\n %s: ᴅᴇʟᴇᴛᴇ %s" (print_condition x) (Var.Table.name t)  
   |RANGE_SELECT (_,_,_,x) -> printf "\n %s: SELECT RANGE"  (print_condition x)
+  |CHOOSE (v1,v2,_,x) -> printf "\n %s: CHOOSE %s from %s" (print_condition x) (V.name v1) (V.name v2)
   |_ -> failwith "ERROR print_stmt: unexpected sql operation"
 
 let print_var: V.t -> unit = let open V in 
-      fun x -> printf "\n %s" @@ name x
+      fun x -> printf "\n %s.%s of %s" (name x) (field x) (table x)
 
 let print_var_list:  V.t list -> unit = fun var_list -> 
   List.iter print_var var_list  
@@ -195,7 +196,7 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L
     let open List in 
     let var_exists = List.filter (fun (v,_) -> before_dot.name = v) (var_list) in
     begin match var_exists with
-      |[(v_name,v)] -> F.L.Var (V.make before_dot.name lbl_name (V.table v) T.Int RECORD)
+      |[(v_name,v)] -> F.L.Var (V.make before_dot.name lbl_name (Some (V.table v)) T.Int RECORD)
       |[] -> F.L.Var (V.make lbl_name "salam" None T.Int FIELD) 
     end
     |Texp_ident (Pident {name},_,_) -> let open List in
@@ -241,7 +242,16 @@ let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*s
       let Texp_ident (Pdot (_,select_kind,_) ,_,_) = e0.exp_desc in 
       let wh_c = extract_where_clause var_list exp1 exp2 op in
       (select_kind,table_name,column_name,wh_c)
-    
+    |Texp_apply (e0,[(arg1,Some exp_func);(arg2,Some exp_vset)]) -> (*!!!  THE CHOOSE CASE*)
+      let Texp_ident (Pident {name=v_name},_,_) = exp_vset.exp_desc in (*the list being chosen from*) 
+      let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp_func.exp_desc in
+        let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
+        let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
+                        [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*) 
+      let Texp_ident (Pdot (_,choose_kind,_) ,_,_) = e0.exp_desc in 
+      let wh_c = extract_where_clause var_list exp1 exp2 op in
+      (choose_kind,v_name,"",wh_c) (*the second argument here is interpreted as the list being chosen from*)
+
     |_ -> Utils.print_helpful_expression_desc  body.exp_desc; 
           failwith "ERROR extract_select_table_name: unexpected case for handling select"
 
@@ -278,11 +288,17 @@ let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list ->  s
     (table_name,wh_c)
 
 
-
+(*extract info on the lhs of selects*)
   let extract_variable: Typedtree.pattern_desc -> string -> (string*V.t) =
   fun pat_desc -> fun accessed_table -> 
   let Tpat_var ({name},{txt}) = pat_desc in
     (name,(V.make name "salam" (Some accessed_table) T.Int V.LOCAL)) (*TODO types must be extracted*)
+
+(*extract info on the lhs of choose*)
+  let extract_choose_variable: Typedtree.pattern_desc -> V.t -> (string*V.t) =
+  fun pat_desc -> fun chosen_var -> 
+  let Tpat_var ({name},{txt}) = pat_desc in
+    (name,(V.make name (V.field chosen_var) (Some (V.table chosen_var)) T.Int RECORD))
 
 
 let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> (string*(string*F.L.expr) list) = 
@@ -335,6 +351,12 @@ let rec convert_body_rec: F.t -> (string*V.t) list -> S.st list ->
                          convert_body_rec curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt]) 
                                        body
+      |"choose" ->  let chosen_var = List.assoc accessed_table old_vars in (*accessed_table here is interpreted as the chosen var name*)
+                    let (new_name,new_var) = extract_choose_variable vb_pat.pat_desc chosen_var  in
+                    let new_stmt = S.CHOOSE (new_var,chosen_var,wh_clause,curr_cond) in
+                    convert_body_rec curr_cond  (old_vars@[(new_name,new_var)]) (old_stmts@[new_stmt]) body
+      
+
       |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 
       |_ -> failwith "(encodeIR.ml) ERROR  convert_body_rec: unexpected select kind" 
       end

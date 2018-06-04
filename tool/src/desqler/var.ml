@@ -30,7 +30,8 @@ struct
   type t = T of {name: string;field: string; table: string option; tp: Type.t; kn: kind}
   let make ~name ~field ~table ~tp ~kn = T{name; field; table; tp; kn}
   let name (T{name}) = name
-  let table (T{table}) = table
+  let table (T{table}) = match table with Some t -> t | None -> ""
+  let field (T{field}) = field
   let test_var = make "acc_dst" "" None Type.Int LOCAL
   let test_field = make "b_id" "" None Type.Int FIELD
   let test_param = make "src_id" "" None Type.Int PARAM

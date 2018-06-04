@@ -25,6 +25,7 @@ sig
   val insert:       table_name  ->  'a -> unit
   val delete:       table_name  -> ('a -> bool) -> unit
   val update:       table_name  -> ('a -> unit) -> ('a -> bool) -> unit
+  val choose:  ('a -> bool) -> 'a list -> 'a
 end = 
 struct
   let select = unimpl ()
@@ -35,6 +36,9 @@ struct
   let insert = unimpl ()
   let delete = unimpl ()
   let update = unimpl ()
+  let choose = unimpl ()
+
+
 end
 
 
@@ -70,15 +74,16 @@ let txn1_txn (src_id:int) (dst_id:int) (amount:int) =
 let deposit_txn (input:int) =  
  
   
-  let v1 = SQL.select1 Employee E_sal
-                   (fun u -> u.e_id = 100) in 
+  let v1 = SQL.select1 Bankaccount B_bal
+                   (fun u -> u.b_id = input) in 
 
   let v2 = SQL.select Employee E_sal
-                   (fun u -> u.e_sal > v1.e_id) in 
+                   (fun u -> u.e_sal > v1.b_bal) in 
+  
+  let v3 = SQL.choose (fun x -> x.e_sal = v1.b_bal) v2 in
 
-
-
-
+  let v4 = SQL.select1 Bankaccount B_bal
+                   (fun u -> u.b_id = v3.e_id) in 
   
   SQL.update Employee
     (*do:*)    (fun u -> begin u.e_sal <- 500; end)    
