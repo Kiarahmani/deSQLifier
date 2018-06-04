@@ -83,8 +83,11 @@
 (declare-fun Deposit_Param_input (T) Int)
 
 ;v1
-(declare-fun Deposit_SVar_v1 (T Employee) Bool)
-(assert (forall ((t0 T)(r Employee)) (=> (Deposit_SVar_v1 t0 r) (> (Employee_Proj_e_id r) 200)) ))
+(declare-fun Deposit_isN_v1 (T) Bool)
+(declare-fun Deposit_Var_v1 (T) Employee)
+(assert (forall((t0 T))(and (=> (not (Deposit_isN_v1 t0)) (exists ((r Employee))(= (Deposit_Var_v1 t0) r))) 
+                            (=> (exists ((r Employee))(= (Deposit_Var_v1 t0) r)) (not (Deposit_isN_v1 t0))))))
+(assert (forall ((t0 T)) (= (Employee_Proj_e_id (Deposit_Var_v1 t0)) (Deposit_Param_input t0))))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +98,16 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
                     (=> (and (RW t1 t2) (not (= t1 t2)))
-                        false ))))
+                        (or false
+                            (exists ((r Employee))
+                                (and 
+                                (= (Employee_Proj_e_id r) (Deposit_Param_input t1))  true
+                                ;insert
+                                (= (Employee_Proj_e_id r) (+ (Employee_Proj_e_id (Deposit_Var_v1 t2)) 1))
+                                (= (Employee_Proj_e_name r) "Roger")
+                                (= (Employee_Proj_e_sal r) (Deposit_Param_input t2))  true
+                                (not (IsAlive_Employee r t1))
+                                (RW_Alive_Employee r t1 t2)))) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WR-> Rules                                                       
@@ -105,7 +117,17 @@
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
                     (=> (and (WR t1 t2) (not (= t1 t2)))
-                        false ))))
+                        (or false
+                            (exists ((r Employee))
+                                (and 
+                                (= (Employee_Proj_e_id r) (Deposit_Param_input t2))  true
+                                ;insert
+                                (= (Employee_Proj_e_id r) (+ (Employee_Proj_e_id (Deposit_Var_v1 t1)) 1))
+                                (= (Employee_Proj_e_name r) "Roger")
+                                (= (Employee_Proj_e_sal r) (Deposit_Param_input t1))  true
+                                (IsAlive_Employee r t2)
+                                (not (Deposit_isN_v1 t2))
+                                (WR_Alive_Employee r t1 t2)))) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WW-> Rules                                                       
@@ -124,7 +146,17 @@
 
 (assert (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
-                    (=> false
+                    (=> (or false
+                            (exists ((r Employee))
+                                (and 
+                                (= (Employee_Proj_e_id r) (Deposit_Param_input t2))  true
+                                ;insert
+                                (= (Employee_Proj_e_id r) (+ (Employee_Proj_e_id (Deposit_Var_v1 t1)) 1))
+                                (= (Employee_Proj_e_name r) "Roger")
+                                (= (Employee_Proj_e_sal r) (Deposit_Param_input t1))  true
+                                (not (Deposit_isN_v1 t2))
+                                (IsAlive_Employee r t2)
+                                (WR_Alive_Employee r t1 t2))))
                         (WR t1 t2) ))))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

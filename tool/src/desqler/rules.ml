@@ -83,27 +83,22 @@ module Utils =
 
         |_ -> failwith "rules.ml ERROR extract_where: the where claus case not handled yet "
  
-
-    let extract_condition: int -> string -> string -> S.st -> string =    
-       fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
-         (extract_where t_i "r"  txn_name table_name (return_where stmt))^"  "^(extract_where t_i "r" txn_name table_name (return_reach stmt))
-
-
       let extract_i_expr: int -> string -> string -> (string * Fol.L.expr) -> string =
       fun t_i -> fun txn_name -> fun table_name -> fun (s,exp) ->
         let value = expression_to_string t_i "r" txn_name table_name exp in
-        "
-                             (= ("^table_name^"_Proj_"^s^" r) "^value^")"
+        _TAB_4^"(= ("^table_name^"_Proj_"^s^" r) "^value^")"
 
 
-  let extract_i_condition: int -> string -> string -> S.st -> string =
-      fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
-        let (S.INSERT (_,Fol.Record.T{vars=c_list},_)) = stmt in
-        let reach_cond  = extract_where t_i "r" txn_name table_name (return_reach stmt)  in
-        let i_conds = List.fold_left (fun old_s -> fun curr_c ->
-                        old_s^""^(extract_i_expr t_i txn_name table_name curr_c)) "" @@ c_list in
-        i_conds^"
-                             "^reach_cond
+    let extract_condition: int -> string -> string -> S.st -> string =    
+       fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
+				 match stmt with
+					|(S.INSERT (_,Fol.Record.T{vars=c_list},_)) ->    
+							let i_conds = List.fold_left (fun old_s -> fun curr_c ->
+                        old_s^""^(extract_i_expr t_i txn_name table_name curr_c)) ";insert" @@ c_list
+							in i_conds^"  "^(extract_where t_i "r" txn_name table_name (return_reach stmt))
+
+          |_ -> (extract_where t_i "r"  txn_name table_name (return_where stmt))^"  "^(extract_where t_i "r" txn_name table_name (return_reach stmt))
+
 
 
   
@@ -130,7 +125,11 @@ module Utils =
             if t_name_s = t_name_i 
             then Some t_name_s
             else None  
-          |(S.DELETE (Var.Table.T{name=t_name_d},_,_), S.SELECT ((t_name_s,_,_,_),_,_,_)) -> 
+					|(S.SELECT ((t_name_s,_,_,_),_,_,_), S.INSERT (Var.Table.T{name=t_name_i},_,_)) ->
+            if t_name_s = t_name_i
+            then Some t_name_s
+            else None          
+					|(S.DELETE (Var.Table.T{name=t_name_d},_,_), S.SELECT ((t_name_s,_,_,_),_,_,_)) -> 
             if t_name_s = t_name_d
             then Some t_name_s
             else None  
@@ -253,8 +252,10 @@ struct
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
-                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
-                              Some (rule_wrapper (table,[s_cond;i_cond;null_cond]))
+                              let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
+															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+															let alive_cond = "(IsAlive_"^table^" r t2)" in
+                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
               |None -> None end
           (*6*)
           |(S.UPDATE _ , S.RANGE_SELECT(_,v,_,_),"WR->") -> 
@@ -279,12 +280,36 @@ struct
           (*15*)
           |(S.RANGE_SELECT(_,v,_,_),S.UPDATE _,"RW->") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
-              |Some table -> let s_cond = extract_condition 1  (to_cap txn_name2) table stmt1 in
+              |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
                              let null_cond = "(not ("^(to_cap txn_name2)^"_SVar_"^(V.name v)^" t1 r))" in
                               Some (rule_wrapper
                                       (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
               |None -> None end 
+ 		      (*14*)
+          |(S.SELECT (_,v,_,_),S.INSERT (_,_,_), "RW->" )->
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "("^to_cap txn_name1^"_isN_"^(V.name v)^" t1)" in
+                              let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
+                              let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
+															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
+															let alive_cond = "(not (IsAlive_"^table^" r t1))" in
+                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;wr_cond]))
+              |None -> None end
+
+					(*-------------------*)
+					(*->WR*)
+  		    (*21*)
+ 	    		|(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "->WR")->
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_condition 1 (to_cap txn_name1) table stmt1 in
+															let alive_cond = "(IsAlive_"^table^" r t2)" in
+															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+                              Some (rule_wrapper (table,[s_cond;i_cond;null_cond;alive_cond;wr_cond]))
+              |None -> None end
+
 
           |_ -> None
   

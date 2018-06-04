@@ -73,11 +73,10 @@ let txn1_txn (src_id:int) (dst_id:int) (amount:int) =
 (*TXN2*)
 let deposit_txn (input:int) =  
  
-  
-  SQL.insert Employee {e_id=input;e_name="Roger";e_sal=1000};
-  
   let v1 = SQL.select1 Employee E_sal
-                   (fun u -> u.e_id = 200) in ()
+                   (fun u -> u.e_id = input) in 
+  SQL.insert Employee {e_id=v1.e_id+1;e_name="Roger";e_sal=input};
+  
   (*let v2 = SQL.choose (fun u -> u.e_id <300) v1 in
   *)
  (* SQL.foreach v1
