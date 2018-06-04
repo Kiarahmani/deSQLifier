@@ -88,6 +88,24 @@ module Utils =
        fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
          (extract_where t_i "r"  txn_name table_name (return_where stmt))^"  "^(extract_where t_i "r" txn_name table_name (return_reach stmt))
 
+
+      let extract_i_expr: int -> string -> string -> (string * Fol.L.expr) -> string =
+      fun t_i -> fun txn_name -> fun table_name -> fun (s,exp) ->
+        let value = expression_to_string t_i "r" txn_name table_name exp in
+        "
+                             (= ("^table_name^"_Proj_"^s^" r) "^value^")"
+
+
+  let extract_i_condition: int -> string -> string -> S.st -> string =
+      fun t_i -> fun txn_name -> fun table_name -> fun stmt ->
+        let (S.INSERT (_,Fol.Record.T{vars=c_list},_)) = stmt in
+        let reach_cond  = extract_where t_i "r" txn_name table_name (return_reach stmt)  in
+        let i_conds = List.fold_left (fun old_s -> fun curr_c ->
+                        old_s^""^(extract_i_expr t_i txn_name table_name curr_c)) "" @@ c_list in
+        i_conds^"
+                             "^reach_cond
+
+
   
       let accessed_common_table : S.st -> S.st -> string option = 
       fun stmt1 -> fun stmt2 ->
@@ -230,6 +248,14 @@ struct
                               Some (rule_wrapper
                                       (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
               |None -> None end 
+ 		      (*4*)
+          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "WR->")->
+            begin match (accessed_common_table stmt1 stmt2) with
+              |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
+                              let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
+                              let i_cond = extract_i_condition 1 (to_cap txn_name1) table stmt1 in
+                              Some (rule_wrapper (table,[s_cond;i_cond;null_cond]))
+              |None -> None end
           (*6*)
           |(S.UPDATE _ , S.RANGE_SELECT(_,v,_,_),"WR->") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
