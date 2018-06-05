@@ -4,11 +4,12 @@ struct
     | Int
     | Bool
     | String
+    | Set of string
     | List of t
 
   let rec to_string tp =
     match tp with
-    |Int -> "Int" |String -> "String" |Bool -> "Bool"
+    |Int -> "Int" |String -> "String" |Bool -> "Bool" |Set s -> s 
     |List x -> "List of "^(to_string x)
 
 end

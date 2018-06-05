@@ -43,7 +43,7 @@ module Cons =
 (assert (! (forall ((t T))     (not (ar t t)))          :named irreflx_ar))"
 
 
-    let gen_deps = "(declare-fun D (T T) Bool)\n(assert (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))))"
+    let gen_deps = "(declare-fun D (T T) Bool)\n(assert (! (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))) :named gen-dep) )"
 
     let  gen_all_Types : string list -> string = 
       fun s_list ->
@@ -67,18 +67,28 @@ module Cons =
                                               " (D t"^(string_of_int curr_i)^
                                               " t"^(string_of_int @@ curr_i+1)^
                                               ")") "" (range 1 (_MAX_CYCLE_LENGTH-1)) 
-    let cycles_to_check = gen_deps^"\n(assert (exists ("^all_ts^") (and (not (= t1 t"^max^")) "^all_ands^" (D t"^max^" t1))))"
+    let cycles_to_check = gen_deps^"\n(assert (! (exists ("^all_ts^") (and (not (= t1 t"^max^")) "^all_ands^" (D t"^max^" t1))) :named cycle))"
   
  
 
-    let guarantee : Constants.g -> string = 
-      fun g -> match g with
-        |SER -> "(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser )) ;SER"
-        |PSI ->  "(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi)) ;PSI"
-        |CC -> "(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc)) ;CC"
-        |EC -> ""
-    
-    let requests = "(check-sat)"
+    let guarantee : (Constants.g*string option*string option) -> string = 
+      fun (g,t1,t2) -> match (g,t1,t2) with
+        |(SER,None,None) -> ";SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser ))"
+        |(SER,Some t1,Some t2) -> ";Selective SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (and (or (and (= (type t1) "^t1^")(= (type t2)"^t2^"))
+                                                (and (= (type t1) "^t2^")(= (type t2)"^t1^"))) 
+                                            (ar t1 t2))  (vis t1 t2))):named ser ))"
+        |(PSI,None,None) ->  ";PSI \n(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi))"
+        |(CC,None,None) -> ";CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
+        |(CC,Some t,_) -> ";Selective CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (= (type t3) "^t^") (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
+        |(EC,_,_) -> ";EC"
+ 
+
+let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s^"\n"^(guarantee g) ) "" _GUARANTEE
+
+
+
+
+let requests = "\n(check-sat)\n;(get-unsat-core)"
 end
 
 
@@ -109,19 +119,19 @@ struct
 
 
   let z3_final = let open Cons in
-    String.concat "\n\n" [PrintUtils.comment_header "Finalization";cycles_to_check;guarantee _GUARANTEE; requests]
+String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all_guarantees; requests]
 
   let table_phi_deps :  string -> string = 
     fun table_name ->
-    "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
-         (=> (and (WR_"^table_name^" r t2 t1)(RW_"^table_name^" r t1 t3))(WW_"^table_name^" r t2 t3))))"^
-    "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
-         (=> (and (WR_Alive_"^table_name^" r t2 t1)(RW_Alive_"^table_name^" r t1 t3))(WW_Alive_"^table_name^" r t2 t3))))"
+    "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
+         (=> (and (WR_"^table_name^" r t2 t1)(RW_"^table_name^" r t1 t3))(WW_"^table_name^" r t2 t3))) :named "^String.lowercase_ascii table_name^"-lww-row))"^
+    "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
+         (=> (and (WR_Alive_"^table_name^" r t2 t1)(RW_Alive_"^table_name^" r t1 t3))(WW_Alive_"^table_name^" r t2 t3))) :named "^String.lowercase_ascii table_name^"-lww-alive))"
   
   let table_deps_gen_deps : string -> string -> string = 
     fun dep_type -> fun table_name ->
-      "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))))"^
-      "\n(assert  (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))))"
+      "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) ("^dep_type^" t1 t2)))       :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-row))"^
+      "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"
 
 
   let table_deps_funcs : string -> string -> string = 
@@ -140,8 +150,8 @@ struct
               (mkCond_equal (proj_of_s^" r1")(proj_of_s^" r2")) 
         else "") @@ cols table  in
     (*the assertion line regaring the PKs*)
-    let dec_pk = "(assert (forall ((r1 "^tname^")(r2 "^
-                 tname^")) (=>\n  "^cond_pk^"(= r1 r2))))" in
+    let dec_pk = "(assert (! (forall ((r1 "^tname^")(r2 "^
+                 tname^")) (=>\n  "^cond_pk^"(= r1 r2))) :named pk-"^String.lowercase_ascii tname^") )" in
     let tcols = List.fold_left (fun s_prev -> fun (_,s_col,t_col,pk_col) -> 
       let s_dec = String.concat "" ["(declare-fun ";(tname^"_Proj_"^s_col);" (";tname;") "; (Var.Type.to_string t_col) ; ")"] in
       (String.concat "" [s_prev;"\n";s_dec])) ""  
@@ -169,27 +179,27 @@ struct
     ";"^vname^
     "\n(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
     "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^table_name^")"^
-    "\n(assert (forall((t0 T))(and (=> (not ("^txn_cap^"_isN_"^vname^" t0)) (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r))) 
-                            (=> (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r)) (not ("^txn_cap^"_isN_"^vname^" t0))))))"
+    "\n(assert (! (forall((t0 T))(and (=> (not ("^txn_cap^"_isN_"^vname^" t0)) (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r))) 
+                               (=> (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r)) (not ("^txn_cap^"_isN_"^vname^" t0))))) :named "^vname^"-isnull-prop) )"
 
   let vars_props tname vname table_name fol = 
     let txn_cap = String.capitalize_ascii tname in 
     let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
     let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
-    "(assert (forall ((t0 T)) "^inner_eq^"))"
+    "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^vname^"-select-prop))"
   
   let choose_vars_props tname vname table_name fol chosen_var = 
     let txn_cap = String.capitalize_ascii tname in 
     let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
     let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
-    "(assert (forall ((t0 T)) "^inner_eq^"))"^
-    "\n(assert (forall ((t0 T))("^txn_cap^"_SVar_"^chosen_var^" t0 ("^txn_cap^"_Var_"^vname^" t0)) ))"
+    "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^vname^"-var-filter-prop))"^
+    "\n(assert (! (forall ((t0 T))("^txn_cap^"_SVar_"^chosen_var^" t0 ("^txn_cap^"_Var_"^vname^" t0)))  :named "^vname^"-var-chosen-prop))"
 
 
   let set_vars_props tname vname table_name fol = 
     let txn_cap = String.capitalize_ascii tname in 
     let inner_eq = Rules.Utils.extract_where 0 "r" txn_cap table_name fol in
-  "(assert (forall ((t0 T)(r "^table_name^")) (=> ("^txn_cap^"_SVar_"^vname^" t0 r) "^inner_eq^") ))" 
+  "(assert (! (forall ((t0 T)(r "^table_name^")) (=> ("^txn_cap^"_SVar_"^vname^" t0 r) "^inner_eq^")) :named "^vname^"-var-prop))" 
 
 
   let declare_set_vars table_name tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
@@ -250,12 +260,25 @@ struct
 (*params*)
   let declare_param tname vname vtype = let txn_cap = String.capitalize_ascii tname in
      "(declare-fun "^txn_cap^"_Param_"^vname^" (T) "^vtype^")"
+  
+  let declare_param_list tname vname vtype = let txn_cap = String.capitalize_ascii tname in
+     "(declare-fun "^txn_cap^"_Param_"^vname^" (T "^String.capitalize_ascii vtype^") Bool)"
+
 
   let txn_declare_param: (T.t * V.t list) -> string = fun (txn,var_list) ->
-        List.fold_left (fun prev_s -> fun (V.T{name;tp;_}) -> 
-          let var_t = Var.Type.to_string tp in
-          let txn_name = T.name txn in
-          prev_s^"\n"^(declare_param txn_name name var_t)) "" var_list
+    List.fold_left (fun prev_s -> fun (V.T{name;field;table;tp;kn}) -> 
+          match kn with 
+              |Var.Variable.RECORD -> 
+                    let var_t = Var.Type.to_string tp in
+                    let txn_name = T.name txn in
+                    prev_s^"\n"^(declare_param_list txn_name name var_t)
+              |_-> 
+                    let var_t = Var.Type.to_string tp in
+                    let txn_name = T.name txn in
+                    prev_s^"\n"^(declare_param txn_name name var_t)
+        ) "" var_list
+  
+
 
   let all_txn_initialize txn_list = 
     let params = 

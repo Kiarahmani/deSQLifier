@@ -177,18 +177,27 @@ let remove_txn_tail s =
 let rec convert_types: type_desc -> T.t =
 	fun tp -> let open Asttypes in 
 		match tp with
-			| Tconstr (patht,_,_) -> 
+      | Tconstr (patht,[{desc=Tconstr (Pident x,_,_)}],_) -> 
         begin 
 					match patht with
 					|Pident {stamp;name;flags} -> 
-						begin match name with "int" -> T.Int | "string" -> T.String | "bool" -> T.Bool  end
+          begin match name with "int" -> T.Int | "string" -> T.String | "bool" -> T.Bool |"list" -> T.Set x.name end
+					end
+      | Tconstr (patht,[],_) -> 
+        begin 
+					match patht with
+					|Pident {stamp;name;flags} -> 
+          begin match name with "int" -> T.Int | "string" -> T.String | "bool" -> T.Bool |"list" -> T.Set "salam" end
 					end
 			| Tlink {desc;level;id} -> convert_types desc
       | _ -> Utils.print_helpful_type_desc tp;  failwith "encodeIR: convert_types error"
 
 
 let convert_param: (Ident.t * type_desc) -> V.t  = 
-  fun (id,tp) ->  V.make id.name "salam" None (convert_types tp) V.PARAM
+  fun (id,tp) ->  
+    match convert_types tp with
+    |T.Set _ -> V.make id.name "salam" None (convert_types tp) V.RECORD
+    |_ -> V.make id.name "salam" None (convert_types tp) V.PARAM
 
 let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L.expr = 
   fun var_list -> fun desc -> match desc with
@@ -216,15 +225,19 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L
     |_ -> let _ = Utils.print_helpful_expression_desc desc in failwith "ERROR extract_operands: case not handled yet"  
   
 
-let extract_where_clause: (string*V.t) list -> Typedtree.expression_desc -> Typedtree.expression_desc -> string -> Fol.t =
-  fun var_list -> fun desc_l -> fun desc_r ->  fun op ->
-    let l_var = extract_operands var_list desc_l in
-    let r_var = extract_operands var_list desc_r in
+let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> Fol.t =
+  fun var_list -> fun exp  ->
+      let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
+                        [(Nolabel,Some l_exp);(Nolabel,Some r_exp)] )= exp.exp_desc in 
+      let r_desc = r_exp.exp_desc in
+      let l_desc = l_exp.exp_desc in
       match op with 
-        |"=" ->  (F.L.Eq (l_var,r_var))
-        |">" ->  (F.L.Gt (l_var,r_var))
-        |"<" ->  (F.L.Lt (l_var,r_var))
-        |"!=" ->  (F.L.Nq (l_var,r_var))
+        |"=" ->  (F.L.Eq (extract_operands var_list l_desc,extract_operands var_list r_desc))
+        |">" ->  (F.L.Gt (extract_operands var_list l_desc,extract_operands var_list r_desc))
+        |"<" ->  (F.L.Lt (extract_operands var_list l_desc,extract_operands var_list r_desc))
+        |"!=" -> (F.L.Nq (extract_operands var_list l_desc,extract_operands var_list r_desc))
+        |"&&" -> (F.L.AND (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
+        |"||" -> (F.L.OR (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
         |_ -> failwith "ERROR extract_where_clause: the operation not handled yet"
 
 
@@ -236,21 +249,17 @@ let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*s
       let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*table name is extracted here*) (*the rest are not used for this case but I'm gonna keep them for future*)
       let Texp_construct (_,{cstr_name=column_name},_) = exp3.exp_desc in (*column name is extracted here*) 
       let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the rest contains the where funtion some where...*)
-        let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
-        let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
-                        [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*) 
+      let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
       let Texp_ident (Pdot (_,select_kind,_) ,_,_) = e0.exp_desc in 
-      let wh_c = extract_where_clause var_list exp1 exp2 op in
+      let wh_c = extract_where_clause var_list c_rhs  in
       (select_kind,table_name,column_name,wh_c)
     (*!!!  THE CHOOSE CASE*)
     |Texp_apply (e0,[(arg1,Some exp_func);(arg2,Some exp_vset)]) -> 
       let Texp_ident (Pident {name=v_name},_,_) = exp_vset.exp_desc in (*the list being chosen from*) 
       let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp_func.exp_desc in
         let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
-        let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
-                        [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*) 
       let Texp_ident (Pdot (_,choose_kind,_) ,_,_) = e0.exp_desc in 
-      let wh_c = extract_where_clause var_list exp1 exp2 op in
+      let wh_c = extract_where_clause var_list c_rhs in
       (choose_kind,v_name,"",wh_c) (*the second argument here is interpreted as the list being chosen from*)
 
     |_ -> Utils.print_helpful_expression_desc  body.exp_desc; 
@@ -268,9 +277,7 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
         let Texp_ident (Pident uu,_,{val_type=record_type}) = u_in_fun.exp_desc in 
         let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp3.exp_desc in (*the where clause*)
           let Tpat_var ({name},_) = c_lhs.pat_desc in 
-          let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
-                           [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*)
-        let wh_c = extract_where_clause old_var_list exp1 exp2 op in 
+        let wh_c = extract_where_clause old_var_list c_rhs in 
         let column_name = let open String in 
                           let prefix_size = index field_name '_' in
                           let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
@@ -279,13 +286,11 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
         in (table_name,column_name,wh_c,update_expression)
 
 
-let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list ->  string*Fol.t = 
-  fun  [(_,Some exp1);(_,Some exp2)] -> 
+let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*Fol.t = 
+  fun  [(_,Some exp1);(_,Some exp2)] -> fun old_var_list -> 
     let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in 
     let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the where clause*)
-    let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
-                           [(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})] )= c_rhs.exp_desc in (*operands are extracted here: exp_desc are passed to a handler*)
-    let wh_c = extract_where_clause [] exp1 exp2 op in
+    let wh_c = extract_where_clause old_var_list c_rhs  in
     (table_name,wh_c)
 
 
@@ -311,12 +316,12 @@ let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(extract_operands var_l
 
 
 let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
-  fun var_list -> fun {exp_desc} ->
-    match exp_desc with
+  fun var_list -> fun exp ->
+    match exp.exp_desc with
     |Texp_construct ({txt=Lident "true"},_,_) -> F.L.Bool true
     |Texp_construct ({txt=Lident "false"},_,_) -> F.L.Bool false
-    |(Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) },[(Nolabel,Some {exp_desc=exp1});(Nolabel,Some {exp_desc=exp2})])) ->
-      extract_where_clause var_list exp1 exp2 op
+    |(Texp_apply _) ->
+      extract_where_clause var_list exp
 
 
 (**********)
@@ -375,7 +380,7 @@ let rec convert_body_rec: F.t -> (string*V.t) list -> S.st list -> int ->
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression) = extract_update ae_list old_vars in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
                                     (old_stmts@[S.UPDATE (accessed_col,update_expression,wh_c,curr_cond)],old_vars)
-                      |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list in
+                      |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list old_vars in
                                     let accessed_table = Var.Table.make accessed_table_name [] in
                                     (old_stmts@[S.DELETE (accessed_table,wh_c,curr_cond)],old_vars)
                       |"foreach" -> let [(_,Some {exp_desc= (Texp_ident(Pident vname,_,_))});(_,Some loop_body)] = ae_list in 
@@ -421,7 +426,7 @@ let convert_body_stmts: Typedtree.expression -> (S.st list*(string*V.t) list) =
 let convert : G.t -> L.t = 
   fun (G.T {name;rec_flag;args_t;res_t;body}) -> 
     let t_name = remove_txn_tail name.name in
-let t_params = List.map convert_param args_t in
+    let t_params = List.map convert_param args_t in
     let (stmts,vars) = convert_body_stmts body in
     L.make t_name t_params stmts vars  
 
