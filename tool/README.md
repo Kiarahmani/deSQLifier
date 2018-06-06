@@ -1,6 +1,7 @@
 ## DSQLify ##
 
 Created from OCaml 4.03 compiler frontend. 
+Requires Ocaml version 4.03.0
 
 ### Building ###
 

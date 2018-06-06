@@ -2436,7 +2436,7 @@
 
 (declare-fun D (T T) Bool)
 (assert (! (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))) :named gen-dep) )
-(assert (! (exists ( (t1 T) (t2 T) (t3 T) (t4 T) (t5 T) (t6 T)) (and (not (= t1 t6))  (D t1 t2) (D t2 t3) (D t3 t4) (D t4 t5) (D t5 t6) (D t6 t1))) :named cycle))
+(assert (! (exists ( (t1 T) (t2 T) (t3 T) (t4 T) (t5 T) (t6 T) (t7 T) (t8 T) (t9 T) (t10 T) (t11 T) (t12 T)) (and (not (= t1 t12))  (D t1 t2) (D t2 t3) (D t3 t4) (D t4 t5) (D t5 t6) (D t6 t7) (D t7 t8) (D t8 t9) (D t9 t10) (D t10 t11) (D t11 t12) (D t12 t1))) :named cycle))
 
 ;Guarantees
 ;Selective SER 
