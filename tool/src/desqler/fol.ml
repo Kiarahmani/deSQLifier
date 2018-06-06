@@ -22,7 +22,7 @@ struct
 							|DIV: expr * expr -> expr
 
 
-	type condition = |Bool: bool -> condition 
+	type condition = |Bool: expr-> condition 
 									 |Gt: expr*expr -> condition
 									 |Lt: expr*expr -> condition
                    |Eq:  expr*expr -> condition
@@ -41,6 +41,6 @@ end
 
 
 type t = L.condition
-let my_true = L.Bool true
+let my_true = L.Bool (L.Var Var.Variable.test_var)
 let my_const = L.Var V.test_field
 let my_test_equal = L.Eq (my_const,my_const)

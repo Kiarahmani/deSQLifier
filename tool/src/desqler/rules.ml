@@ -18,6 +18,7 @@ module Utils =
       fun t_i -> fun record_name -> fun txn_name -> fun table_name -> 
       fun e -> match e with
         (*vars*)
+        | F.L.Var (V.T{name="my_true"}) -> "true"
         | F.L.Var (V.T{name;field;table=None; tp; kn=V.PARAM})               -> "("^txn_name^"_Param_"^name^" t"^(string_of_int t_i)^")"
         | F.L.Var (V.T{name;field;table=None; tp; kn=V.LOCAL})               -> "("^txn_name^"_Var_"^name^" t"^(string_of_int t_i)^")"
         | F.L.Var (V.T{name;field;table=None; tp; kn=V.FIELD})               -> "("^table_name^"_Proj_"^name^" "^record_name^")"
@@ -71,7 +72,7 @@ module Utils =
                            let rhs = expression_to_string t_i record_name txn_name table_name e2 in
                            "(not (= "^lhs^" "^rhs^"))"
 
-        |F.L.Bool b -> string_of_bool b
+        |F.L.Bool b -> expression_to_string t_i record_name txn_name table_name b
         |F.L.AND (c1,c2) -> let lhs = extract_where t_i record_name txn_name table_name  c1 in
                             let rhs = extract_where t_i record_name txn_name table_name  c2 in
                            "(and "^lhs^" "^rhs^")"
@@ -203,7 +204,6 @@ struct
     let tr_final_wrapper (rule,txn1_name,txn2_name,all_conds)=
       let conclusion = match rule with 
           "WW" -> "(or (WW t1 t2) (WW t2 t1))" | "WR" -> "(WR t1 t2)" in 
-      
       "\n\n(assert (! (forall ((t1 T) (t2 T))
                 (=> (and (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^") (not (= t1 t2)))
                     (=> "^all_conds^"
@@ -330,7 +330,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                             let null_cond = "(not ("^(to_cap txn_name2)^"_SVar_"^(V.name v)^" t1 r))" in
+                             let null_cond = "(not ("^(to_cap txn_name1)^"_SVar_"^(V.name v)^" t1 r))" in
                               Some (rule_wrapper
                                       (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
               |None -> None end 

@@ -106,7 +106,7 @@ let open F.L in
 let rec print_condition : F.t -> string = fun (condition) -> 
 let open F.L in 
   match condition with 
-    |Bool b -> string_of_bool b
+    |Bool b -> "not printing yet...."
     |Gt (s1,s2) -> "("^(print_expression s1)^")>("^(print_expression s2)^")"
     |Eq (s1,s2) -> "("^(print_expression s1)^")("^(print_expression s2)^")"
     |Lt (s1,s2) -> "("^(print_expression s1)^")=("^(print_expression s2)^")"
@@ -136,7 +136,8 @@ let print_var: V.t -> unit = let open V in
       fun x -> printf "\n %s.%s of %s (%s)" (name x) (field x) (table x) (kind_to_string @@ kind x)
 
 let print_var_list:  V.t list -> unit = fun var_list -> 
-  List.iter print_var var_list  
+let _ = List.iter print_var var_list in
+    print_string "\n-------"
 
 let print_stmts_list : S.st list -> unit = fun st_list -> 
   let _ = List.iter print_stmt st_list in
@@ -196,7 +197,7 @@ let rec convert_types: type_desc -> T.t =
 let convert_param: (Ident.t * type_desc) -> V.t  = 
   fun (id,tp) ->  
     match convert_types tp with
-    |T.Set _ -> V.make id.name "salam" None (convert_types tp) V.RECORD
+    |T.Set table -> V.make id.name "salam" (Some (String.capitalize_ascii table)) (convert_types tp) V.RECORD
     |_ -> V.make id.name "salam" None (convert_types tp) V.PARAM
 
 let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L.expr = 
@@ -227,19 +228,23 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L
 
 let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> Fol.t =
   fun var_list -> fun exp  ->
-      let Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
-                        [(Nolabel,Some l_exp);(Nolabel,Some r_exp)] )= exp.exp_desc in 
-      let r_desc = r_exp.exp_desc in
-      let l_desc = l_exp.exp_desc in
-      match op with 
-        |"=" ->  (F.L.Eq (extract_operands var_list l_desc,extract_operands var_list r_desc))
-        |">" ->  (F.L.Gt (extract_operands var_list l_desc,extract_operands var_list r_desc))
-        |"<" ->  (F.L.Lt (extract_operands var_list l_desc,extract_operands var_list r_desc))
-        |"!=" -> (F.L.Nq (extract_operands var_list l_desc,extract_operands var_list r_desc))
-        |"&&" -> (F.L.AND (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
-        |"||" -> (F.L.OR (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
-        |_ -> failwith "ERROR extract_where_clause: the operation not handled yet"
-
+      match exp.exp_desc with
+        |Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
+                        [(Nolabel,Some l_exp);(Nolabel,Some r_exp)] ) ->
+          let r_desc = r_exp.exp_desc in
+          let l_desc = l_exp.exp_desc in
+          begin
+          match op with 
+            |"=" ->  (F.L.Eq (extract_operands var_list l_desc,extract_operands var_list r_desc))
+            |">" ->  (F.L.Gt (extract_operands var_list l_desc,extract_operands var_list r_desc))
+            |"<" ->  (F.L.Lt (extract_operands var_list l_desc,extract_operands var_list r_desc))
+            |"!=" -> (F.L.Nq (extract_operands var_list l_desc,extract_operands var_list r_desc))
+            |"&&" -> (F.L.AND (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
+            |"||" -> (F.L.OR (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
+            |_ -> failwith "ERROR extract_where_clause: the operation not handled yet" end
+        |Texp_ident _ -> (F.L.Bool (extract_operands var_list exp.exp_desc))
+        |_ -> failwith "encodeIR.ml: extract_where_clause"
+        
 
 (*handle the rhs of select*)
 let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*string*Fol.t  =  
@@ -318,10 +323,11 @@ let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(extract_operands var_l
 let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
   fun var_list -> fun exp ->
     match exp.exp_desc with
-    |Texp_construct ({txt=Lident "true"},_,_) -> F.L.Bool true
-    |Texp_construct ({txt=Lident "false"},_,_) -> F.L.Bool false
-    |(Texp_apply _) ->
-      extract_where_clause var_list exp
+    |Texp_construct ({txt=Lident "true"},_,_) -> F.L.Bool (F.L.Var V.true_var)
+    |Texp_construct ({txt=Lident "false"},_,_) ->F.L.Bool (F.L.Var V.true_var)
+    |(Texp_apply _) -> extract_where_clause var_list exp
+    |Texp_ident _ -> extract_where_clause var_list exp
+    |_ -> Utils.print_helpful_expression_desc exp.exp_desc;  failwith "enncodeIR.ml: eaxtract_condition error"
 
 
 (**********)
@@ -414,9 +420,9 @@ let rec convert_body_rec: F.t -> (string*V.t) list -> S.st list -> int ->
     |_ -> Utils.print_helpful_expression_desc exp_desc;  failwith "ERROR convert_body_rec: unexpected case"
 
 
-let convert_body_stmts: Typedtree.expression -> (S.st list*(string*V.t) list) =
-  fun body -> 
-  let (output_st,output_var) = convert_body_rec F.my_true [] [] 1 body in
+let convert_body_stmts: (string * V.t) list -> Typedtree.expression -> (S.st list*(string*V.t) list) =
+  fun init_param_vars -> fun body -> 
+  let (output_st,output_var) = convert_body_rec F.my_true init_param_vars [] 1 body in
   (*testing*)
   let _ = Utils.print_stmts_list output_st in 
   let _ = Utils.print_var_list @@ snd @@ List.split output_var in 
@@ -426,8 +432,14 @@ let convert_body_stmts: Typedtree.expression -> (S.st list*(string*V.t) list) =
 let convert : G.t -> L.t = 
   fun (G.T {name;rec_flag;args_t;res_t;body}) -> 
     let t_name = remove_txn_tail name.name in
-    let t_params = List.map convert_param args_t in
-    let (stmts,vars) = convert_body_stmts body in
+    let (t_params,old_vars) = List.fold_left 
+      (fun (old_parms,old_vars) -> fun arg -> let conv = convert_param arg in 
+                                              match V.kind conv with
+                                              |V.RECORD -> (old_parms@[conv],old_vars@[(V.name conv,conv)])
+                                              |_ -> (old_parms@[conv],old_vars) 
+      ) ([],[]) args_t in
+    
+    let (stmts,vars) = convert_body_stmts old_vars body in
     L.make t_name t_params stmts vars  
 
 end

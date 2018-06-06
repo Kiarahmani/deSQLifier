@@ -76,7 +76,7 @@ module Cons =
         |(SER,None,None) -> ";SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser ))"
         |(SER,Some t1,Some t2) -> ";Selective SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (and (or (and (= (type t1) "^t1^")(= (type t2)"^t2^"))
                                                 (and (= (type t1) "^t2^")(= (type t2)"^t1^"))) 
-                                            (ar t1 t2))  (vis t1 t2))):named ser ))"
+                                            (ar t1 t2))  (vis t1 t2))):named "^t1^"-"^t2^"-selective-ser ))"
         |(PSI,None,None) ->  ";PSI \n(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi))"
         |(CC,None,None) -> ";CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
         |(CC,Some t,_) -> ";Selective CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (= (type t3) "^t^") (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
@@ -176,30 +176,30 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
 (* vars *)
   
   let declare_vars tname vname vtype table_name = let txn_cap = String.capitalize_ascii tname in 
-    ";"^vname^
+    ";"^tname^"_"^vname^
     "\n(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
     "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^table_name^")"^
     "\n(assert (! (forall((t0 T))(and (=> (not ("^txn_cap^"_isN_"^vname^" t0)) (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r))) 
-                               (=> (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r)) (not ("^txn_cap^"_isN_"^vname^" t0))))) :named "^vname^"-isnull-prop) )"
+                               (=> (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r)) (not ("^txn_cap^"_isN_"^vname^" t0))))) :named "^tname^"-"^vname^"-isnull-prop) )"
 
   let vars_props tname vname table_name fol = 
     let txn_cap = String.capitalize_ascii tname in 
     let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
     let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
-    "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^vname^"-select-prop))"
+    "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^tname^"-"^vname^"-select-prop))"
   
   let choose_vars_props tname vname table_name fol chosen_var = 
     let txn_cap = String.capitalize_ascii tname in 
     let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
     let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
-    "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^vname^"-var-filter-prop))"^
-    "\n(assert (! (forall ((t0 T))("^txn_cap^"_SVar_"^chosen_var^" t0 ("^txn_cap^"_Var_"^vname^" t0)))  :named "^vname^"-var-chosen-prop))"
+    "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^tname^"-"^vname^"-var-filter-prop))"^
+    "\n(assert (! (forall ((t0 T))("^txn_cap^"_SVar_"^chosen_var^" t0 ("^txn_cap^"_Var_"^vname^" t0)))  :named "^tname^"-"^vname^"-var-chosen-prop))"
 
 
   let set_vars_props tname vname table_name fol = 
     let txn_cap = String.capitalize_ascii tname in 
     let inner_eq = Rules.Utils.extract_where 0 "r" txn_cap table_name fol in
-  "(assert (! (forall ((t0 T)(r "^table_name^")) (=> ("^txn_cap^"_SVar_"^vname^" t0 r) "^inner_eq^")) :named "^vname^"-var-prop))" 
+  "(assert (! (forall ((t0 T)(r "^table_name^")) (=> ("^txn_cap^"_SVar_"^vname^" t0 r) "^inner_eq^")) :named "^tname^"-"^vname^"-var-prop))" 
 
 
   let declare_set_vars table_name tname vname vtype = let txn_cap = String.capitalize_ascii tname in 
@@ -262,7 +262,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
      "(declare-fun "^txn_cap^"_Param_"^vname^" (T) "^vtype^")"
   
   let declare_param_list tname vname vtype = let txn_cap = String.capitalize_ascii tname in
-     "(declare-fun "^txn_cap^"_Param_"^vname^" (T "^String.capitalize_ascii vtype^") Bool)"
+     "(declare-fun "^txn_cap^"_SVar_"^vname^" (T "^String.capitalize_ascii vtype^") Bool)"
 
 
   let txn_declare_param: (T.t * V.t list) -> string = fun (txn,var_list) ->
