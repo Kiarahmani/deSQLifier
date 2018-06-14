@@ -70,9 +70,10 @@ let withdraw_txn (input:int) =
   let at__kia_acs = SQL.select Account A_all
      (fun a -> a.a_owner = "Kia" ) in
   let at__ac1 = SQL.choose (fun a -> 1=1) at__kia_acs in
-  SQL.update Account
-    (*do:*)    (fun a -> begin a.a_balance <- a.a_balance - 100; end)
-    (*where:*) (fun a -> a.a_id = at__ac1.a_id)
+  if (a.a_balance > 100)
+  then SQL.update Account
+        (*do:*)    (fun a -> begin a.a_balance <- a.a_balance - 100; end)
+        (*where:*) (fun a -> a.a_id = at__ac1.a_id)
 ```
  
  By running the tool on the above SQL program, the following z3 file was created, which is satisfiable under EC, RC, CC but not under SI or SER:
