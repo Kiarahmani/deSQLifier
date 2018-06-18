@@ -89,14 +89,14 @@
                                 (RW_Account r t1 t2)
                                 (not (Withdraw_SVar_at__all_acs t1 r))
                                 (= 1 1)  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  true)))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100)))))
                             (exists ((r Account))
                                 (and 
                                 (IsAlive_Account r t2)
                                 (RW_Account r t1 t2)
                                 (not (Withdraw_SVar_at__kia_acs t1 r))
                                 (= (Account_Proj_a_owner r) "Kia")  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  true))) )))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100))))) )))
                                 :named withdraw-withdraw-rw-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,14 +114,14 @@
                                 (WR_Account r t1 t2)
                                 (Withdraw_SVar_at__all_acs t2 r)
                                 (= 1 1)  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  true)))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100)))))
                             (exists ((r Account))
                                 (and 
                                 (IsAlive_Account r t1)
                                 (WR_Account r t1 t2)
                                 (Withdraw_SVar_at__kia_acs t2 r)
                                 (= (Account_Proj_a_owner r) "Kia")  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  true))) )))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100))))) )))
                                 :named withdraw-withdraw-wr-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,8 +138,8 @@
                                 (WW_Account r t1 t2)
                                 (IsAlive_Account r t1)
                                 (IsAlive_Account r t2)
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  true))) )))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100))))) )))
                                 :named withdraw-withdraw-ww-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -165,8 +165,8 @@
                                 (and 
                                 (IsAlive_Account r t1)
                                 (IsAlive_Account r t2)
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  true)))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100))
+                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100)))))
                         (or (WW t1 t2) (WW t2 t1)) )))
                                 :named withdraw-withdraw-then-ww))
 
@@ -180,8 +180,8 @@
 (assert (! (exists ( (t1 T) (t2 T) (t3 T) (t4 T) (t5 T) (t6 T) (t7 T) (t8 T) (t9 T) (t10 T) (t11 T) (t12 T)) (and (not (= t1 t12))  (D t1 t2) (D t2 t3) (D t3 t4) (D t4 t5) (D t5 t6) (D t6 t7) (D t7 t8) (D t8 t9) (D t9 t10) (D t10 t11) (D t11 t12) (D t12 t1))) :named cycle))
 
 ;Guarantees
-;CC 
-(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))
+;PSI 
+(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi))
 
 (check-sat)
 ;(get-unsat-core)
