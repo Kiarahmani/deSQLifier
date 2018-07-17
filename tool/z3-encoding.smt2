@@ -6,7 +6,7 @@
 
 (set-option :produce-unsat-cores true)
 
-(declare-datatypes () ((TType (Withdraw)))) 
+(declare-datatypes () ((TType (Deposit) (Status)))) 
 (declare-sort T)
 (declare-fun type (T) TType)
 
@@ -32,46 +32,47 @@
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-(declare-sort Account)
-(declare-fun Account_Proj_a_id (Account) Int)
-(declare-fun Account_Proj_a_owner (Account) String)
-(declare-fun Account_Proj_a_balance (Account) Int)
-(assert (! (forall ((r1 Account)(r2 Account)) (=>
-  (and (= (Account_Proj_a_id r1) (Account_Proj_a_id r2)))(= r1 r2))) :named pk-account) )
-(declare-fun RW_Account (Account T T) Bool)
-(declare-fun RW_Alive_Account (Account T T) Bool)
-(declare-fun WR_Account (Account T T) Bool)
-(declare-fun WR_Alive_Account (Account T T) Bool)
-(declare-fun WW_Account (Account T T) Bool)
-(declare-fun WW_Alive_Account (Account T T) Bool)
-(declare-fun IsAlive_Account (Account T) Bool)
-(assert (! (forall ((r Account)(t1 T)(t2 T)) (=> (RW_Account r t1 t2) (RW t1 t2)))       :named account-RW-then-row))
-(assert (! (forall ((r Account)(t1 T)(t2 T)) (=> (RW_Alive_Account r t1 t2) (RW t1 t2))) :named account-RW-then-alive))
-(assert (! (forall ((r Account)(t1 T)(t2 T)) (=> (WR_Account r t1 t2) (WR t1 t2)))       :named account-WR-then-row))
-(assert (! (forall ((r Account)(t1 T)(t2 T)) (=> (WR_Alive_Account r t1 t2) (WR t1 t2))) :named account-WR-then-alive))
-(assert (! (forall ((r Account)(t1 T)(t2 T)) (=> (WW_Account r t1 t2) (WW t1 t2)))       :named account-WW-then-row))
-(assert (! (forall ((r Account)(t1 T)(t2 T)) (=> (WW_Alive_Account r t1 t2) (WW t1 t2))) :named account-WW-then-alive))
-(assert (! (forall ((r Account)(t1 T)(t2 T)(t3 T)) 
-         (=> (and (WR_Account r t2 t1)(RW_Account r t1 t3))(WW_Account r t2 t3))) :named account-lww-row))
-(assert (! (forall ((r Account)(t1 T)(t2 T)(t3 T)) 
-         (=> (and (WR_Alive_Account r t2 t1)(RW_Alive_Account r t1 t3))(WW_Alive_Account r t2 t3))) :named account-lww-alive))
+(declare-sort Bankaccount)
+(declare-fun Bankaccount_Proj_b_id (Bankaccount) Int)
+(declare-fun Bankaccount_Proj_b_owner (Bankaccount) String)
+(declare-fun Bankaccount_Proj_b_bal (Bankaccount) Int)
+(assert (! (forall ((r1 Bankaccount)(r2 Bankaccount)) (=>
+  (and (= (Bankaccount_Proj_b_id r1) (Bankaccount_Proj_b_id r2)))(= r1 r2))) :named pk-bankaccount) )
+(declare-fun RW_Bankaccount (Bankaccount T T) Bool)
+(declare-fun RW_Alive_Bankaccount (Bankaccount T T) Bool)
+(declare-fun WR_Bankaccount (Bankaccount T T) Bool)
+(declare-fun WR_Alive_Bankaccount (Bankaccount T T) Bool)
+(declare-fun WW_Bankaccount (Bankaccount T T) Bool)
+(declare-fun WW_Alive_Bankaccount (Bankaccount T T) Bool)
+(declare-fun IsAlive_Bankaccount (Bankaccount T) Bool)
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (RW_Bankaccount r t1 t2) (RW t1 t2)))       :named bankaccount-RW-then-row))
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (RW_Alive_Bankaccount r t1 t2) (RW t1 t2))) :named bankaccount-RW-then-alive))
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WR_Bankaccount r t1 t2) (WR t1 t2)))       :named bankaccount-WR-then-row))
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WR_Alive_Bankaccount r t1 t2) (WR t1 t2))) :named bankaccount-WR-then-alive))
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WW_Bankaccount r t1 t2) (WW t1 t2)))       :named bankaccount-WW-then-row))
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WW_Alive_Bankaccount r t1 t2) (WW t1 t2))) :named bankaccount-WW-then-alive))
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)(t3 T)) 
+         (=> (and (WR_Bankaccount r t2 t1)(RW_Bankaccount r t1 t3))(WW_Bankaccount r t2 t3))) :named bankaccount-lww-row))
+(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)(t3 T)) 
+         (=> (and (WR_Alive_Bankaccount r t2 t1)(RW_Alive_Bankaccount r t1 t3))(WW_Alive_Bankaccount r t2 t3))) :named bankaccount-lww-alive))
 
 ;params
-(declare-fun Withdraw_Param_input (T) Int)
+(declare-fun Deposit_Param_ac_id (T) Int)
+(declare-fun Status_Param_ac_id (T) Int)
+(declare-fun Status_Param_ac_id2 (T) Int)
 
-;at__all_acs
-(declare-fun Withdraw_SVar_at__all_acs (T Account) Bool)
-(assert (! (forall ((t0 T)(r Account)) (=> (Withdraw_SVar_at__all_acs t0 r) (= 1 1))) :named withdraw-at__all_acs-var-prop))
-;at__kia_acs
-(declare-fun Withdraw_SVar_at__kia_acs (T Account) Bool)
-(assert (! (forall ((t0 T)(r Account)) (=> (Withdraw_SVar_at__kia_acs t0 r) (= (Account_Proj_a_owner r) "Kia"))) :named withdraw-at__kia_acs-var-prop))
-;withdraw_at__ac1
-(declare-fun Withdraw_isN_at__ac1 (T) Bool)
-(declare-fun Withdraw_Var_at__ac1 (T) Account)
-(assert (! (forall((t0 T))(and (=> (not (Withdraw_isN_at__ac1 t0)) (exists ((r Account))(= (Withdraw_Var_at__ac1 t0) r))) 
-                               (=> (exists ((r Account))(= (Withdraw_Var_at__ac1 t0) r)) (not (Withdraw_isN_at__ac1 t0))))) :named withdraw-at__ac1-isnull-prop) )
-(assert (! (forall ((t0 T)) (= 1 1)) :named withdraw-at__ac1-var-filter-prop))
-(assert (! (forall ((t0 T))(Withdraw_SVar_at__kia_acs t0 (Withdraw_Var_at__ac1 t0)))  :named withdraw-at__ac1-var-chosen-prop))
+;status_v1
+(declare-fun Status_isN_v1 (T) Bool)
+(declare-fun Status_Var_v1 (T) Bankaccount)
+(assert (! (forall((t0 T))(and (=> (not (Status_isN_v1 t0)) (exists ((r Bankaccount))(= (Status_Var_v1 t0) r))) 
+                               (=> (exists ((r Bankaccount))(= (Status_Var_v1 t0) r)) (not (Status_isN_v1 t0))))) :named status-v1-isnull-prop) )
+(assert (! (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Status_Var_v1 t0)) (Status_Param_ac_id t0))) :named status-v1-select-prop))
+;status_v2
+(declare-fun Status_isN_v2 (T) Bool)
+(declare-fun Status_Var_v2 (T) Bankaccount)
+(assert (! (forall((t0 T))(and (=> (not (Status_isN_v2 t0)) (exists ((r Bankaccount))(= (Status_Var_v2 t0) r))) 
+                               (=> (exists ((r Bankaccount))(= (Status_Var_v2 t0) r)) (not (Status_isN_v2 t0))))) :named status-v2-isnull-prop) )
+(assert (! (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Status_Var_v2 t0)) (Status_Param_ac_id2 t0))) :named status-v2-select-prop))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,24 +81,40 @@
 
 
 (assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
+                    (=> (and (RW t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named deposit-deposit-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Deposit) (= (type t2) Status))
+                    (=> (and (RW t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named deposit-status-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Deposit))
                     (=> (and (RW t1 t2) (not (= t1 t2)))
                         (or (or false
-                            (exists ((r Account))
+                            (exists ((r Bankaccount))
                                 (and 
-                                (IsAlive_Account r t2)
-                                (RW_Account r t1 t2)
-                                (not (Withdraw_SVar_at__all_acs t1 r))
-                                (= 1 1)  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100)))))
-                            (exists ((r Account))
+                                (IsAlive_Bankaccount r t2)
+                                (RW_Bankaccount r t1 t2)
+                                (= (Bankaccount_Proj_b_id r) (Status_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t2))  true)))
+                            (exists ((r Bankaccount))
                                 (and 
-                                (IsAlive_Account r t2)
-                                (RW_Account r t1 t2)
-                                (not (Withdraw_SVar_at__kia_acs t1 r))
-                                (= (Account_Proj_a_owner r) "Kia")  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100))))) )))
-                                :named withdraw-withdraw-rw-then))
+                                (IsAlive_Bankaccount r t2)
+                                (RW_Bankaccount r t1 t2)
+                                (= (Bankaccount_Proj_b_id r) (Status_Param_ac_id2 t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t2))  true))) )))
+                                :named status-deposit-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Status))
+                    (=> (and (RW t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named status-status-rw-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WR-> Rules                                                       
@@ -105,24 +122,42 @@
 
 
 (assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
+                    (=> (and (WR t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named deposit-deposit-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Deposit) (= (type t2) Status))
                     (=> (and (WR t1 t2) (not (= t1 t2)))
                         (or (or false
-                            (exists ((r Account))
+                            (exists ((r Bankaccount))
                                 (and 
-                                (IsAlive_Account r t1)
-                                (WR_Account r t1 t2)
-                                (Withdraw_SVar_at__all_acs t2 r)
-                                (= 1 1)  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100)))))
-                            (exists ((r Account))
+                                (IsAlive_Bankaccount r t1)
+                                (WR_Bankaccount r t1 t2)
+                                (not (Status_isN_v1 t2))
+                                (= (Bankaccount_Proj_b_id r) (Status_Param_ac_id t2))  true
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t1))  true)))
+                            (exists ((r Bankaccount))
                                 (and 
-                                (IsAlive_Account r t1)
-                                (WR_Account r t1 t2)
-                                (Withdraw_SVar_at__kia_acs t2 r)
-                                (= (Account_Proj_a_owner r) "Kia")  true
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100))))) )))
-                                :named withdraw-withdraw-wr-then))
+                                (IsAlive_Bankaccount r t1)
+                                (WR_Bankaccount r t1 t2)
+                                (not (Status_isN_v2 t2))
+                                (= (Bankaccount_Proj_b_id r) (Status_Param_ac_id2 t2))  true
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t1))  true))) )))
+                                :named deposit-status-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Deposit))
+                    (=> (and (WR t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named status-deposit-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Status))
+                    (=> (and (WR t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named status-status-wr-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WW-> Rules                                                       
@@ -130,17 +165,35 @@
 
 
 (assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
                     (=> (and (WW t1 t2) (not (= t1 t2)))
                         (or false
-                            (exists ((r Account))
+                            (exists ((r Bankaccount))
                                 (and 
-                                (WW_Account r t1 t2)
-                                (IsAlive_Account r t1)
-                                (IsAlive_Account r t2)
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100))
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100))))) )))
-                                :named withdraw-withdraw-ww-then))
+                                (WW_Bankaccount r t1 t2)
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t2))  true))) )))
+                                :named deposit-deposit-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Deposit) (= (type t2) Status))
+                    (=> (and (WW t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named deposit-status-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Deposit))
+                    (=> (and (WW t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named status-deposit-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Status))
+                    (=> (and (WW t1 t2) (not (= t1 t2)))
+                        false )))
+                                :named status-status-ww-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       ->WR Rules                                                       
@@ -148,10 +201,28 @@
 
 
 (assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw) (not (= t1 t2)))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
                     (=> false
                         (WR t1 t2) )))
-                                :named withdraw-withdraw-then-wr))
+                                :named deposit-deposit-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Deposit) (= (type t2) Status) (not (= t1 t2)))
+                    (=> false
+                        (WR t1 t2) )))
+                                :named deposit-status-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Deposit) (not (= t1 t2)))
+                    (=> false
+                        (WR t1 t2) )))
+                                :named status-deposit-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Status) (not (= t1 t2)))
+                    (=> false
+                        (WR t1 t2) )))
+                                :named status-status-then-wr))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       ->WW Rules                                                       
@@ -159,16 +230,34 @@
 
 
 (assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Withdraw) (= (type t2) Withdraw) (not (= t1 t2)))
+                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
                     (=> (or false
-                            (exists ((r Account))
+                            (exists ((r Bankaccount))
                                 (and 
-                                (IsAlive_Account r t1)
-                                (IsAlive_Account r t2)
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t1)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t1)) 100))
-                                (= (Account_Proj_a_id r) (Account_Proj_a_id (Withdraw_Var_at__ac1 t2)))  (and true (> (Account_Proj_a_balance (Withdraw_Var_at__ac1 t2)) 100)))))
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t2))  true)))
                         (or (WW t1 t2) (WW t2 t1)) )))
-                                :named withdraw-withdraw-then-ww))
+                                :named deposit-deposit-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Deposit) (= (type t2) Status) (not (= t1 t2)))
+                    (=> false
+                        (or (WW t1 t2) (WW t2 t1)) )))
+                                :named deposit-status-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Deposit) (not (= t1 t2)))
+                    (=> false
+                        (or (WW t1 t2) (WW t2 t1)) )))
+                                :named status-deposit-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T))
+                (=> (and (= (type t1) Status) (= (type t2) Status) (not (= t1 t2)))
+                    (=> false
+                        (or (WW t1 t2) (WW t2 t1)) )))
+                                :named status-status-then-ww))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -177,7 +266,7 @@
 
 (declare-fun D (T T) Bool)
 (assert (! (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))) :named gen-dep) )
-(assert (! (exists ( (t1 T) (t2 T) (t3 T) (t4 T) (t5 T) (t6 T) (t7 T) (t8 T) (t9 T) (t10 T) (t11 T) (t12 T)) (and (not (= t1 t12))  (D t1 t2) (D t2 t3) (D t3 t4) (D t4 t5) (D t5 t6) (D t6 t7) (D t7 t8) (D t8 t9) (D t9 t10) (D t10 t11) (D t11 t12) (D t12 t1))) :named cycle))
+(assert (! (exists ( (t1 T) (t2 T) (t3 T) (t4 T) (t5 T) (t6 T) (t7 T)) (and (not (= t1 t7))  (D t1 t2) (D t2 t3) (D t3 t4) (D t4 t5) (D t5 t6) (D t6 t7) (D t7 t1))) :named cycle))
 
 ;Guarantees
 ;PSI 
