@@ -194,7 +194,7 @@ struct
     
     (*final: R->*)
     let rt_final_wrapper (rule,txn1_name,txn2_name,all_conds)=
-      "\n\n(assert (! (forall ((t1 T) (t2 T))
+      "\n\n(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^"))
                     (=> (and ("^rule^" t1 t2) (not (= t1 t2)))
                         "^all_conds^" )))"^_TAB_4^":named "^txn1_name^"-"^txn2_name^"-"^(String.lowercase_ascii rule)^"-then))"
@@ -204,7 +204,7 @@ struct
     let tr_final_wrapper (rule,txn1_name,txn2_name,all_conds)=
       let conclusion = match rule with 
           "WW" -> "(or (WW t1 t2) (WW t2 t1))" | "WR" -> "(WR t1 t2)" in 
-      "\n\n(assert (! (forall ((t1 T) (t2 T))
+      "\n\n(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^") (not (= t1 t2)))
                     (=> "^all_conds^"
                         "^conclusion^" )))"^_TAB_4^":named "^txn1_name^"-"^txn2_name^"-"^"then-"^(String.lowercase_ascii rule)^"))"
