@@ -49,9 +49,9 @@
 (assert (! (forall ((o1 O)(o2 O))(=> (RW_O o1 o2)(RW (parent o1)(parent o2)))) :named rw_op_txn))
 (assert (! (forall ((o1 O)(o2 O))(=> (WW_O o1 o2)(WW (parent o1)(parent o2)))) :named ww_op_txn))
 
-(assert (! (forall ((t1 T)(t2 T))(=> (WW t1 t2) (exists ((o1 O)(o2 O))(WW_O o1 o2)))) :named ww_to_ww_o))
-(assert (! (forall ((t1 T)(t2 T))(=> (RW t1 t2) (exists ((o1 O)(o2 O))(RW_O o1 o2)))) :named rw_to_rw_o))
-(assert (! (forall ((t1 T)(t2 T))(=> (WR t1 t2) (exists ((o1 O)(o2 O))(WR_O o1 o2)))) :named wr_to_wr_o))
+(assert (! (forall ((t1 T)(t2 T))(=> (WW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WW_O o1 o2))))) :named ww_to_ww_o))
+(assert (! (forall ((t1 T)(t2 T))(=> (RW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(RW_O o1 o2))))) :named rw_to_rw_o))
+(assert (! (forall ((t1 T)(t2 T))(=> (WR t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WR_O o1 o2))))) :named wr_to_wr_o))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,9 +99,9 @@
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-(assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
-                    (=> (and (RW t1 t2) (not (= t1 t2)))
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Deposit) (= (type t2) Deposit))
+                    (=> (and (RW_O o1 o2) (not (= t1 t2)))
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
@@ -116,9 +116,9 @@
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-(assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
-                    (=> (and (WR t1 t2) (not (= t1 t2)))
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Deposit) (= (type t2) Deposit))
+                    (=> (and (WR_O o1 o2) (not (= t1 t2)))
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
@@ -134,9 +134,9 @@
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-(assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit))
-                    (=> (and (WW t1 t2) (not (= t1 t2)))
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Deposit) (= (type t2) Deposit))
+                    (=> (and (WW_O o1 o2) (not (= t1 t2)))
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
@@ -152,10 +152,10 @@
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-(assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
                     (=> false
-                        (WR t1 t2) )))
+                        (WR_O o1 o2) )))
                                 :named deposit-deposit-then-wr))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,8 +163,8 @@
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-(assert (! (forall ((t1 T) (t2 T))
-                (=> (and (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Deposit) (= (type t2) Deposit) (not (= t1 t2)))
                     (=> (or false
                             (exists ((r Bankaccount))
                                 (and 
@@ -172,7 +172,7 @@
                                 (IsAlive_Bankaccount r t2)
                                 (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t1))  true
                                 (= (Bankaccount_Proj_b_id r) (Deposit_Param_ac_id t2))  true)))
-                        (or (WW t1 t2) (WW t2 t1)) )))
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
                                 :named deposit-deposit-then-ww))
 
 
@@ -185,8 +185,7 @@
 (assert (! (exists ( (t1 T) (t2 T) (t3 T)) (and (not (= t1 t3))  (D t1 t2) (D t2 t3) (D t3 t1))) :named cycle))
 
 ;Guarantees
-;PSI 
-(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi))
+;EC
 
 (check-sat)
 ;(get-unsat-core) 

@@ -37,9 +37,9 @@ module Cons =
 
 
 
-    let r_to_r_o=    "(assert (! (forall ((t1 T)(t2 T))(=> (WW t1 t2) (exists ((o1 O)(o2 O))(WW_O o1 o2)))) :named ww_to_ww_o))"
-                  ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (RW t1 t2) (exists ((o1 O)(o2 O))(RW_O o1 o2)))) :named rw_to_rw_o))"
-                  ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (WR t1 t2) (exists ((o1 O)(o2 O))(WR_O o1 o2)))) :named wr_to_wr_o))"
+    let r_to_r_o=    "(assert (! (forall ((t1 T)(t2 T))(=> (WW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WW_O o1 o2))))) :named ww_to_ww_o))"
+                  ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (RW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(RW_O o1 o2))))) :named rw_to_rw_o))"
+                  ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (WR t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WR_O o1 o2))))) :named wr_to_wr_o))"
 
 
 
