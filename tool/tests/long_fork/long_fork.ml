@@ -45,20 +45,22 @@ type bankaccount = {b_id: int; mutable b_owner: string; mutable b_bal: int}
 
 
 
-
+(*
 let status_txn (ac_id:int) (ac_id2:int) =
   let v1 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = ac_id)) in
   let v2 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = ac_id2)) in
   ()
-
+*)
 
 
 
 let deposit_txn (ac_id:int) = 
+  let v1 = SQL.select1 Bankaccount B_bal 
+      (fun u -> (u.b_id = ac_id)) in
   SQL.update Bankaccount
-    (fun u -> begin u.b_bal <- 100; end)
+    (fun u -> begin u.b_bal <- v1.b_bal; end)
     (fun u -> (u.b_id = ac_id))
 
 
