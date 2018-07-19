@@ -196,7 +196,7 @@ struct
     let rt_final_wrapper (rule,txn1_name,txn2_name,all_conds)=
       "\n\n(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) "^(to_cap txn1_name)^") (= (type t2) "^(to_cap txn2_name)^"))
-                    (=> (and ("^rule^"_O o1 o2) (not (= t1 t2)))
+                    (=> (and ("^rule^"_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
                         "^all_conds^" )))"^_TAB_4^":named "^txn1_name^"-"^txn2_name^"-"^(String.lowercase_ascii rule)^"-then))"
 
 

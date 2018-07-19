@@ -164,12 +164,18 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
   let table_deps_gen_deps : string -> string -> string = 
     fun dep_type -> fun table_name ->
       "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) ("^dep_type^" t1 t2)))       :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-row))"^
-      "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"
+      "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"^
+      "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)) (=> ("^dep_type^"_"^table_name^"_O r o1 o2) ("^dep_type^"_"^table_name^" r (parent o1)(parent o2)))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-o))"^
+      "\n;(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) 
+;                                            (exists ((o1 O)(o2 O)) 
+;                                                            (and (= (parent o1) t1)(= (parent o2) t2)
+;                                                                 ("^dep_type^"_"^table_name^"_O r o1 o2))))) :named "^dep_type^"o_to_"^dep_type^"_o))"
 
 
   let table_deps_funcs : string -> string -> string = 
     fun dep_type -> fun table_name ->
       "\n(declare-fun "^dep_type^"_"^table_name^" ("^table_name^" T T) Bool)"^
+      "\n(declare-fun "^dep_type^"_"^table_name^"_O ("^table_name^" O O) Bool)"^
       "\n(declare-fun "^dep_type^"_Alive_"^table_name^" ("^table_name^" T T) Bool)"
 
    let table_initialize: Var.Table.t -> string =
