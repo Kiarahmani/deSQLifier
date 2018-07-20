@@ -3,5 +3,6 @@
 
 TEST=$1
 ./bin/deSQLer.opt -w -20 -c ./tests/$TEST/$TEST.ml #&> /dev/null
-time z3 z3-encoding.smt2
+time z3 z3-encoding.smt2 > z3.dump
+head -n 1 z3.dump
 #rm z3-encoding.smt2

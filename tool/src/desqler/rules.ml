@@ -246,7 +246,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let u1_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u2_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                             Some (rule_wrapper (table, ["(WW_"^table^" r t1 t2)";"(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
+                             Some (rule_wrapper (table, ["(WW_"^table^"_O r o1 o2)";"(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
               |None -> None end
 
           (*-------------------*)
@@ -258,7 +258,7 @@ struct
                              let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
                              let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               Some (rule_wrapper
-                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
+                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      (*4*)
           |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "WR->")->
@@ -299,7 +299,7 @@ struct
                              let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
                              let null_cond = "("^(to_cap txn_name2)^"_SVar_"^(V.name v)^" t2 r)" in
                               Some (rule_wrapper
-                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
+                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      
           (*7*)
@@ -323,7 +323,7 @@ struct
               match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                Some (rule_wrapper (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^" r t1 t2)";s_cond;u_cond]))
+                Some (rule_wrapper (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";s_cond;u_cond]))
               |None -> None end
           (*15*)
           |(S.RANGE_SELECT(_,v,_,_),S.UPDATE _,"RW->") -> 
@@ -332,7 +332,7 @@ struct
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
                              let null_cond = "(not ("^(to_cap txn_name1)^"_SVar_"^(V.name v)^" t1 r))" in
                               Some (rule_wrapper
-                                      (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^" r t1 t2)";null_cond;s_cond;u_cond]))
+                                      (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      (*14*)
           |(S.SELECT (_,v,_,_),S.INSERT (_,_,_), "RW->" )->

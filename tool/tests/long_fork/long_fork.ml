@@ -45,47 +45,19 @@ type bankaccount = {b_id: int; mutable b_owner: string; mutable b_bal: int}
 
 
 
-(*
-let status_txn (ac_id:int) (ac_id2:int) =
+(*TXN 1*)
+let read_txn (ac_id:int) = 
   let v1 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = ac_id)) in
-  let v2 = SQL.select1 Bankaccount B_bal 
-      (fun u -> (u.b_id = ac_id2)) in
   ()
-*)
 
 
 
-let deposit_txn (ac_id:int) = 
-  let v1 = SQL.select1 Bankaccount B_bal 
-      (fun u -> (u.b_id = ac_id)) in
+(*TXN 2*)
+let write_txn (ac_id:int)= 
   SQL.update Bankaccount
-    (fun u -> begin u.b_bal <- v1.b_bal; end)
+    (fun u -> begin u.b_bal <-  100; end)
+    (fun u -> (u.b_id = ac_id));
+  SQL.update Bankaccount
+    (fun u -> begin u.b_bal <-  200; end)
     (fun u -> (u.b_id = ac_id))
-
-
-
-
-
-
-
-
-
-
-
-
-(*
-(*TXN2*)
-let deposit_txn (input:int) =  
- 
-  let v1 = SQL.select Employee E_sal
-                   (fun u -> (u.e_id > 100) || (u.e_id < 200)) in 
-  
-  SQL.update Employee
-    (*do:*)    (fun u -> begin u.e_sal <- 200; end)    
-      (*where:*) (fun u -> u.e_id = 100)
-      *)
-
-
-
-

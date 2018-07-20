@@ -32,8 +32,8 @@ module Cons =
 (declare-fun WR_O (O O) Bool)
 (declare-fun RW_O (O O) Bool)
 (declare-fun WW_O (O O) Bool)
-(declare-fun vis (T T) Bool)
-(declare-fun ar (T T) Bool)"
+(declare-fun vis (O O) Bool)
+(declare-fun ar (O O) Bool)"
 
 
 
@@ -41,31 +41,37 @@ module Cons =
                   ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (RW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(RW_O o1 o2))))) :named rw_to_rw_o))"
                   ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (WR t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WR_O o1 o2))))) :named wr_to_wr_o))"
 
+    let temp_types = "\n(declare-datatypes () ((OType (Write_update_1)(Write_update_2)(Read_select_1))))  "
+    let temp_types_2 = "(assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_1) (= (type (parent o1)) Read))) :named op_types_to_dep1))
+(assert (! (forall ((o1 O))(=> (= (otype o1) Write_update_1) (= (type (parent o1)) Write))) :named op_types_to_dep2))
+(assert (! (forall ((o1 O))(=> (= (otype o1) Write_update_2) (= (type (parent o1)) Write))) :named op_types_to_dep3))
+(assert (! (forall ((o1 O))(=> (= (type (parent o1)) Read)(or (= (otype o1) Read_select_1)))) :named dep_to_ops_type))
+(assert (! (forall ((o1 O))(=> (= (type (parent o1)) Write)(or (= (otype o1) Write_update_1)
+                                                              (= (otype o1) Write_update_2)))) :named dep_to_ops_typeX))
+(declare-fun is_write (O) Bool)
+(assert (forall ((o1 O)(o2 O))(=> (ar o1 o2)(and (is_write o1)(is_write o2)))))
+(assert (forall ((o1 O)(o2 O))(=> (vis o1 o2)(and (is_write o1)(not (is_write o2))))))
+(assert (forall ((o O))(=> (is_write o)(or (=(otype o)Write_update_1)(= (otype o)Write_update_2)))))
+(assert (forall ((o O))(=> (or (=(otype o)Write_update_1)(= (otype o)Write_update_2))(is_write o))))"
+ 
 
-
-    let basic_assertions= "(assert (! (forall ((o1 O)(o2 O))(=> (program_order o1 o2)(sibling o1 o2))) :named po_then_sib))
+    let basic_assertions= temp_types_2^"\n(assert (! (forall ((o1 O)(o2 O))(=> (program_order o1 o2)(sibling o1 o2))) :named po_then_sib))
 (assert (! (forall ((o O))(not (program_order o o))) :named irreflx_po))
 (assert (! (forall ((o1 O)(o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))
 (assert (! (forall ((o1 O)(o2 O))(=> (sibling o1 o2) (= (parent o1)(parent o2)))) :named sib_then_par))
 (assert (! (forall ((o1 O)(o2 O))(=> (and (= (otype o1)(otype o2)) (= (parent o1)(parent o2)))(= o1 o2))) :named types_then_eq))
 (assert (! (forall ((t T)) (not (or (WR t t) (RW t t) (WW t t))))     :named no_loops))
-(assert (! (forall ((t1 T) (t2 T))   (=> (vis t1 t2) (not (vis t2 t1))))      :named acyc_vis))
-(assert (! (forall ((t1 T) (t2 T) (t3 T))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
-(assert (! (forall ((t1 T) (t2 T))   (=> (not (= t1 t2)) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
-(assert (! (forall ((t1 T) (t2 T))   (=> (vis t1 t2) (ar t1 t2)))       :named vis_in_ar))
-(assert (! (forall ((t1 T) (t2 T))   (=> (WR t1 t2) (vis t1 t2)))       :named wr_then_vis))
-(assert (! (forall ((t1 T) (t2 T))   (=> (WW t1 t2) (ar t1 t2)))        :named ww->ar))
-(assert (! (forall ((t1 T) (t2 T))   (=> (RW t1 t2) (not (vis t2 t1))))     :named rw_then_not_vis))
-(assert (! (forall ((t T))     (not (ar t t)))          :named irreflx_ar))"
+(assert (! (forall ((o O)) (not (or (WR_O o o) (RW_O o o) (WW_O o o))))     :named no_loops_o))
+(assert (! (forall ((t1 O) (t2 O) (t3 O))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
+(assert (! (forall ((t1 O) (t2 O))(=> (and (is_write t1) (is_write t2) (not (= t1 t2)) (not (sibling t1 t2))) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
+(assert (! (forall ((o1 O) (o2 O))   (=> (WR_O o1 o2) (vis o1 o2)))       :named wr_then_vis))
+(assert (! (forall ((o1 O) (o2 O))   (=> (WW_O o1 o2) (ar o1 o2)))        :named ww->ar))
+(assert (! (forall ((o1 O) (o2 O))   (=> (RW_O o1 o2) (not (vis o2 o1))))     :named rw_then_not_vis))
+(assert (! (forall ((t O))     (not (ar t t)))          :named irreflx_ar))"
 
 
 
-    let temp_types = "\n(declare-datatypes () ((OType (Deposit_select_1)(Deposit_update_1))))  "
-    let temp_types_2 = "(assert (! (forall ((o1 O))(=> (= (otype o1) Deposit_update_1) (= (type (parent o1)) Deposit))) :named op_types_to_dep1))
-(assert (! (forall ((o1 O))(=> (= (otype o1) Deposit_select_1) (= (type (parent o1)) Deposit))) :named op_types_to_dep2))
-(assert (! (forall ((o1 O))(=> (= (type (parent o1)) Deposit)(or (= (otype o1) Deposit_select_1)
-                                                                 (= (otype o1) Deposit_update_1)))) :named dep_to_ops_type))"
-    
+   
     let op_funcs = "\n(declare-fun parent (O) T)\n(declare-fun sibling (O O) Bool)\n(declare-fun program_order (O O) Bool)  "
 
 
@@ -106,7 +112,7 @@ String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";temp_types;
 
     let guarantee : (Constants.g*string option*string option) -> string = 
       fun (g,t1,t2) -> match (g,t1,t2) with
-        |(SER,None,None) -> ";SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (ar t1 t2) (vis t1 t2))):named ser ))"
+        |(SER,None,None) -> ";SER \n(assert (! (forall ((o1 O) (o2 O)) (=> (ar (parent o1) (parent o2)) (vis o1 o2))):named ser ))"
         |(SER,Some t1,Some t2) -> ";Selective SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (and (or (and (= (type t1) "^t1^")(= (type t2)"^t2^"))
                                                 (and (= (type t1) "^t2^")(= (type t2)"^t1^"))) 
                                             (ar t1 t2))  (vis t1 t2))):named "^t1^"-"^t2^"-selective-ser ))"
@@ -114,6 +120,8 @@ String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";temp_types;
         |(CC,None,None) -> ";CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
         |(CC,Some t,_) -> ";Selective CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (= (type t3) "^t^") (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
         |(EC,_,_) -> ";EC"
+        |(RC,None,None) -> ";RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
+(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
  
 
 let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s^"\n"^(guarantee g) ) "" _GUARANTEE
@@ -148,7 +156,7 @@ struct
 
   let z3_init  = fun s_list -> let open Cons in 
     String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types s_list; basic_relations; 
-                          basic_assertions; temp_types_2; op_rels;r_to_r_o]
+                          basic_assertions; op_rels;r_to_r_o]
 
 
   let z3_final = let open Cons in
@@ -156,16 +164,15 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
 
   let table_phi_deps :  string -> string = 
     fun table_name ->
-    "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
-         (=> (and (WR_"^table_name^" r t2 t1)(RW_"^table_name^" r t1 t3))(WW_"^table_name^" r t2 t3))) :named "^String.lowercase_ascii table_name^"-lww-row))"^
+"\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)(o3 O)) 
+     (=> (and (not (sibling o2 o3)) (WR_"^table_name^"_O r o2 o1)(RW_"^table_name^"_O r o1 o3))(WW_"^table_name^"_O r o2 o3))) :named "^String.lowercase_ascii table_name^"-lww-row))"^
     "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
          (=> (and (WR_Alive_"^table_name^" r t2 t1)(RW_Alive_"^table_name^" r t1 t3))(WW_Alive_"^table_name^" r t2 t3))) :named "^String.lowercase_ascii table_name^"-lww-alive))"
   
   let table_deps_gen_deps : string -> string -> string = 
     fun dep_type -> fun table_name ->
-      "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) ("^dep_type^" t1 t2)))       :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-row))"^
       "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"^
-      "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)) (=> ("^dep_type^"_"^table_name^"_O r o1 o2) ("^dep_type^"_"^table_name^" r (parent o1)(parent o2)))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-o))"^
+      "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)) (=> ("^dep_type^"_"^table_name^"_O r o1 o2) ("^dep_type^"_O o1 o2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-o))"^
       "\n;(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) 
 ;                                            (exists ((o1 O)(o2 O)) 
 ;                                                            (and (= (parent o1) t1)(= (parent o2) t2)
@@ -174,7 +181,6 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
 
   let table_deps_funcs : string -> string -> string = 
     fun dep_type -> fun table_name ->
-      "\n(declare-fun "^dep_type^"_"^table_name^" ("^table_name^" T T) Bool)"^
       "\n(declare-fun "^dep_type^"_"^table_name^"_O ("^table_name^" O O) Bool)"^
       "\n(declare-fun "^dep_type^"_Alive_"^table_name^" ("^table_name^" T T) Bool)"
 
