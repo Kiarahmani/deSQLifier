@@ -16,9 +16,6 @@
 (declare-fun sibling (O O) Bool)
 (declare-fun program_order (O O) Bool)  
 
-(declare-fun WR (T T) Bool)
-(declare-fun RW (T T) Bool)
-(declare-fun WW (T T) Bool)
 (declare-fun WR_O (O O) Bool)
 (declare-fun RW_O (O O) Bool)
 (declare-fun WW_O (O O) Bool)
@@ -41,7 +38,6 @@
 (assert (! (forall ((o1 O)(o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))
 (assert (! (forall ((o1 O)(o2 O))(=> (sibling o1 o2) (= (parent o1)(parent o2)))) :named sib_then_par))
 (assert (! (forall ((o1 O)(o2 O))(=> (and (= (otype o1)(otype o2)) (= (parent o1)(parent o2)))(= o1 o2))) :named types_then_eq))
-(assert (! (forall ((t T)) (not (or (WR t t) (RW t t) (WW t t))))     :named no_loops))
 (assert (! (forall ((o O)) (not (or (WR_O o o) (RW_O o o) (WW_O o o))))     :named no_loops_o))
 (assert (! (forall ((t1 O) (t2 O) (t3 O))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
 (assert (! (forall ((t1 O) (t2 O))(=> (and (is_write t1) (is_write t2) (not (= t1 t2)) (not (sibling t1 t2))) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
@@ -50,13 +46,9 @@
 (assert (! (forall ((o1 O) (o2 O))   (=> (RW_O o1 o2) (not (vis o2 o1))))     :named rw_then_not_vis))
 (assert (! (forall ((t O))     (not (ar t t)))          :named irreflx_ar))
 
-(assert (! (forall ((o1 O)(o2 O))(=> (WR_O o1 o2)(WR (parent o1)(parent o2)))) :named wr_op_txn))
-(assert (! (forall ((o1 O)(o2 O))(=> (RW_O o1 o2)(RW (parent o1)(parent o2)))) :named rw_op_txn))
-(assert (! (forall ((o1 O)(o2 O))(=> (WW_O o1 o2)(WW (parent o1)(parent o2)))) :named ww_op_txn))
 
-(assert (! (forall ((t1 T)(t2 T))(=> (WW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WW_O o1 o2))))) :named ww_to_ww_o))
-(assert (! (forall ((t1 T)(t2 T))(=> (RW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(RW_O o1 o2))))) :named rw_to_rw_o))
-(assert (! (forall ((t1 T)(t2 T))(=> (WR t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WR_O o1 o2))))) :named wr_to_wr_o))
+
+
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,19 +69,19 @@
 (declare-fun WW_Bankaccount_O (Bankaccount O O) Bool)
 (declare-fun WW_Alive_Bankaccount (Bankaccount T T) Bool)
 (declare-fun IsAlive_Bankaccount (Bankaccount T) Bool)
-(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (RW_Alive_Bankaccount r t1 t2) (RW t1 t2))) :named bankaccount-RW-then-alive))
+;(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (RW_Alive_Bankaccount r t1 t2) (RW t1 t2))) :named bankaccount-RW-then-alive))
 (assert (! (forall ((r Bankaccount)(o1 O)(o2 O)) (=> (RW_Bankaccount_O r o1 o2) (RW_O o1 o2))) :named bankaccount-RW-then-o))
 ;(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (RW_Bankaccount r t1 t2) 
 ;                                            (exists ((o1 O)(o2 O)) 
 ;                                                            (and (= (parent o1) t1)(= (parent o2) t2)
 ;                                                                 (RW_Bankaccount_O r o1 o2))))) :named RWo_to_RW_o))
-(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WR_Alive_Bankaccount r t1 t2) (WR t1 t2))) :named bankaccount-WR-then-alive))
+;(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WR_Alive_Bankaccount r t1 t2) (WR t1 t2))) :named bankaccount-WR-then-alive))
 (assert (! (forall ((r Bankaccount)(o1 O)(o2 O)) (=> (WR_Bankaccount_O r o1 o2) (WR_O o1 o2))) :named bankaccount-WR-then-o))
 ;(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WR_Bankaccount r t1 t2) 
 ;                                            (exists ((o1 O)(o2 O)) 
 ;                                                            (and (= (parent o1) t1)(= (parent o2) t2)
 ;                                                                 (WR_Bankaccount_O r o1 o2))))) :named WRo_to_WR_o))
-(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WW_Alive_Bankaccount r t1 t2) (WW t1 t2))) :named bankaccount-WW-then-alive))
+;(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WW_Alive_Bankaccount r t1 t2) (WW t1 t2))) :named bankaccount-WW-then-alive))
 (assert (! (forall ((r Bankaccount)(o1 O)(o2 O)) (=> (WW_Bankaccount_O r o1 o2) (WW_O o1 o2))) :named bankaccount-WW-then-o))
 ;(assert (! (forall ((r Bankaccount)(t1 T)(t2 T)) (=> (WW_Bankaccount r t1 t2) 
 ;                                            (exists ((o1 O)(o2 O)) 
@@ -340,13 +332,16 @@
 ;                                                      Finalization                                                      
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(declare-fun D (T T) Bool)
-(assert (! (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))) :named gen-dep) )
-(assert (! (exists ( (t1 T) (t2 T)) (and (not (= t1 t2))  (D t1 t2) (D t2 t1))) :named cycle))
+(declare-fun D (O O) Bool)
+(declare-fun X (O O) Bool)
+
+(assert (! (forall ((t1 O)(t2 O)) (=> (D t1 t2) (and (not (sibling t1 t2))(or (WW_O t1 t2)(WR_O t1 t2)(RW_O t1 t2))))) :named gen-dep) )
+(assert (! (forall ((t1 O)(t2 O)) (=> (X t1 t2) (or (sibling t1 t2)(D t1 t2)))) :named gen-depx) )
+(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O) (t5 O) (t6 O) (t7 O) (t8 O) (t9 O) (t10 O)) (and (not (= t1 t10)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t5) (X t5 t6) (X t6 t7) (X t7 t8) (X t8 t9) (X t9 t10) (X t10 t1))) :named cycle))
 
 ;Guarantees
 ;EC
 
 (check-sat)
 ;(get-unsat-core) 
-;(get-model)
+(get-model)

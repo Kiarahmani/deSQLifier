@@ -26,10 +26,8 @@ module Cons =
 
     let options =  "(set-option :produce-unsat-cores true)"
  
-    let basic_relations =        "(declare-fun WR (T T) Bool)
-(declare-fun RW (T T) Bool)
-(declare-fun WW (T T) Bool)
-(declare-fun WR_O (O O) Bool)
+    let basic_relations =        
+      "(declare-fun WR_O (O O) Bool)
 (declare-fun RW_O (O O) Bool)
 (declare-fun WW_O (O O) Bool)
 (declare-fun vis (O O) Bool)
@@ -37,9 +35,7 @@ module Cons =
 
 
 
-    let r_to_r_o=    "(assert (! (forall ((t1 T)(t2 T))(=> (WW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WW_O o1 o2))))) :named ww_to_ww_o))"
-                  ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (RW t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(RW_O o1 o2))))) :named rw_to_rw_o))"
-                  ^"\n(assert (! (forall ((t1 T)(t2 T))(=> (WR t1 t2) (exists ((o1 O)(o2 O)) (and (= (parent o1) t1)(= (parent o2) t2)(WR_O o1 o2))))) :named wr_to_wr_o))"
+    let r_to_r_o=    ""
 
     let temp_types = "\n(declare-datatypes () ((OType (Write_update_1)(Write_update_2)(Read_select_1))))  "
     let temp_types_2 = "(assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_1) (= (type (parent o1)) Read))) :named op_types_to_dep1))
@@ -60,7 +56,6 @@ module Cons =
 (assert (! (forall ((o1 O)(o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))
 (assert (! (forall ((o1 O)(o2 O))(=> (sibling o1 o2) (= (parent o1)(parent o2)))) :named sib_then_par))
 (assert (! (forall ((o1 O)(o2 O))(=> (and (= (otype o1)(otype o2)) (= (parent o1)(parent o2)))(= o1 o2))) :named types_then_eq))
-(assert (! (forall ((t T)) (not (or (WR t t) (RW t t) (WW t t))))     :named no_loops))
 (assert (! (forall ((o O)) (not (or (WR_O o o) (RW_O o o) (WW_O o o))))     :named no_loops_o))
 (assert (! (forall ((t1 O) (t2 O) (t3 O))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
 (assert (! (forall ((t1 O) (t2 O))(=> (and (is_write t1) (is_write t2) (not (= t1 t2)) (not (sibling t1 t2))) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
@@ -75,12 +70,12 @@ module Cons =
     let op_funcs = "\n(declare-fun parent (O) T)\n(declare-fun sibling (O O) Bool)\n(declare-fun program_order (O O) Bool)  "
 
 
-    let op_rels = "(assert (! (forall ((o1 O)(o2 O))(=> (WR_O o1 o2)(WR (parent o1)(parent o2)))) :named wr_op_txn))
-(assert (! (forall ((o1 O)(o2 O))(=> (RW_O o1 o2)(RW (parent o1)(parent o2)))) :named rw_op_txn))
-(assert (! (forall ((o1 O)(o2 O))(=> (WW_O o1 o2)(WW (parent o1)(parent o2)))) :named ww_op_txn))" 
+    let op_rels = ""
 
 
-    let gen_deps = "(declare-fun D (T T) Bool)\n(assert (! (forall ((t1 T)(t2 T)) (=> (D t1 t2) (or (WW t1 t2)(WR t1 t2)(RW t1 t2)))) :named gen-dep) )"
+    let gen_deps = "(declare-fun D (O O) Bool)\n(declare-fun X (O O) Bool)\n"^
+                   "\n(assert (! (forall ((t1 O)(t2 O)) (=> (D t1 t2) (and (not (sibling t1 t2))(or (WW_O t1 t2)(WR_O t1 t2)(RW_O t1 t2))))) :named gen-dep) )"
+                   ^"\n(assert (! (forall ((t1 O)(t2 O)) (=> (X t1 t2) (or (sibling t1 t2)(D t1 t2)))) :named gen-depx) )"
 
     let  gen_all_Types : string list -> string = 
       fun s_list ->
@@ -101,12 +96,12 @@ String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";temp_types;
       if n < i then acc else aux (n-1) (n :: acc)
       in aux j []
     let max = string_of_int _MAX_CYCLE_LENGTH 
-    let all_ts = List.fold_left (fun old_s -> fun curr_i -> old_s^" (t"^(string_of_int curr_i)^" T)") "" (range 1 _MAX_CYCLE_LENGTH)
+    let all_ts = List.fold_left (fun old_s -> fun curr_i -> old_s^" (t"^(string_of_int curr_i)^" O)") "" (range 1 _MAX_CYCLE_LENGTH)
     let all_ands = List.fold_left (fun old_s -> fun curr_i -> old_s^
-                                              " (D t"^(string_of_int curr_i)^
+                                              " (X t"^(string_of_int curr_i)^
                                               " t"^(string_of_int @@ curr_i+1)^
-                                              ")") "" (range 1 (_MAX_CYCLE_LENGTH-1)) 
-    let cycles_to_check = gen_deps^"\n(assert (! (exists ("^all_ts^") (and (not (= t1 t"^max^")) "^all_ands^" (D t"^max^" t1))) :named cycle))"
+                                              ")") "" (range 2 (_MAX_CYCLE_LENGTH-1)) 
+    let cycles_to_check = gen_deps^"\n(assert (! (exists ("^all_ts^") (and (not (= t1 t"^max^")) (D t1 t2)"^all_ands^" (X t"^max^" t1))) :named cycle))"
   
  
 
@@ -116,11 +111,16 @@ String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";temp_types;
         |(SER,Some t1,Some t2) -> ";Selective SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (and (or (and (= (type t1) "^t1^")(= (type t2)"^t2^"))
                                                 (and (= (type t1) "^t2^")(= (type t2)"^t1^"))) 
                                             (ar t1 t2))  (vis t1 t2))):named "^t1^"-"^t2^"-selective-ser ))"
-        |(PSI,None,None) ->  ";PSI \n(assert (! (forall ((t1 T) (t2 T)) (=> (WW t1 t2) (vis t1 t2))):named psi))"
+        |(PSI,None,None) ->  ";PSI \n(assert (! (forall ((t1 O) (t2 O)) (=> (WW_O t1 t2) (vis t1 t2))):named psi))
+;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
+(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
         |(CC,None,None) -> ";CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
         |(CC,Some t,_) -> ";Selective CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (= (type t3) "^t^") (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
         |(EC,_,_) -> ";EC"
         |(RC,None,None) -> ";RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
+(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
+|(RR,None,None) -> ";RR \n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))))
+;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
 (assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
  
 
@@ -128,7 +128,7 @@ let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s
 
 
 
-let requests = "\n(check-sat)\n;(get-unsat-core) \n;(get-model)"
+let requests = "\n(check-sat)\n;(get-unsat-core) \n(get-model)"
 end
 
 
@@ -171,7 +171,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
   
   let table_deps_gen_deps : string -> string -> string = 
     fun dep_type -> fun table_name ->
-      "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"^
+"\n;(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"^
       "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)) (=> ("^dep_type^"_"^table_name^"_O r o1 o2) ("^dep_type^"_O o1 o2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-o))"^
       "\n;(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) 
 ;                                            (exists ((o1 O)(o2 O)) 

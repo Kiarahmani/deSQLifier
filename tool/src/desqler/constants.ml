@@ -1,8 +1,8 @@
-type g = SER | CC | PSI | EC | RC
+type g = SER | CC | RR | PSI | EC | RC
 
 
 (*set the followig for your analysis*)
-let _MAX_CYCLE_LENGTH = 2
+let _MAX_CYCLE_LENGTH = 10
 let _GUARANTEE = [
                   (*(SER,Some "New_order",Some "Payment");
                   (SER,Some "New_order",Some "New_order");
