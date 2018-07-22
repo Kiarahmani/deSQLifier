@@ -35,9 +35,12 @@ module Cons =
 
 
 
-    let r_to_r_o=    ""
 
     let temp_types = "\n(declare-datatypes () ((OType (Write_update_1)(Write_update_2)(Read_select_1))))  "
+
+
+
+
     let temp_types_2 = "(assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_1) (= (type (parent o1)) Read))) :named op_types_to_dep1))
 (assert (! (forall ((o1 O))(=> (= (otype o1) Write_update_1) (= (type (parent o1)) Write))) :named op_types_to_dep2))
 (assert (! (forall ((o1 O))(=> (= (otype o1) Write_update_2) (= (type (parent o1)) Write))) :named op_types_to_dep3))
@@ -51,27 +54,25 @@ module Cons =
 (assert (forall ((o O))(=> (or (=(otype o)Write_update_1)(= (otype o)Write_update_2))(is_write o))))"
  
 
-    let basic_assertions= temp_types_2^"\n(assert (! (forall ((o1 O)(o2 O))(=> (program_order o1 o2)(sibling o1 o2))) :named po_then_sib))
-(assert (! (forall ((o O))(not (program_order o o))) :named irreflx_po))
-(assert (! (forall ((o1 O)(o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))
-(assert (! (forall ((o1 O)(o2 O))(=> (sibling o1 o2) (= (parent o1)(parent o2)))) :named sib_then_par))
-(assert (! (forall ((o1 O)(o2 O))(=> (and (= (otype o1)(otype o2)) (= (parent o1)(parent o2)))(= o1 o2))) :named types_then_eq))
-(assert (! (forall ((o O)) (not (or (WR_O o o) (RW_O o o) (WW_O o o))))     :named no_loops_o))
-(assert (! (forall ((t1 O) (t2 O) (t3 O))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
-(assert (! (forall ((t1 O) (t2 O))(=> (and (is_write t1) (is_write t2) (not (= t1 t2)) (not (sibling t1 t2))) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
-(assert (! (forall ((o1 O) (o2 O))   (=> (WR_O o1 o2) (vis o1 o2)))       :named wr_then_vis))
-(assert (! (forall ((o1 O) (o2 O))   (=> (WW_O o1 o2) (ar o1 o2)))        :named ww->ar))
-(assert (! (forall ((o1 O) (o2 O))   (=> (RW_O o1 o2) (not (vis o2 o1))))     :named rw_then_not_vis))
-(assert (! (forall ((t O))     (not (ar t t)))          :named irreflx_ar))"
+    let basic_assertions= temp_types_2
+                          ^"\n(assert (! (forall ((o1 O) (o2 O))(=> (program_order o1 o2)(sibling o1 o2))) :named po_then_sib))"
+                          ^"\n(assert (! (forall ((o  O))(not (program_order o o))) :named irreflx_po))"
+                          ^"\n(assert (! (forall ((o1 O) (o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))"
+                          ^"\n(assert (! (forall ((o1 O) (o2 O))(=> (sibling o1 o2) (= (parent o1)(parent o2)))) :named sib_then_par))"
+                          ^"\n(assert (! (forall ((o1 O) (o2 O))(=> (and (= (otype o1)(otype o2)) (= (parent o1)(parent o2)))(= o1 o2))) :named types_then_eq))"
+                          ^"\n(assert (! (forall ((o  O))(not (or (WR_O o o) (RW_O o o) (WW_O o o))))     :named no_loops_o))"
+                          ^"\n(assert (! (forall ((t1 O) (t2 O) (t3 O))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))"
+                          ^"\n(assert (! (forall ((t1 O) (t2 O))(=> (and (is_write t1) (is_write t2) (not (= t1 t2)) (not (sibling t1 t2))) 
+                                      (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))"
+                          ^"\n(assert (! (forall ((o1 O) (o2 O))   (=> (WR_O o1 o2) (vis o1 o2)))       :named wr_then_vis))"
+                          ^"\n(assert (! (forall ((o1 O) (o2 O))   (=> (WW_O o1 o2) (ar o1 o2)))        :named ww->ar))"
+                          ^"\n(assert (! (forall ((o1 O) (o2 O))   (=> (RW_O o1 o2) (not (vis o2 o1))))     :named rw_then_not_vis))"
+                          ^"\n(assert (! (forall ((t O)) (not (ar t t)))          :named irreflx_ar))"
 
 
 
    
     let op_funcs = "\n(declare-fun parent (O) T)\n(declare-fun sibling (O O) Bool)\n(declare-fun program_order (O O) Bool)  "
-
-
-    let op_rels = ""
-
 
     let gen_deps = "(declare-fun D (O O) Bool)\n(declare-fun X (O O) Bool)\n"^
                    "\n(assert (! (forall ((t1 O)(t2 O)) (=> (D t1 t2) (and (not (sibling t1 t2))(or (WW_O t1 t2)(WR_O t1 t2)(RW_O t1 t2))))) :named gen-dep) )"
@@ -156,7 +157,7 @@ struct
 
   let z3_init  = fun s_list -> let open Cons in 
     String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types s_list; basic_relations; 
-                          basic_assertions; op_rels;r_to_r_o]
+                          basic_assertions]
 
 
   let z3_final = let open Cons in

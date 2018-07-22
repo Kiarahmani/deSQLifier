@@ -33,22 +33,19 @@
 (assert (forall ((o1 O)(o2 O))(=> (vis o1 o2)(and (is_write o1)(not (is_write o2))))))
 (assert (forall ((o O))(=> (is_write o)(or (=(otype o)Write_update_1)(= (otype o)Write_update_2)))))
 (assert (forall ((o O))(=> (or (=(otype o)Write_update_1)(= (otype o)Write_update_2))(is_write o))))
-(assert (! (forall ((o1 O)(o2 O))(=> (program_order o1 o2)(sibling o1 o2))) :named po_then_sib))
-(assert (! (forall ((o O))(not (program_order o o))) :named irreflx_po))
-(assert (! (forall ((o1 O)(o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))
-(assert (! (forall ((o1 O)(o2 O))(=> (sibling o1 o2) (= (parent o1)(parent o2)))) :named sib_then_par))
-(assert (! (forall ((o1 O)(o2 O))(=> (and (= (otype o1)(otype o2)) (= (parent o1)(parent o2)))(= o1 o2))) :named types_then_eq))
-(assert (! (forall ((o O)) (not (or (WR_O o o) (RW_O o o) (WW_O o o))))     :named no_loops_o))
+(assert (! (forall ((o1 O) (o2 O))(=> (program_order o1 o2)(sibling o1 o2))) :named po_then_sib))
+(assert (! (forall ((o  O))(not (program_order o o))) :named irreflx_po))
+(assert (! (forall ((o1 O) (o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))
+(assert (! (forall ((o1 O) (o2 O))(=> (sibling o1 o2) (= (parent o1)(parent o2)))) :named sib_then_par))
+(assert (! (forall ((o1 O) (o2 O))(=> (and (= (otype o1)(otype o2)) (= (parent o1)(parent o2)))(= o1 o2))) :named types_then_eq))
+(assert (! (forall ((o  O))(not (or (WR_O o o) (RW_O o o) (WW_O o o))))     :named no_loops_o))
 (assert (! (forall ((t1 O) (t2 O) (t3 O))(=> (and (ar  t1 t2) (ar  t2 t3)) (ar  t1 t3)))  :named trans_ar))
-(assert (! (forall ((t1 O) (t2 O))(=> (and (is_write t1) (is_write t2) (not (= t1 t2)) (not (sibling t1 t2))) (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
+(assert (! (forall ((t1 O) (t2 O))(=> (and (is_write t1) (is_write t2) (not (= t1 t2)) (not (sibling t1 t2))) 
+                                      (xor (ar  t1 t2) (ar  t2 t1))))  :named total_ar))
 (assert (! (forall ((o1 O) (o2 O))   (=> (WR_O o1 o2) (vis o1 o2)))       :named wr_then_vis))
 (assert (! (forall ((o1 O) (o2 O))   (=> (WW_O o1 o2) (ar o1 o2)))        :named ww->ar))
 (assert (! (forall ((o1 O) (o2 O))   (=> (RW_O o1 o2) (not (vis o2 o1))))     :named rw_then_not_vis))
-(assert (! (forall ((t O))     (not (ar t t)))          :named irreflx_ar))
-
-
-
-
+(assert (! (forall ((t O)) (not (ar t t)))          :named irreflx_ar))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -337,10 +334,14 @@
 
 (assert (! (forall ((t1 O)(t2 O)) (=> (D t1 t2) (and (not (sibling t1 t2))(or (WW_O t1 t2)(WR_O t1 t2)(RW_O t1 t2))))) :named gen-dep) )
 (assert (! (forall ((t1 O)(t2 O)) (=> (X t1 t2) (or (sibling t1 t2)(D t1 t2)))) :named gen-depx) )
-(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O) (t5 O) (t6 O) (t7 O) (t8 O) (t9 O) (t10 O)) (and (not (= t1 t10)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t5) (X t5 t6) (X t6 t7) (X t7 t8) (X t8 t9) (X t9 t10) (X t10 t1))) :named cycle))
+(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O) (t5 O)) (and (not (= t1 t5)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t5) (X t5 t1))) :named cycle))
 
 ;Guarantees
-;EC
+;PSI 
+(assert (! (forall ((t1 O) (t2 O)) (=> (WW_O t1 t2) (vis t1 t2))):named psi))
+;RC
+(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
+(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))
 
 (check-sat)
 ;(get-unsat-core) 
