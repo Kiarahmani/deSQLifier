@@ -413,7 +413,7 @@ let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) lis
       let open List in
       let open Sql.Statement in
         begin (*XX are we sure it is the head? needs to be verified*)
-        match (hd s_list1) with
+        match (hd @@ rev s_list1) with
           |(INSERT _,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i+1) 
                         curr_cond v_list1 s_list1  for_count body_exps
           |(DELETE _,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d+1,iter_i) 
@@ -449,8 +449,8 @@ let convert_body_stmts: string -> (string * V.t) list -> Typedtree.expression ->
   let (output_st,output_var) = convert_body_rec txn_name (1,1,1,1) F.my_true init_param_vars [] 1 body in
   (*testing*)
   let temp_output = List.map (fun (x,y)->x) output_st in
-  let _ = Utils.print_stmts_list temp_output in 
-  let _ = Utils.print_var_list @@ snd @@ List.split output_var in 
+  (*let _ = Utils.print_stmts_list temp_output in 
+  let _ = Utils.print_var_list @@ snd @@ List.split output_var in *)
   (output_st,output_var)
 
 

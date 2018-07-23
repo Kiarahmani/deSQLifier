@@ -1,8 +1,10 @@
 #/bin/bash
 # This script will run the deSQLer on the given test benchmark
-
+line="=============";
 TEST=$1
-./bin/deSQLer.opt -w -20 -c ./tests/$TEST/$TEST.ml #&> /dev/null
-time z3 z3-encoding.smt2 > z3.dump
-head -n 1 z3.dump
+./bin/deSQLer.opt -w -20 -c ./tests/$TEST/$TEST.ml &> /dev/null
+echo "$1:" >> z3.dump
+z3 z3-encoding.smt2 >> z3.dump
+echo "$line" >> z3.dump
+#head -n 1 z3.dump
 #rm z3-encoding.smt2

@@ -6,8 +6,8 @@
 
 (set-option :produce-unsat-cores true)
 
-(declare-datatypes () ((TType (Update)))) 
-(declare-datatypes () ((OType (Update_select_1)(Update_update_1)))) 
+(declare-datatypes () ((TType (Write2) (Write1) (Read)))) 
+(declare-datatypes () ((OType (Write2_update_1) (Write1_update_1) (Read_select_1)(Read_select_2)))) 
 (declare-sort T)
 (declare-sort O)
 (declare-fun type (T) TType)
@@ -16,11 +16,13 @@
 (declare-fun parent (O) T)
 (declare-fun sibling (O O) Bool)
 (declare-fun program_order (O O) Bool)  
-(assert (forall ((o O))(=> (or (=(otype o) Update_update_1))(is_write o))))
-(assert (forall ((o O))(=> (is_write o)(or (=(otype o) Update_update_1)))))
+(assert (forall ((o O))(=> (or (=(otype o) Write2_update_1)(=(otype o) Write1_update_1))(is_write o))))
+(assert (forall ((o O))(=> (is_write o)(or (=(otype o) Write2_update_1)(=(otype o) Write1_update_1)))))
 
-(assert (! (forall ((o1 O))(=> (= (otype o1) Update_select_1) (= (type (parent o1)) Update))) :named op_types_Update_select_1))
-(assert (! (forall ((o1 O))(=> (= (otype o1) Update_update_1) (= (type (parent o1)) Update))) :named op_types_Update_update_1))
+(assert (! (forall ((o1 O))(=> (= (otype o1) Write2_update_1) (= (type (parent o1)) Write2))) :named op_types_Write2_update_1))
+(assert (! (forall ((o1 O))(=> (= (otype o1) Write1_update_1) (= (type (parent o1)) Write1))) :named op_types_Write1_update_1))
+(assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_1) (= (type (parent o1)) Read))) :named op_types_Read_select_1))
+(assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_2) (= (type (parent o1)) Read))) :named op_types_Read_select_2))
 
 (declare-fun WR_O (O O) Bool)
 (declare-fun RW_O (O O) Bool)
@@ -28,8 +30,8 @@
 (declare-fun vis (O O) Bool)
 (declare-fun ar (O O) Bool)
 
-(assert (forall ((o1 O)(o2 O))(=> (ar o1 o2)(and (is_write o1)(is_write o2)))))
-(assert (forall ((o1 O)(o2 O))(=> (vis o1 o2)(and (is_write o1)(not (is_write o2))))))
+(assert (! (forall ((o1 O)(o2 O))(=> (ar o1 o2)(and (is_write o1)(is_write o2)))) :named ar_on_writes))
+(assert (! (forall ((o1 O)(o2 O))(=> (and (vis o1 o2)(is_write o1)(is_write o2))(ar o1 o2))) :named vis_then_ar))
 (assert (! (forall ((o1 O) (o2 O))(=> (program_order o1 o2)(sibling o1 o2))) :named po_then_sib))
 (assert (! (forall ((o  O))(not (program_order o o))) :named irreflx_po))
 (assert (! (forall ((o1 O) (o2 O))(=> (= (parent o1)(parent o2))(sibling o1 o2))) :named par_then_sib))
@@ -75,15 +77,22 @@
          (=> (and (WR_Alive_Bankaccount r t2 t1)(RW_Alive_Bankaccount r t1 t3))(WW_Alive_Bankaccount r t2 t3))) :named bankaccount-lww-alive))
 
 ;params
-(declare-fun Update_Param_ac_id (T) Int)
-(declare-fun Update_Param_ac_id2 (T) Int)
+(declare-fun Write2_Param_ac_id (T) Int)
+(declare-fun Write1_Param_ac_id (T) Int)
+(declare-fun Read_Param_ac_id (T) Int)
 
-;update_v1
-(declare-fun Update_isN_v1 (T) Bool)
-(declare-fun Update_Var_v1 (T) Bankaccount)
-(assert (! (forall((t0 T))(and (=> (not (Update_isN_v1 t0)) (exists ((r Bankaccount))(= (Update_Var_v1 t0) r))) 
-                               (=> (exists ((r Bankaccount))(= (Update_Var_v1 t0) r)) (not (Update_isN_v1 t0))))) :named update-v1-isnull-prop) )
-(assert (! (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Update_Var_v1 t0)) (Update_Param_ac_id t0))) :named update-v1-select-prop))
+;read_v1
+(declare-fun Read_isN_v1 (T) Bool)
+(declare-fun Read_Var_v1 (T) Bankaccount)
+(assert (! (forall((t0 T))(and (=> (not (Read_isN_v1 t0)) (exists ((r Bankaccount))(= (Read_Var_v1 t0) r))) 
+                               (=> (exists ((r Bankaccount))(= (Read_Var_v1 t0) r)) (not (Read_isN_v1 t0))))) :named read-v1-isnull-prop) )
+(assert (! (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Read_Var_v1 t0)) (Read_Param_ac_id t0))) :named read-v1-select-prop))
+;read_v2
+(declare-fun Read_isN_v2 (T) Bool)
+(declare-fun Read_Var_v2 (T) Bankaccount)
+(assert (! (forall((t0 T))(and (=> (not (Read_isN_v2 t0)) (exists ((r Bankaccount))(= (Read_Var_v2 t0) r))) 
+                               (=> (exists ((r Bankaccount))(= (Read_Var_v2 t0) r)) (not (Read_isN_v2 t0))))) :named read-v2-isnull-prop) )
+(assert (! (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Read_Var_v2 t0)) (+ (Read_Param_ac_id t0) 1))) :named read-v2-select-prop))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,18 +101,90 @@
 
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
-                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Update) (= (type t2) Update))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write2))
                     (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or false
+                        false )))
+                                :named write2-write2-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write1))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write2-write1-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Read))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write2-read-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write2))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write1-write2-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write1))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write1-write1-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Read))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write1-read-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write2))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        (or (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) Update_select_1)
-                                (= (otype o2) Update_update_1)
+                                (= (otype o1) Read_select_1)
+                                (= (otype o2) Write2_update_1)
                                 (IsAlive_Bankaccount r t2)
                                 (RW_Bankaccount_O r o1 o2)
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t1))  true
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t2))  true))) )))
-                                :named update-update-rw-then))
+                                (= (Bankaccount_Proj_b_id r) (Read_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t2))  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Read_select_2)
+                                (= (otype o2) Write2_update_1)
+                                (IsAlive_Bankaccount r t2)
+                                (RW_Bankaccount_O r o1 o2)
+                                (= (Bankaccount_Proj_b_id r) (+ (Read_Param_ac_id t1) 1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t2))  true))) )))
+                                :named read-write2-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write1))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        (or (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Read_select_1)
+                                (= (otype o2) Write1_update_1)
+                                (IsAlive_Bankaccount r t2)
+                                (RW_Bankaccount_O r o1 o2)
+                                (= (Bankaccount_Proj_b_id r) (Read_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t2))  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Read_select_2)
+                                (= (otype o2) Write1_update_1)
+                                (IsAlive_Bankaccount r t2)
+                                (RW_Bankaccount_O r o1 o2)
+                                (= (Bankaccount_Proj_b_id r) (+ (Read_Param_ac_id t1) 1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t2))  true))) )))
+                                :named read-write1-rw-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read))
+                    (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named read-read-rw-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WR-> Rules                                                       
@@ -111,19 +192,94 @@
 
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
-                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Update) (= (type t2) Update))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write2))
                     (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or false
+                        false )))
+                                :named write2-write2-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write1))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write2-write1-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Read))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        (or (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) Update_update_1)
-                                (= (otype o2) Update_select_1)
+                                (= (otype o1) Write2_update_1)
+                                (= (otype o2) Read_select_1)
                                 (IsAlive_Bankaccount r t1)
                                 (WR_Bankaccount_O r o1 o2)
-                                (not (Update_isN_v1 t2))
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t2))  true
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t1))  true))) )))
-                                :named update-update-wr-then))
+                                (not (Read_isN_v1 t2))
+                                (= (Bankaccount_Proj_b_id r) (Read_Param_ac_id t2))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t1))  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write2_update_1)
+                                (= (otype o2) Read_select_2)
+                                (IsAlive_Bankaccount r t1)
+                                (WR_Bankaccount_O r o1 o2)
+                                (not (Read_isN_v2 t2))
+                                (= (Bankaccount_Proj_b_id r) (+ (Read_Param_ac_id t2) 1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t1))  true))) )))
+                                :named write2-read-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write2))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write1-write2-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write1))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write1-write1-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Read))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        (or (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write1_update_1)
+                                (= (otype o2) Read_select_1)
+                                (IsAlive_Bankaccount r t1)
+                                (WR_Bankaccount_O r o1 o2)
+                                (not (Read_isN_v1 t2))
+                                (= (Bankaccount_Proj_b_id r) (Read_Param_ac_id t2))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t1))  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write1_update_1)
+                                (= (otype o2) Read_select_2)
+                                (IsAlive_Bankaccount r t1)
+                                (WR_Bankaccount_O r o1 o2)
+                                (not (Read_isN_v2 t2))
+                                (= (Bankaccount_Proj_b_id r) (+ (Read_Param_ac_id t2) 1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t1))  true))) )))
+                                :named write1-read-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write2))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named read-write2-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write1))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named read-write1-wr-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read))
+                    (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named read-read-wr-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       WW-> Rules                                                       
@@ -131,19 +287,94 @@
 
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
-                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Update) (= (type t2) Update))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write2))
                     (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) Update_update_1)
-                                (= (otype o2) Update_update_1)
+                                (= (otype o1) Write2_update_1)
+                                (= (otype o2) Write2_update_1)
                                 (WW_Bankaccount_O r o1 o2)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t1))  true
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t2))  true))) )))
-                                :named update-update-ww-then))
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t2))  true))) )))
+                                :named write2-write2-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write1))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write2_update_1)
+                                (= (otype o2) Write1_update_1)
+                                (WW_Bankaccount_O r o1 o2)
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t2))  true))) )))
+                                :named write2-write1-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Read))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write2-read-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write2))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write1_update_1)
+                                (= (otype o2) Write2_update_1)
+                                (WW_Bankaccount_O r o1 o2)
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t2))  true))) )))
+                                :named write1-write2-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write1))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write1_update_1)
+                                (= (otype o2) Write1_update_1)
+                                (WW_Bankaccount_O r o1 o2)
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t2))  true))) )))
+                                :named write1-write1-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Read))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named write1-read-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write2))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named read-write2-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write1))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named read-write1-ww-then))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read))
+                    (=> (and (WW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
+                        false )))
+                                :named read-read-ww-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       ->WR Rules                                                       
@@ -151,10 +382,58 @@
 
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
-                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Update) (= (type t2) Update) (not (= t1 t2)))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write2) (not (= t1 t2)))
                     (=> false
                         (WR_O o1 o2) )))
-                                :named update-update-then-wr))
+                                :named write2-write2-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write1) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named write2-write1-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Read) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named write2-read-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write2) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named write1-write2-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write1) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named write1-write1-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Read) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named write1-read-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write2) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named read-write2-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write1) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named read-write1-then-wr))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read) (not (= t1 t2)))
+                    (=> false
+                        (WR_O o1 o2) )))
+                                :named read-read-then-wr))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;                                                       ->WW Rules                                                       
@@ -162,18 +441,90 @@
 
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
-                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Update) (= (type t2) Update) (not (= t1 t2)))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write2) (not (= t1 t2)))
                     (=> (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) Update_update_1)
-                                (= (otype o2) Update_update_1)
+                                (= (otype o1) Write2_update_1)
+                                (= (otype o2) Write2_update_1)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t1))  true
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t2))  true)))
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t2))  true)))
                         (or (WW_O o1 o2) (WW_O o2 o1)) )))
-                                :named update-update-then-ww))
+                                :named write2-write2-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Write1) (not (= t1 t2)))
+                    (=> (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write2_update_1)
+                                (= (otype o2) Write1_update_1)
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t2))  true)))
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named write2-write1-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Read) (not (= t1 t2)))
+                    (=> false
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named write2-read-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write2) (not (= t1 t2)))
+                    (=> (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write1_update_1)
+                                (= (otype o2) Write2_update_1)
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write2_Param_ac_id t2))  true)))
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named write1-write2-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Write1) (not (= t1 t2)))
+                    (=> (or false
+                            (exists ((r Bankaccount))
+                                (and 
+                                (= (otype o1) Write1_update_1)
+                                (= (otype o2) Write1_update_1)
+                                (IsAlive_Bankaccount r t1)
+                                (IsAlive_Bankaccount r t2)
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t1))  true
+                                (= (Bankaccount_Proj_b_id r) (Write1_Param_ac_id t2))  true)))
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named write1-write1-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Read) (not (= t1 t2)))
+                    (=> false
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named write1-read-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write2) (not (= t1 t2)))
+                    (=> false
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named read-write2-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write1) (not (= t1 t2)))
+                    (=> false
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named read-write1-then-ww))
+
+(assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
+                (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read) (not (= t1 t2)))
+                    (=> false
+                        (or (WW_O o1 o2) (WW_O o2 o1)) )))
+                                :named read-read-then-ww))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -185,15 +536,17 @@
 
 (assert (! (forall ((t1 O)(t2 O)) (=> (D t1 t2) (and (not (sibling t1 t2))(or (WW_O t1 t2)(WR_O t1 t2)(RW_O t1 t2))))) :named gen-dep) )
 (assert (! (forall ((t1 O)(t2 O)) (=> (X t1 t2) (or (sibling t1 t2)(D t1 t2)))) :named gen-depx) )
-(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O) (t5 O)) (and (not (= t1 t5)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t5) (X t5 t1))) :named cycle))
+(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O) (t5 O) (t6 O)) (and (not (= t1 t6)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t5) (X t5 t6) (X t6 t1))) :named cycle))
 
 ;Guarantees
 ;SER 
-(assert (! (forall ((t1 O) (t2 O)) (=> (ar t1 t2) (vis t1 t2))):named psi))
+(assert (! (forall ((o1 O) (o2 O)) (=> (ar o1 o2) (vis o1 o2))) :named ser))(assert (! (forall ((o1 O) (o2 O) (o3 O)) (=> (and (ar o1 o2)(vis o2 o3))(vis o1 o3))) :named ser2))
+;RR
+(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))) :named rr))
 ;RC
-(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
-(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))
+(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o1 o3))(vis o3 o2))) :named rc))
+(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (is_write o3)(and (ar o1 o2)(sibling o2 o3))(ar o1 o3))) :named rc2))
 
 (check-sat)
 ;(get-unsat-core) 
-(get-model)
+;(get-model)

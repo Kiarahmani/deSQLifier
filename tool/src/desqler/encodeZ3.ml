@@ -35,8 +35,8 @@ module Cons =
 
 
 
-    let temp_types_2 = "(assert (forall ((o1 O)(o2 O))(=> (ar o1 o2)(and (is_write o1)(is_write o2)))))
-(assert (forall ((o1 O)(o2 O))(=> (vis o1 o2)(and (is_write o1)(not (is_write o2))))))"
+    let temp_types_2 = "(assert (! (forall ((o1 O)(o2 O))(=> (ar o1 o2)(and (is_write o1)(is_write o2)))) :named ar_on_writes))
+(assert (! (forall ((o1 O)(o2 O))(=> (and (vis o1 o2)(is_write o1)(is_write o2))(ar o1 o2))) :named vis_then_ar))"
  
 
     let basic_assertions= temp_types_2
@@ -163,27 +163,23 @@ module Cons =
                                               ")") "" (range 2 (_MAX_CYCLE_LENGTH-1)) 
     let cycles_to_check = gen_deps^"\n(assert (! (exists ("^all_ts^") (and (not (= t1 t"^max^")) (D t1 t2)"^all_ands^" (X t"^max^" t1))) :named cycle))"
   
- 
 
+
+    let rc = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o1 o3))(vis o3 o2))) :named rc))"
+             ^"\n(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (is_write o3)(and (ar o1 o2)(sibling o2 o3))(ar o1 o3))) :named rc2))"
+    let rr = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))) :named rr))"
+    let cc = "(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
+    let psi = "(assert (! (forall ((o1 O) (o2 O)) (=> (WW_O o1 o2) (vis o1 o2))) :named psi))"
+    let ser = "(assert (! (forall ((o1 O) (o2 O)) (=> (ar o1 o2) (vis o1 o2))) :named ser))"
+              ^"(assert (! (forall ((o1 O) (o2 O) (o3 O)) (=> (and (ar o1 o2)(vis o2 o3))(vis o1 o3))) :named ser2))"
     let guarantee : (Constants.g*string option*string option) -> string = 
       fun (g,t1,t2) -> match (g,t1,t2) with
-        |(SER,Some t1,Some t2) -> ";Selective SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (and (or (and (= (type t1) "^t1^")(= (type t2)"^t2^"))
-                                                (and (= (type t1) "^t2^")(= (type t2)"^t1^"))) 
-                                            (ar t1 t2))  (vis t1 t2))):named "^t1^"-"^t2^"-selective-ser ))"
-        |(PSI,None,None) ->  ";PSI \n(assert (! (forall ((t1 O) (t2 O)) (=> (WW_O t1 t2) (vis t1 t2))):named psi))"
-                            ^"\n;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
-                            ^"\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
-        |(CC,None,None) -> ";CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
-        |(CC,Some t,_) -> ";Selective CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (= (type t3) "^t^") (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
+        |(PSI,None,None) ->  ";PSI \n"^psi^"\n;RR\n"^rr^"\n;RC\n"^rc
+        |(SER,None,None) ->  ";SER \n"^ser^"\n;RR\n"^rr^"\n;RC\n"^rc
+        |(CC,None,None) -> ";CC \n"^cc
         |(EC,_,_) -> ";EC"
-        |(RC,None,None) -> ";RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
-                               ^"(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
-        |(RR,None,None) -> ";RR \n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))))"
-                               ^"\n;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
-                               ^"\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
-        |(SER,None,None) ->   ";SER \n(assert (! (forall ((t1 O) (t2 O)) (=> (ar t1 t2) (vis t1 t2))):named psi))"
-                            ^"\n;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
-                            ^"\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
+        |(RC,None,None) -> ";RC\n"^rc
+        |(RR,None,None) -> ";RR \n"^rr^"\n;RC\n"^rc
 
  
 
@@ -191,7 +187,7 @@ let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s
 
 
 
-let requests = "\n(check-sat)\n;(get-unsat-core) \n(get-model)"
+let requests = "\n(check-sat)\n;(get-unsat-core) \n;(get-model)"
 end
 
 
