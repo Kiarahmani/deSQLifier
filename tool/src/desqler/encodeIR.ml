@@ -421,14 +421,14 @@ let rec convert_body_rec: F.t -> (string*V.t) list -> (S.st*string) list -> int 
     |_ -> Utils.print_helpful_expression_desc exp_desc;  failwith "ERROR convert_body_rec: unexpected case"
 
 
-let convert_body_stmts: (string * V.t) list -> Typedtree.expression -> (S.st list*(string*V.t) list) =
+let convert_body_stmts: (string * V.t) list -> Typedtree.expression -> ((S.st*string) list*(string*V.t) list) =
   fun init_param_vars -> fun body -> 
   let (output_st,output_var) = convert_body_rec F.my_true init_param_vars [] 1 body in
   (*testing*)
   let temp_output = List.map (fun (x,y)->x) output_st in
   let _ = Utils.print_stmts_list temp_output in 
   let _ = Utils.print_var_list @@ snd @@ List.split output_var in 
-  (temp_output,output_var)
+  (output_st,output_var)
 
 
 let convert : G.t -> L.t = 

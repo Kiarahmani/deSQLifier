@@ -224,54 +224,55 @@ end
 module Analyze = 
 struct
      (*WW->*)
-     let analyze_stmts: string ->  string -> S.st -> S.st -> string -> string option = 
-      fun txn_name1 -> fun txn_name2 -> fun stmt1 -> fun stmt2 -> fun dir -> 
+     let analyze_stmts: string ->  string -> (S.st*string) -> (S.st*string) -> string -> string option = 
+      fun txn_name1 -> fun txn_name2 -> fun (stmt1,sttyp1) -> fun (stmt2,sttyp2) -> fun dir -> 
         (*t1 and t2 are the same if the txns are the same*)
         let open Utils in 
         let open Wrappers in
-        match (stmt1,stmt2,dir) with
+        let type_conds = ["(= (otype o1) "^sttyp1^")";"(= (otype o2) "^sttyp2^")"] in
+        match (stmt1,sttyp1,stmt2,sttyp2,dir) with
           
           (*-------------------*)
           (*WW*)
           (*1*)
-          |(S.UPDATE _,S.UPDATE _,"->WW") -> 
+          |(S.UPDATE _,_,S.UPDATE _,_,"->WW") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let u1_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u2_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                Some (rule_wrapper (table, ["(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
+                             Some (rule_wrapper (table, type_conds@["(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
               |None -> None end
           
           (*2*)
-          |(S.UPDATE _,S.UPDATE _,"WW->") -> 
+          |(S.UPDATE _,_,S.UPDATE _,_,"WW->") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let u1_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u2_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                             Some (rule_wrapper (table, ["(WW_"^table^"_O r o1 o2)";"(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
+                             Some (rule_wrapper (table, type_conds@["(WW_"^table^"_O r o1 o2)";"(IsAlive_"^table^" r t1)";"(IsAlive_"^table^" r t2)";u1_cond ; u2_cond]))
               |None -> None end
 
           (*-------------------*)
           (*WR->*)
           (*3*)
-          |(S.UPDATE _ , S.SELECT(_,v,_,_),"WR->") -> 
+          |(S.UPDATE _ ,_, S.SELECT(_,v,_,_),_,"WR->") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 2  (to_cap txn_name2) table stmt2 in
                              let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
                              let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               Some (rule_wrapper
-                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
+                                      (table, type_conds@["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      (*4*)
-          |(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "WR->")->
+          |(S.INSERT (_,_,_) ,_, S.SELECT (_,v,_,_),_, "WR->")->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
               |None -> None end
           (*5*)
-          |(S.DELETE (_,_,_) , S.SELECT (_,v,_,_), "WR->")->
+          |(S.DELETE (_,_,_),_, S.SELECT (_,v,_,_),_, "WR->")->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
@@ -279,37 +280,37 @@ struct
 															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
 															let alive_cond_d = "(IsAlive_"^table^" r t1)" in
 															let alive_cond_s = "(not (IsAlive_"^table^" r t2))" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond_d;alive_cond_s;null_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;null_cond;wr_cond]))
               |None -> None end
           (*10*)
-          |(S.DELETE (_,_,_) , S.RANGE_SELECT (_,v,_,_), "WR->")->
+          |(S.DELETE (_,_,_),_, S.RANGE_SELECT (_,v,_,_),_, "WR->")->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
 															let alive_cond_d = "(IsAlive_"^table^" r t1)" in
 															let alive_cond_s = "(not (IsAlive_"^table^" r t2))" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond_d;alive_cond_s;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;wr_cond]))
               |None -> None end
 
           (*6*)
-          |(S.UPDATE _ , S.RANGE_SELECT(_,v,_,_),"WR->") -> 
+          |(S.UPDATE _,_, S.RANGE_SELECT(_,v,_,_),_,"WR->") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 2  (to_cap txn_name2) table stmt2 in
                              let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
                              let null_cond = "("^(to_cap txn_name2)^"_SVar_"^(V.name v)^" t2 r)" in
                               Some (rule_wrapper
-                                      (table, ["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
+                                      (table, type_conds@["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      
           (*7*)
-          |(S.INSERT (_,_,_) , S.RANGE_SELECT (_,v,_,_), "WR->")->
+          |(S.INSERT (_,_,_),_, S.RANGE_SELECT (_,v,_,_),_, "WR->")->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
  
 
@@ -318,82 +319,82 @@ struct
           (*-------------------*)
           (*RW->*)
           (*12*)
-          |(S.SELECT _,S.UPDATE _, "RW->") -> 
+          |(S.SELECT _,_,S.UPDATE _,_, "RW->") -> 
             begin
               match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                Some (rule_wrapper (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";s_cond;u_cond]))
+                Some (rule_wrapper (table, type_conds@["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";s_cond;u_cond]))
               |None -> None end
           (*15*)
-          |(S.RANGE_SELECT(_,v,_,_),S.UPDATE _,"RW->") -> 
+          |(S.RANGE_SELECT(_,v,_,_),_,S.UPDATE _,_,"RW->") -> 
             begin match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
                              let null_cond = "(not ("^(to_cap txn_name1)^"_SVar_"^(V.name v)^" t1 r))" in
                               Some (rule_wrapper
-                                      (table, ["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
+                                      (table, type_conds@["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      (*14*)
-          |(S.SELECT (_,v,_,_),S.INSERT (_,_,_), "RW->" )->
+          |(S.SELECT (_,v,_,_),_,S.INSERT (_,_,_),_, "RW->" )->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let null_cond = "("^to_cap txn_name1^"_isN_"^(V.name v)^" t1)" in
                               let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
 															let alive_cond = "(not (IsAlive_"^table^" r t1))" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
 
           (*16*)
-          |(S.RANGE_SELECT (_,v,_,_),S.INSERT (_,_,_), "RW->" )->
+          |(S.RANGE_SELECT (_,v,_,_),_,S.INSERT (_,_,_),_, "RW->" )->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
 															let alive_cond = "(not (IsAlive_"^table^" r t1))" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
           (*13*)
-          |(S.SELECT (_,v,_,_),S.DELETE (_,_,_), "RW->" )->
+          |(S.SELECT (_,v,_,_),_,S.DELETE (_,_,_),_, "RW->" )->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let null_cond = "(not ("^to_cap txn_name1^"_isN_"^(V.name v)^" t1))" in
                               let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
               |None -> None end
           (*17*)
-          |(S.RANGE_SELECT (_,v,_,_),S.DELETE (_,_,_), "RW->" )->
+          |(S.RANGE_SELECT (_,v,_,_),_,S.DELETE (_,_,_),_, "RW->" )->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
 
 					(*-------------------*)
 					(*->WR*)
   		    (*21*)
- 	    		|(S.INSERT (_,_,_) , S.SELECT (_,v,_,_), "->WR")->
+ 	    		|(S.INSERT (_,_,_),_, S.SELECT (_,v,_,_),_, "->WR")->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond = extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
 															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;null_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;null_cond;alive_cond;wr_cond]))
               |None -> None end
           (*22*)
- 	    		|(S.INSERT (_,_,_) , S.RANGE_SELECT (_,v,_,_), "->WR")->
+ 	    		|(S.INSERT (_,_,_),_, S.RANGE_SELECT (_,v,_,_),_, "->WR")->
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond = extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
 															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
-                              Some (rule_wrapper (table,[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
 
 
