@@ -267,7 +267,7 @@ struct
               |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
-															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
               |None -> None end
@@ -277,7 +277,7 @@ struct
               |Some table ->  let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
-															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond_d = "(IsAlive_"^table^" r t1)" in
 															let alive_cond_s = "(not (IsAlive_"^table^" r t2))" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;null_cond;wr_cond]))
@@ -287,7 +287,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
-															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond_d = "(IsAlive_"^table^" r t1)" in
 															let alive_cond_s = "(not (IsAlive_"^table^" r t2))" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;wr_cond]))
@@ -308,7 +308,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
-															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
@@ -341,7 +341,7 @@ struct
               |Some table ->  let null_cond = "("^to_cap txn_name1^"_isN_"^(V.name v)^" t1)" in
                               let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
-															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(not (IsAlive_"^table^" r t1))" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
@@ -351,7 +351,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
-															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(not (IsAlive_"^table^" r t1))" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
@@ -361,7 +361,7 @@ struct
               |Some table ->  let null_cond = "(not ("^to_cap txn_name1^"_isN_"^(V.name v)^" t1))" in
                               let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
-															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
               |None -> None end
@@ -370,7 +370,7 @@ struct
             begin match (accessed_common_table stmt1 stmt2) with
               |Some table ->  let s_cond =  extract_condition 1  (to_cap txn_name1) table stmt1 in
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
-															let wr_cond = "(RW_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
@@ -384,7 +384,7 @@ struct
                               let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond = extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;null_cond;alive_cond;wr_cond]))
               |None -> None end
           (*22*)
@@ -393,7 +393,7 @@ struct
               |Some table ->  let s_cond =  extract_condition 2  (to_cap txn_name2) table stmt2 in
                               let i_cond = extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-															let wr_cond = "(WR_Alive_"^table^" r t1 t2)" in
+															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
                               Some (rule_wrapper (table,type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
 

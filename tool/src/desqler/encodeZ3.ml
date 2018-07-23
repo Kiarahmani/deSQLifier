@@ -225,12 +225,12 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
     fun table_name ->
 "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)(o3 O)) 
      (=> (and (not (sibling o2 o3)) (WR_"^table_name^"_O r o2 o1)(RW_"^table_name^"_O r o1 o3))(WW_"^table_name^"_O r o2 o3))) :named "^String.lowercase_ascii table_name^"-lww-row))"^
-    "\n(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)(t3 T)) 
+    "\n(assert (! (forall ((r "^table_name^")(t1 O)(t2 O)(t3 O)) 
          (=> (and (WR_Alive_"^table_name^" r t2 t1)(RW_Alive_"^table_name^" r t1 t3))(WW_Alive_"^table_name^" r t2 t3))) :named "^String.lowercase_ascii table_name^"-lww-alive))"
   
   let table_deps_gen_deps : string -> string -> string = 
     fun dep_type -> fun table_name ->
-"\n;(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"^
+"\n(assert (! (forall ((r "^table_name^")(t1 O)(t2 O)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^"_O t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"^
       "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)) (=> ("^dep_type^"_"^table_name^"_O r o1 o2) ("^dep_type^"_O o1 o2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-o))"
 
 
@@ -238,7 +238,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
   let table_deps_funcs : string -> string -> string = 
     fun dep_type -> fun table_name ->
       "\n(declare-fun "^dep_type^"_"^table_name^"_O ("^table_name^" O O) Bool)"^
-      "\n(declare-fun "^dep_type^"_Alive_"^table_name^" ("^table_name^" T T) Bool)"
+      "\n(declare-fun "^dep_type^"_Alive_"^table_name^" ("^table_name^" O O) Bool)"
 
    let table_initialize: Var.Table.t -> string =
     fun table -> let open Var.Table in
