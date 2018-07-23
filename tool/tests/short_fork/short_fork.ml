@@ -44,25 +44,10 @@ type bankaccount = {b_id: int; mutable b_owner: string; mutable b_bal: int}
 
 
 
-
 (*TXN 1*)
-let read_txn (ac_id:int) = 
+let update_txn (ac_id:int)(ac_id2:int) = 
   let v1 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = ac_id)) in
-  let v2 = SQL.select1 Bankaccount B_bal 
-      (fun u -> (u.b_id = ac_id+1)) in
-  ()
-
-(*TXN 2*)
-let write1_txn (ac_id:int)= 
   SQL.update Bankaccount
-    (fun u -> begin u.b_bal <-  100; end)
-    (fun u -> (u.b_id = ac_id))
-
-(*TXN 3*)
-let write2_txn (ac_id:int)= 
-  SQL.update Bankaccount
-    (fun u -> begin u.b_bal <-  200; end)
-    (fun u -> (u.b_id = ac_id));
-
-
+    (fun u -> begin u.b_bal <- v1.b_bal + 100; end)
+    (fun u -> (u.b_id = ac_id2));

@@ -35,23 +35,8 @@ module Cons =
 
 
 
-
-    let temp_types = "\n(declare-datatypes () ((OType (Write_update_1)(Write_update_2)(Read_select_1))))  "
-
-
-
-
-    let temp_types_2 = "(assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_1) (= (type (parent o1)) Read))) :named op_types_to_dep1))
-(assert (! (forall ((o1 O))(=> (= (otype o1) Write_update_1) (= (type (parent o1)) Write))) :named op_types_to_dep2))
-(assert (! (forall ((o1 O))(=> (= (otype o1) Write_update_2) (= (type (parent o1)) Write))) :named op_types_to_dep3))
-(assert (! (forall ((o1 O))(=> (= (type (parent o1)) Read)(or (= (otype o1) Read_select_1)))) :named dep_to_ops_type))
-(assert (! (forall ((o1 O))(=> (= (type (parent o1)) Write)(or (= (otype o1) Write_update_1)
-                                                              (= (otype o1) Write_update_2)))) :named dep_to_ops_typeX))
-(declare-fun is_write (O) Bool)
-(assert (forall ((o1 O)(o2 O))(=> (ar o1 o2)(and (is_write o1)(is_write o2)))))
-(assert (forall ((o1 O)(o2 O))(=> (vis o1 o2)(and (is_write o1)(not (is_write o2))))))
-(assert (forall ((o O))(=> (is_write o)(or (=(otype o)Write_update_1)(= (otype o)Write_update_2)))))
-(assert (forall ((o O))(=> (or (=(otype o)Write_update_1)(= (otype o)Write_update_2))(is_write o))))"
+    let temp_types_2 = "(assert (forall ((o1 O)(o2 O))(=> (ar o1 o2)(and (is_write o1)(is_write o2)))))
+(assert (forall ((o1 O)(o2 O))(=> (vis o1 o2)(and (is_write o1)(not (is_write o2))))))"
  
 
     let basic_assertions= temp_types_2
@@ -83,11 +68,85 @@ module Cons =
         List.fold_left (fun old_s -> fun curr_t -> old_s^" ("^(String.capitalize_ascii curr_t)^")") "" s_list
 
 
-   	let primitive_types : string list -> string = fun s_list -> 
+    let gen_txn_op_type : T.t -> (string*string list) = 
+      fun txn -> 
+        let name = to_cap @@ T.name txn in
+        let stmts = T.stmts txn in
+        let (result,_,_,_,_,write_list) = List.fold_left  
+            (fun (old_s,iter_s,iter_u,iter_d,iter_i,old_writes) -> fun curr_stmt -> 
+               match curr_stmt with
+               |S.SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
+               |S.RANGE_SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
+               |S.MAX_SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
+               |S.MIN_SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
+               |S.COUNT_SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
+               |S.CHOOSE _ -> (old_s,iter_s,iter_u,iter_d,iter_i,old_writes) 
+               |S.DELETE _ -> (old_s^("("^name^"_"^"delete_"^(string_of_int iter_d)^")"),iter_s,iter_u,iter_d+1,iter_i,old_writes@[name^"_"^"delete_"^(string_of_int iter_d)])
+               |S.UPDATE _ -> (old_s^("("^name^"_"^"update_"^(string_of_int iter_u)^")"),iter_s,iter_u+1,iter_d,iter_i,old_writes@[name^"_"^"update_"^(string_of_int iter_u)]) 
+               |S.INSERT _ -> (old_s^("("^name^"_"^"insert_"^(string_of_int iter_i)^")"),iter_s,iter_u,iter_d,iter_i+1,old_writes@[name^"_"^"insert_"^(string_of_int iter_i)])) ("",1,1,1,1,[]) stmts
+        in (result,write_list)
+    
+    
+    let txn_type_to_op_type : T.t -> string = 
+      fun txn -> 
+        let name = to_cap @@ T.name txn in
+        let stmts = T.stmts txn in
+        let (result,_,_,_,_) = List.fold_left  
+            (fun (old_s,iter_s,iter_u,iter_d,iter_i) -> fun curr_stmt -> 
+               match curr_stmt with
+               |S.SELECT _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_select_"^(string_of_int iter_s)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_select_"^(string_of_int iter_s)^"))"),iter_s+1,iter_u,iter_d,iter_i) 
+               |S.RANGE_SELECT _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_select_"^(string_of_int iter_s)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_select_"^(string_of_int iter_s)^"))"),iter_s+1,iter_u,iter_d,iter_i) 
+               |S.MAX_SELECT _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_select_"^(string_of_int iter_s)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_select_"^(string_of_int iter_s)^"))"),iter_s+1,iter_u,iter_d,iter_i) 
+               |S.MIN_SELECT _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_select_"^(string_of_int iter_s)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_select_"^(string_of_int iter_s)^"))"),iter_s+1,iter_u,iter_d,iter_i) 
+               |S.COUNT_SELECT _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_select_"^(string_of_int iter_s)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_select_"^(string_of_int iter_s)^"))"),iter_s+1,iter_u,iter_d,iter_i) 
+               |S.CHOOSE _ -> (old_s,iter_s,iter_u,iter_d,iter_i) 
+               |S.DELETE _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_delete_"^(string_of_int iter_d)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_delete_"^(string_of_int iter_d)^"))"),iter_s,iter_u,iter_d+1,iter_i) 
+               |S.UPDATE _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_update_"^(string_of_int iter_u)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_update_"^(string_of_int iter_u)^"))"),iter_s,iter_u+1,iter_d,iter_i) 
+               |S.INSERT _ -> (old_s^("\n(assert (! (forall ((o1 O))(=> (= (otype o1) "^name^"_insert_"^(string_of_int iter_i)
+                                      ^") (= (type (parent o1)) "^name^"))) :named op_types_"^name^"_insert_"^(string_of_int iter_i)^"))"),iter_s,iter_u,iter_d,iter_i+1)) ("",1,1,1,1) stmts
+        in result
+
+
+
+
+    let txns_type_to_op_type : T.t list -> string =
+      fun txn_list -> List.fold_left (fun old_s -> fun curr_txn -> old_s^(txn_type_to_op_type curr_txn)) "" txn_list
+
+    let gen_all_op_types : T.t list -> (string*string list) = 
+      fun (txn_list) -> List.fold_left (fun (old_s,old_list) -> fun curr_txn -> 
+          let (new_s,new_list) = gen_txn_op_type curr_txn in
+          (old_s^" "^new_s,old_list@new_list)) ("",[]) txn_list
+
+    let mk_write_types_assertions write_types_list = 
+      List.fold_left (fun old_s -> fun curr_type -> old_s^"(=(otype o) "^curr_type^")") "" write_types_list
+
+
+
+
+   	let primitive_types : T.t list -> string list -> string = fun txn_list -> fun s_list -> 
       let pr = (gen_all_Types s_list) in 
-String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";temp_types;
-                  "\n(declare-sort T)\n(declare-sort O)\n(declare-fun type (T) TType)\n(declare-fun otype (O) OType)  "
-                  ;op_funcs] 
+      let (ore,write_types_list) = (gen_all_op_types txn_list) in
+      let write_types_assertions_help = mk_write_types_assertions write_types_list in
+      let write_types_assertions = "(assert (forall ((o O))(=> (or "^write_types_assertions_help^")(is_write o))))"^
+                                   "\n(assert (forall ((o O))(=> (is_write o)(or "^write_types_assertions_help^"))))"in
+      let tt_to_ot = txns_type_to_op_type txn_list in
+                  String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";
+                                    "\n(declare-datatypes () ((OType";ore;"))) ";
+                                    "\n(declare-sort T)";
+                                    "\n(declare-sort O)";
+                                    "\n(declare-fun type (T) TType)";
+                                    "\n(declare-fun otype (O) OType)";
+                                    "\n(declare-fun is_write (O) Bool)";
+                                    op_funcs;"\n";
+                                    write_types_assertions;"\n";
+                                    tt_to_ot]
     
   
     
@@ -108,21 +167,24 @@ String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";temp_types;
 
     let guarantee : (Constants.g*string option*string option) -> string = 
       fun (g,t1,t2) -> match (g,t1,t2) with
-        |(SER,None,None) -> ";SER \n(assert (! (forall ((o1 O) (o2 O)) (=> (ar (parent o1) (parent o2)) (vis o1 o2))):named ser ))"
         |(SER,Some t1,Some t2) -> ";Selective SER \n(assert (! (forall ((t1 T) (t2 T)) (=> (and (or (and (= (type t1) "^t1^")(= (type t2)"^t2^"))
                                                 (and (= (type t1) "^t2^")(= (type t2)"^t1^"))) 
                                             (ar t1 t2))  (vis t1 t2))):named "^t1^"-"^t2^"-selective-ser ))"
-        |(PSI,None,None) ->  ";PSI \n(assert (! (forall ((t1 O) (t2 O)) (=> (WW_O t1 t2) (vis t1 t2))):named psi))
-;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
-(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
+        |(PSI,None,None) ->  ";PSI \n(assert (! (forall ((t1 O) (t2 O)) (=> (WW_O t1 t2) (vis t1 t2))):named psi))"
+                            ^"\n;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
+                            ^"\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
         |(CC,None,None) -> ";CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
         |(CC,Some t,_) -> ";Selective CC \n(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (= (type t3) "^t^") (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
         |(EC,_,_) -> ";EC"
-        |(RC,None,None) -> ";RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
-(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
-|(RR,None,None) -> ";RR \n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))))
-;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
-(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
+        |(RC,None,None) -> ";RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
+                               ^"(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
+        |(RR,None,None) -> ";RR \n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))))"
+                               ^"\n;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
+                               ^"\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
+        |(SER,None,None) ->   ";SER \n(assert (! (forall ((t1 O) (t2 O)) (=> (ar t1 t2) (vis t1 t2))):named psi))"
+                            ^"\n;RC\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))"
+                            ^"\n(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))"
+
  
 
 let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s^"\n"^(guarantee g) ) "" _GUARANTEE
@@ -155,8 +217,8 @@ end
 module Encode =
 struct
 
-  let z3_init  = fun s_list -> let open Cons in 
-    String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types s_list; basic_relations; 
+  let z3_init  = fun txn_list -> fun s_list -> let open Cons in 
+    String.concat "\n\n" [PrintUtils.comment_header "Constants"; options; primitive_types txn_list s_list; basic_relations; 
                           basic_assertions]
 
 
@@ -173,11 +235,8 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
   let table_deps_gen_deps : string -> string -> string = 
     fun dep_type -> fun table_name ->
 "\n;(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_Alive_"^table_name^" r t1 t2) ("^dep_type^" t1 t2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-alive))"^
-      "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)) (=> ("^dep_type^"_"^table_name^"_O r o1 o2) ("^dep_type^"_O o1 o2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-o))"^
-      "\n;(assert (! (forall ((r "^table_name^")(t1 T)(t2 T)) (=> ("^dep_type^"_"^table_name^" r t1 t2) 
-;                                            (exists ((o1 O)(o2 O)) 
-;                                                            (and (= (parent o1) t1)(= (parent o2) t2)
-;                                                                 ("^dep_type^"_"^table_name^"_O r o1 o2))))) :named "^dep_type^"o_to_"^dep_type^"_o))"
+      "\n(assert (! (forall ((r "^table_name^")(o1 O)(o2 O)) (=> ("^dep_type^"_"^table_name^"_O r o1 o2) ("^dep_type^"_O o1 o2))) :named "^String.lowercase_ascii table_name^"-"^dep_type^"-then-o))"
+
 
 
   let table_deps_funcs : string -> string -> string = 
@@ -410,7 +469,7 @@ let all_txns_all_rules: T.t list -> string = fun txn_list ->
     fun txn_list -> 
       let open Encode in
       let txn_name_list = List.map T.name txn_list in
-      write_to_file  @@ String.concat "\n\n" [z3_init txn_name_list;
+      write_to_file  @@ String.concat "\n\n" [z3_init txn_list txn_name_list;
                                               all_table_initialize table_list;
                                               all_txn_initialize txn_list;
                                               all_txns_all_rules txn_list;

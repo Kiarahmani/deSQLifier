@@ -12,6 +12,6 @@ let _GUARANTEE = [
                   (SER,Some "Delivery",Some "Delivery");
 
                   (SER,Some "Payment",Some "Payment");*)
-                  (PSI,None,None)]
+                  (SER,None,None)]
 
 
