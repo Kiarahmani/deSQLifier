@@ -97,8 +97,8 @@
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) XX)
-                                (= (otype o2) XX)
+                                (= (otype o1) Update_select_1)
+                                (= (otype o2) Update_update_1)
                                 (IsAlive_Bankaccount r t2)
                                 (RW_Bankaccount_O r o1 o2)
                                 (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t1))  true
@@ -116,8 +116,8 @@
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) XX)
-                                (= (otype o2) XX)
+                                (= (otype o1) Update_update_1)
+                                (= (otype o2) Update_select_1)
                                 (IsAlive_Bankaccount r t1)
                                 (WR_Bankaccount_O r o1 o2)
                                 (not (Update_isN_v1 t2))
@@ -136,8 +136,8 @@
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) XX)
-                                (= (otype o2) XX)
+                                (= (otype o1) Update_update_1)
+                                (= (otype o2) Update_update_1)
                                 (WW_Bankaccount_O r o1 o2)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
@@ -166,8 +166,8 @@
                     (=> (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) XX)
-                                (= (otype o2) XX)
+                                (= (otype o1) Update_update_1)
+                                (= (otype o2) Update_update_1)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
                                 (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t1))  true
