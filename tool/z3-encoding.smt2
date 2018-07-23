@@ -97,8 +97,6 @@
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) Update_select_1)
-                                (= (otype o2) Update_update_1)
                                 (IsAlive_Bankaccount r t2)
                                 (RW_Bankaccount_O r o1 o2)
                                 (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t1))  true
@@ -116,8 +114,6 @@
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o2) Update_select_1)
-                                (= (otype o1) Update_update_1)
                                 (IsAlive_Bankaccount r t1)
                                 (WR_Bankaccount_O r o1 o2)
                                 (not (Update_isN_v1 t2))
@@ -136,8 +132,6 @@
                         (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) Update_update_1)
-                                (= (otype o2) Update_update_1)
                                 (WW_Bankaccount_O r o1 o2)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
@@ -166,8 +160,6 @@
                     (=> (or false
                             (exists ((r Bankaccount))
                                 (and 
-                                (= (otype o1) Update_update_1)
-                                (= (otype o1) Update_update_1)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
                                 (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id2 t1))  true
@@ -189,13 +181,11 @@
 
 ;Guarantees
 ;SER 
-;(assert (! (forall ((t1 O) (t2 O)(t3 O)) (=> (and (ar t1 t2) (sibling t3 t1) (not (is_write t3))) (vis t3 t2))):named psi))
+(assert (! (forall ((t1 O) (t2 O)) (=> (ar t1 t2) (vis t1 t2))):named psi))
 ;RC
-(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(is_write o3)(sibling o1 o2))(vis o2 o3))))
-(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(is_write o2)(sibling o1 o2))(ar  o2 o3))))
-
-
+(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o3)(sibling o1 o2))(vis o2 o3))))
+(assert (forall ((o1 O)(o2 O)(o3 O))(=> (and (ar  o1 o3)(sibling o1 o2))(ar  o2 o3))))
 
 (check-sat)
 ;(get-unsat-core) 
-;(get-model)
+(get-model)
