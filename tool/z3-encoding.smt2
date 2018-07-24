@@ -103,7 +103,7 @@
                                 (IsAlive_Bankaccount r t2)
                                 (RW_Bankaccount_O r o1 o2)
                                 (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t1))  true
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t2)))  true))) )))
+                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t2)))  (and true (< 2 4))))) )))
                                 :named update-update-rw-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,7 +125,7 @@
                                 (WR_Bankaccount_O r o1 o2)
                                 (not (Update_isN_v1 t2))
                                 (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t2))  true
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t1)))  true))) )))
+                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t1)))  (and true (< 2 4))))) )))
                                 :named update-update-wr-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,8 +144,8 @@
                                 (WW_Bankaccount_O r o1 o2)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t1)))  true
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t2)))  true))) )))
+                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t1)))  (and true (< 2 4))
+                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t2)))  (and true (< 2 4))))) )))
                                 :named update-update-ww-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -173,8 +173,8 @@
                                 (= (otype o2) Update_update_1)
                                 (IsAlive_Bankaccount r t1)
                                 (IsAlive_Bankaccount r t2)
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t1)))  true
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t2)))  true)))
+                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t1)))  (and true (< 2 4))
+                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t2)))  (and true (< 2 4)))))
                         (or (WW_O o1 o2) (WW_O o2 o1)) )))
                                 :named update-update-then-ww))
 
