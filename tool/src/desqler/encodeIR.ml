@@ -348,35 +348,35 @@ let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) lis
       |"select1" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
                     let new_stmt = S.SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                     let new_type = txn_name^"_select_"^(string_of_int iter_s) in
-                    let new_es_cond = F.my_true in
+                    let new_es_cond = F.my_false in
                       convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
                                        body
       |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  
                     let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                     let new_type = txn_name^"_select_"^(string_of_int iter_s) in
-                    let new_es_cond = F.my_true in
+                    let new_es_cond = F.my_false in
                       convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
                                        body
       |"select_max" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
                        let new_stmt = S.MAX_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                        let new_type = txn_name^"_select_"^(string_of_int iter_s) in
-                       let new_es_cond = F.my_true in
+                       let new_es_cond = F.my_false in
                          convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt,new_type,new_es_cond]) for_count
                                        body
       |"select_min" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
                        let new_stmt = S.MIN_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                        let new_type = txn_name^"_select_"^(string_of_int iter_s) in
-                       let new_es_cond = F.my_true in
+                       let new_es_cond = F.my_false in
                          convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
                                        (old_stmts@[new_stmt,new_type,new_es_cond]) for_count
                                        body
       |"choose" ->  let chosen_var = List.assoc accessed_table old_vars in (*accessed_table here is interpreted as the chosen var name*)
                     let (new_name,new_var) = extract_choose_variable vb_pat.pat_desc chosen_var  in
                     let new_stmt = S.CHOOSE (new_var,chosen_var,wh_clause,curr_cond) in
-                    let new_es_cond = F.my_true in
+                    let new_es_cond = F.my_false in
                     convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) curr_cond  
                                                (old_vars@[(new_name,new_var)]) 
                                                (old_stmts@[new_stmt,"XX",new_es_cond]) for_count body
