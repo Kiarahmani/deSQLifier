@@ -226,14 +226,14 @@ module Analyze =
 struct
      (*WW->*)
      let analyze_stmts: string ->  string -> (S.st*string*F.t) -> (S.st*string*F.t) -> string -> string option = 
-      fun txn_name1 -> fun txn_name2 -> fun (stmt1,sttyp1,_) -> fun (stmt2,sttyp2,_) -> fun dir -> 
+      fun txn_name1 -> fun txn_name2 -> fun (stmt1,sttyp1,esc1) -> fun (stmt2,sttyp2,esc2) -> fun dir -> 
         (*t1 and t2 are the same if the txns are the same*)
         let open Utils in 
         let open Wrappers in
-        let es_conds_to_s = "(> 2 1)" in
+        let es_conds_to_s1 = extract_where "" txn_name1 "" esc1 in
         let es_conds = match _CORRECTNESS with
                         |SERIALIZABILITY -> []
-                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";"(or false "^es_conds_to_s^")"] 
+                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";"(or false "^es_conds_to_s1^")"] 
                         |_ -> failwith "ERROR (Unknown correctness criterion): analyze_stmts.rules.ml" in
 
         let type_conds = ["(= (otype o1) "^sttyp1^")";"(= (otype o2) "^sttyp2^")"] in
