@@ -134,8 +134,10 @@ module Cons =
       let pr = (gen_all_Types s_list) in 
       let (ore,write_types_list) = (gen_all_op_types txn_list) in
       let write_types_assertions_help = mk_write_types_assertions write_types_list in
-      let write_types_assertions = "(assert (forall ((o O))(=> (or "^write_types_assertions_help^")(is_write o))))"^
-                                   "\n(assert (forall ((o O))(=> (is_write o)(or "^write_types_assertions_help^"))))"in
+      let write_types_assertions = match write_types_assertions_help with
+                                    |"" -> ";no write operations detected"
+                                    |_ -> "(assert (forall ((o O))(=> (or "^write_types_assertions_help^")(is_write o))))"^
+                                          "\n(assert (forall ((o O))(=> (is_write o)(or "^write_types_assertions_help^"))))"in
       let tt_to_ot = txns_type_to_op_type txn_list in
                   String.concat "" ["(declare-datatypes () ((TType";pr;"))) ";
                                     "\n(declare-datatypes () ((OType";ore;"))) ";
@@ -168,7 +170,7 @@ module Cons =
     let rc = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o1 o3))(vis o3 o2))) :named rc))"
              ^"\n(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (is_write o3)(and (ar o1 o2)(sibling o2 o3))(ar o1 o3))) :named rc2))"
     let rr = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))) :named rr))"
-    let cc = "(assert (! (forall ((t1 T) (t2 T) (t3 T))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
+    let cc = "(assert (! (forall ((t1 O) (t2 O) (t3 O))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
     let psi = "(assert (! (forall ((o1 O) (o2 O)) (=> (WW_O o1 o2) (vis o1 o2))) :named psi))"
     let ser = "(assert (! (forall ((o1 O) (o2 O)) (=> (ar o1 o2) (vis o1 o2))) :named ser))"
               ^"(assert (! (forall ((o1 O) (o2 O) (o3 O)) (=> (and (ar o1 o2)(vis o2 o3))(vis o1 o3))) :named ser2))"
