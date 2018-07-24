@@ -225,8 +225,8 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> (st
     |_ -> let _ = Utils.print_helpful_expression_desc desc in failwith "ERROR extract_operands: case not handled yet"  
   
 
-let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> Fol.t =
-  fun var_list -> fun exp  ->
+let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> (string * V.t) list -> (Fol.t*(string * V.t) list) =
+  fun var_list -> fun exp  -> fun already_extracted_vars -> 
       match exp.exp_desc with
         |Texp_apply ({exp_desc = Texp_ident (Pdot (_,op,_),_,_) }, (*operator is extracted here. e.g. =*)
                         [(Nolabel,Some l_exp);(Nolabel,Some r_exp)] ) ->
@@ -236,14 +236,14 @@ let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> Fol.t
           let (r_op,_) = extract_operands var_list r_desc [] in
           begin
           match op with 
-            |"=" ->  (F.L.Eq (l_op,r_op))
-            |">" ->  (F.L.Gt (l_op,r_op))
-            |"<" ->  (F.L.Lt (l_op,r_op))
-            |"!=" -> (F.L.Nq (l_op,r_op))
-            |"&&" -> (F.L.AND (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
-            |"||" -> (F.L.OR (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
+            |"=" ->  (F.L.Eq (l_op,r_op),[])
+            |">" ->  (F.L.Gt (l_op,r_op),[])
+            |"<" ->  (F.L.Lt (l_op,r_op),[])
+            |"!=" -> (F.L.Nq (l_op,r_op),[])
+            |"&&" -> (F.L.AND (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp,[] ))
+            |"||" -> (F.L.OR (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp,[] ))
             |_ -> failwith "ERROR extract_where_clause: the operation not handled yet" end
-        |Texp_ident _ -> (F.L.Bool (fst @@ extract_operands var_list exp.exp_desc []))
+            |Texp_ident _ -> (F.L.Bool (fst @@ extract_operands var_list exp.exp_desc []),[])
         |_ -> failwith "encodeIR.ml: extract_where_clause"
         
 
@@ -283,7 +283,7 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
         let Texp_ident (Pident uu,_,{val_type=record_type}) = u_in_fun.exp_desc in 
         let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp3.exp_desc in (*the where clause*)
           let Tpat_var ({name},_) = c_lhs.pat_desc in 
-        let wh_c = extract_where_clause old_var_list c_rhs in 
+        let (wh_c,wh_accessed_var_list) = extract_where_clause old_var_list c_rhs in 
         let column_name = let open String in 
                           let prefix_size = index field_name '_' in
                           let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
