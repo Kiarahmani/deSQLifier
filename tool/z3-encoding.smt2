@@ -7,7 +7,7 @@
 (set-option :produce-unsat-cores true)
 
 (declare-datatypes () ((TType (Update)))) 
-(declare-datatypes () ((OType (Update_select_1)(Update_update_1)))) 
+(declare-datatypes () ((OType (Update_update_1)))) 
 (declare-sort T)
 (declare-sort O)
 (declare-fun type (T) TType)
@@ -19,7 +19,6 @@
 (assert (forall ((o O))(=> (or (=(otype o) Update_update_1))(is_write o))))
 (assert (forall ((o O))(=> (is_write o)(or (=(otype o) Update_update_1)))))
 
-(assert (! (forall ((o1 O))(=> (= (otype o1) Update_select_1) (= (type (parent o1)) Update))) :named op_types_Update_select_1))
 (assert (! (forall ((o1 O))(=> (= (otype o1) Update_update_1) (= (type (parent o1)) Update))) :named op_types_Update_update_1))
 
 (declare-fun WR_O (O O) Bool)
@@ -77,12 +76,6 @@
 ;params
 (declare-fun Update_Param_ac_id (T) Int)
 
-;update_v1
-(declare-fun Update_isN_v1 (T) Bool)
-(declare-fun Update_Var_v1 (T) Bankaccount)
-(assert (! (forall((t0 T))(and (=> (not (Update_isN_v1 t0)) (exists ((r Bankaccount))(= (Update_Var_v1 t0) r))) 
-                               (=> (exists ((r Bankaccount))(= (Update_Var_v1 t0) r)) (not (Update_isN_v1 t0))))) :named update-v1-isnull-prop) )
-(assert (! (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Update_Var_v1 t0)) (Update_Param_ac_id t0))) :named update-v1-select-prop))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,17 +86,7 @@
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Update) (= (type t2) Update))
                     (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or false
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                false
-                                (= (otype o1) Update_select_1)
-                                (= (otype o2) Update_update_1)
-                                (IsAlive_Bankaccount r t2)
-                                (RW_Bankaccount_O r o1 o2)
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t1))  true
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t2)))  (and true (< 2 4))))) )))
+                        false )))
                                 :named update-update-rw-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,18 +97,7 @@
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Update) (= (type t2) Update))
                     (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or false
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                false
-                                (= (otype o1) Update_update_1)
-                                (= (otype o2) Update_select_1)
-                                (IsAlive_Bankaccount r t1)
-                                (WR_Bankaccount_O r o1 o2)
-                                (not (Update_isN_v1 t2))
-                                (= (Bankaccount_Proj_b_id r) (Update_Param_ac_id t2))  true
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_id (Update_Var_v1 t1)))  (and true (< 2 4))))) )))
+                        false )))
                                 :named update-update-wr-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
