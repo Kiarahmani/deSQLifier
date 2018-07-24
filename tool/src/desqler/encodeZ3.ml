@@ -71,7 +71,7 @@ module Cons =
     let gen_txn_op_type : T.t -> (string*string list) = 
       fun txn -> 
         let name = to_cap @@ T.name txn in
-        let (stmts,_) = List.split @@ T.stmts txn in
+        let stmts = List.map (fun (x,_,_)->x) @@ T.stmts txn in
         let (result,_,_,_,_,write_list) = List.fold_left  
             (fun (old_s,iter_s,iter_u,iter_d,iter_i,old_writes) -> fun curr_stmt -> 
                match curr_stmt with
@@ -90,7 +90,7 @@ module Cons =
     let txn_type_to_op_type : T.t -> string = 
       fun txn -> 
         let name = to_cap @@ T.name txn in
-        let (stmts,_) = List.split @@ T.stmts txn in
+        let stmts = List.map (fun (x,_,_)->x) @@ T.stmts txn in
         let (result,_,_,_,_) = List.fold_left  
             (fun (old_s,iter_s,iter_u,iter_d,iter_i) -> fun curr_stmt -> 
                match curr_stmt with
@@ -353,7 +353,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
   let txn_extract_vars : T.t -> (string*V.t*string*F.t*string) list = 
   fun (T.T{name;params;stmts}) ->  (*first list is for normal vars the second is for set vars (result of select range)*)
   let vars = 
-    List.fold_left (fun prev_l -> fun (stmt,_) -> match stmt_extract_var stmt with
+    List.fold_left (fun prev_l -> fun (stmt,_,_) -> match stmt_extract_var stmt with
                                                 |(Some curr_var,"v",tb_name,fol,_) -> prev_l@[("v",curr_var,tb_name,fol,"")]
                                                 |(Some curr_var,"s",tb_name,fol,_) -> prev_l@[("s",curr_var,tb_name,fol,"")]
                                                 |(Some curr_var,"c",tb_name,fol,chosen_var) -> prev_l@[("c",curr_var,tb_name,fol,chosen_var)]

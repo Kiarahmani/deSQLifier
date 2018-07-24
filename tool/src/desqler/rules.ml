@@ -219,15 +219,14 @@ end
 
 
 
-
 (*----------------------------------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------------------------------*)
 (*analyze statements according to the rules. If applicable, return the wrapped cnoditions as strings*)
 module Analyze = 
 struct
      (*WW->*)
-     let analyze_stmts: string ->  string -> (S.st*string) -> (S.st*string) -> string -> string option = 
-      fun txn_name1 -> fun txn_name2 -> fun (stmt1,sttyp1) -> fun (stmt2,sttyp2) -> fun dir -> 
+     let analyze_stmts: string ->  string -> (S.st*string*F.t) -> (S.st*string*F.t) -> string -> string option = 
+      fun txn_name1 -> fun txn_name2 -> fun (stmt1,sttyp1,_) -> fun (stmt2,sttyp2,_) -> fun dir -> 
         (*t1 and t2 are the same if the txns are the same*)
         let open Utils in 
         let open Wrappers in

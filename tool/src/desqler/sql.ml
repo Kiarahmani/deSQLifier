@@ -34,7 +34,7 @@ struct
   type t = T of {name: string;
                  params: Var.Variable.t list;
                  (*statement itself+the object type+the ES condition*)
-                 stmts: (Statement.st*string) list;
+                 stmts: (Statement.st*string*Fol.t) list;
                  vars: (string*Var.Variable.t) list }
   let make ~name ~params ~stmts ~vars = T {name=name; params=params; stmts=stmts; vars=vars}
   let name (T{name}) = name

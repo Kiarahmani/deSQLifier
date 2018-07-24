@@ -334,8 +334,8 @@ let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
 (**********)
 (*The main extraction function*)
 (**********)
-let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) list -> (S.st*string) list -> int -> 
-                            Typedtree.expression  -> (S.st*string) list*(string*V.t) list = 
+let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) list -> (S.st*string*F.t) list -> int -> 
+                            Typedtree.expression  -> (S.st*string*F.t) list*(string*V.t) list = 
   fun txn_name -> fun (iter_s,iter_u,iter_d,iter_i) -> 
   fun curr_cond -> fun old_vars -> fun old_stmts ->  fun for_count ->
   fun {exp_desc;exp_loc;exp_extra;exp_type;exp_env;exp_attributes} ->
@@ -348,31 +348,38 @@ let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) lis
       |"select1" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
                     let new_stmt = S.SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                     let new_type = txn_name^"_select_"^(string_of_int iter_s) in
+                    let new_es_cond = F.my_true in
                       convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[(new_stmt,new_type)]) for_count
+                                       (old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
                                        body
       |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  
                     let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                     let new_type = txn_name^"_select_"^(string_of_int iter_s) in
+                    let new_es_cond = F.my_true in
                       convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[(new_stmt,new_type)]) for_count
+                                       (old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
                                        body
       |"select_max" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
                        let new_stmt = S.MAX_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                        let new_type = txn_name^"_select_"^(string_of_int iter_s) in
+                       let new_es_cond = F.my_true in
                          convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[new_stmt,new_type]) for_count
+                                       (old_stmts@[new_stmt,new_type,new_es_cond]) for_count
                                        body
       |"select_min" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
                        let new_stmt = S.MIN_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                        let new_type = txn_name^"_select_"^(string_of_int iter_s) in
+                       let new_es_cond = F.my_true in
                          convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[new_stmt,new_type]) for_count
+                                       (old_stmts@[new_stmt,new_type,new_es_cond]) for_count
                                        body
       |"choose" ->  let chosen_var = List.assoc accessed_table old_vars in (*accessed_table here is interpreted as the chosen var name*)
                     let (new_name,new_var) = extract_choose_variable vb_pat.pat_desc chosen_var  in
                     let new_stmt = S.CHOOSE (new_var,chosen_var,wh_clause,curr_cond) in
-                    convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) curr_cond  (old_vars@[(new_name,new_var)]) (old_stmts@[new_stmt,"XX"]) for_count body
+                    let new_es_cond = F.my_true in
+                    convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) curr_cond  
+                                               (old_vars@[(new_name,new_var)]) 
+                                               (old_stmts@[new_stmt,"XX",new_es_cond]) for_count body
       
 
       |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 
@@ -388,22 +395,22 @@ let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) lis
                                     let inserted_table = Var.Table.make table_name [Var.my_col] in (*only table name matters. The actuall columns can be retrieved later*)
                                     let inserted_record = Fol.Record.T{name="test_record"; vars=var_list} in (*I'm gonna create test record for now*)
                                     let new_type = txn_name^"_insert_"^(string_of_int iter_i) in
-                                    (old_stmts@[(S.INSERT (inserted_table,inserted_record ,curr_cond),new_type)],old_vars)
+                                    (old_stmts@[(S.INSERT (inserted_table,inserted_record ,curr_cond),new_type,F.my_true)],old_vars)
  
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression) = extract_update ae_list old_vars in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
                                     let new_type = txn_name^"_update_"^(string_of_int iter_u) in
-                                    (old_stmts@[(S.UPDATE (accessed_col,update_expression,wh_c,curr_cond),new_type)],old_vars)
+                                    (old_stmts@[(S.UPDATE (accessed_col,update_expression,wh_c,curr_cond),new_type,F.my_true)],old_vars)
                       |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list old_vars in
                                     let accessed_table = Var.Table.make accessed_table_name [] in
                                     let new_type = txn_name^"_delete_"^(string_of_int iter_d) in
-                                    (old_stmts@[(S.DELETE (accessed_table,wh_c,curr_cond),new_type)],old_vars)
+                                    (old_stmts@[(S.DELETE (accessed_table,wh_c,curr_cond),new_type,F.my_true)],old_vars)
                       |"foreach" -> let [(_,Some {exp_desc= (Texp_ident(Pident vname,_,_))});(_,Some loop_body)] = ae_list in 
                                     let iterated_var = List.assoc vname.name old_vars in
                                     let new_name = "loop_var_"^(string_of_int for_count)  in
                                     let new_for_var = V.make new_name (V.field iterated_var) (Some (V.table iterated_var)) T.Int RECORD in
                                     let new_stmt = S.CHOOSE (new_for_var,iterated_var,F.my_true,curr_cond) in
-                                    convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) curr_cond (old_vars@[new_name,new_for_var]) (old_stmts@[(new_stmt,"XX")]) (for_count+1) loop_body
+                                    convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) curr_cond (old_vars@[new_name,new_for_var]) (old_stmts@[(new_stmt,"XX",F.my_true)]) (for_count+1) loop_body
                       |_ -> failwith "ERROR convert_body_rec: unexpected SQL operation"
     in (new_stmt,new_var)
     (*intermediate del/upt/ins*)
@@ -414,13 +421,13 @@ let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) lis
       let open Sql.Statement in
         begin (*XX are we sure it is the head? needs to be verified*)
         match (hd @@ rev s_list1) with
-          |(INSERT _,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i+1) 
+          |(INSERT _,_,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i+1) 
                         curr_cond v_list1 s_list1  for_count body_exps
-          |(DELETE _,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d+1,iter_i) 
+          |(DELETE _,_,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d+1,iter_i) 
                         curr_cond v_list1 s_list1  for_count body_exps
-          |(UPDATE _,_) -> convert_body_rec txn_name (iter_s,iter_u+1,iter_d,iter_i) 
+          |(UPDATE _,_,_) -> convert_body_rec txn_name (iter_s,iter_u+1,iter_d,iter_i) 
                         curr_cond v_list1 s_list1  for_count body_exps
-          |(CHOOSE _,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) 
+          |(CHOOSE _,_,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) 
                         curr_cond v_list1 s_list1  for_count body_exps
         end
     (*the unit ()*)
@@ -443,12 +450,12 @@ let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) lis
     |_ -> Utils.print_helpful_expression_desc exp_desc;  failwith "ERROR convert_body_rec: unexpected case"
 
 
-let convert_body_stmts: string -> (string * V.t) list -> Typedtree.expression -> ((S.st*string) list*(string*V.t) list) =
+let convert_body_stmts: string -> (string * V.t) list -> Typedtree.expression -> ((S.st*string*F.t) list*(string*V.t) list) =
   fun txn_name -> 
   fun init_param_vars -> fun body -> 
   let (output_st,output_var) = convert_body_rec txn_name (1,1,1,1) F.my_true init_param_vars [] 1 body in
   (*testing*)
-  let temp_output = List.map (fun (x,y)->x) output_st in
+  let temp_output = List.map (fun (x,_,_)->x) output_st in
   (*let _ = Utils.print_stmts_list temp_output in 
   let _ = Utils.print_var_list @@ snd @@ List.split output_var in *)
   (output_st,output_var)
