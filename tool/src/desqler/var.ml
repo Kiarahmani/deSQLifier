@@ -36,6 +36,7 @@ struct
   let kind (T{kn}) = kn
   let test_var = make "my_true" "" None Type.Int LOCAL
   let true_var = make "my_true" "" None Type.Bool LOCAL
+  let false_var = make "my_false" "" None Type.Bool LOCAL
   let test_field = make "b_id" "" None Type.Int FIELD
   let test_param = make "src_id" "" None Type.Int PARAM
   let kind_to_string = fun x -> match x with PARAM -> "PARAM" | LOCAL -> "LOCAL" | RECORD -> "RECORD" | FIELD -> "FIELD"

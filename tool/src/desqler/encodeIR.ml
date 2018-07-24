@@ -166,15 +166,12 @@ struct
                      (t_name,col_name,(convert_type_to_IR col_type), col_pk)
                 ) 
                 (App.Tableschema.cols table))
-
 end
-
 
 module Txn = 
 struct
 let remove_txn_tail s = 
   String.sub s 0 ((String.length s) - 4)
-
 
 let rec convert_types: type_desc -> T.t =
 	fun tp -> let open Asttypes in 
@@ -325,7 +322,7 @@ let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
   fun var_list -> fun exp ->
     match exp.exp_desc with
     |Texp_construct ({txt=Lident "true"},_,_) -> F.L.Bool (F.L.Var V.true_var)
-    |Texp_construct ({txt=Lident "false"},_,_) ->F.L.Bool (F.L.Var V.true_var)
+    |Texp_construct ({txt=Lident "false"},_,_) ->F.L.Bool (F.L.Var V.false_var)
     |(Texp_apply _) -> extract_where_clause var_list exp
     |Texp_ident _ -> extract_where_clause var_list exp
     |_ -> Utils.print_helpful_expression_desc exp.exp_desc;  failwith "enncodeIR.ml: eaxtract_condition error"
@@ -334,7 +331,7 @@ let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
 (**********)
 (*The main extraction function*)
 (**********)
-let rec convert_body_rec: string -> (int*int*int*int) -> F.t -> (string*V.t) list -> (S.st*string*F.t) list -> int -> 
+let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) list -> (S.st*string*F.t) list -> int -> 
                             Typedtree.expression  -> (S.st*string*F.t) list*(string*V.t) list = 
   fun txn_name -> fun (iter_s,iter_u,iter_d,iter_i) -> 
   fun curr_cond -> fun old_vars -> fun old_stmts ->  fun for_count ->
