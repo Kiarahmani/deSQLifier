@@ -15,6 +15,7 @@ module L =
 struct
   type expr = |Cons: int -> expr
               |Str: string -> expr
+              |Boolean: bool -> expr
 							|Var: Var.Variable.t -> expr
 							|PLUS: expr * expr -> expr
 							|MINUS: expr * expr -> expr
@@ -41,9 +42,8 @@ end
 
 
 type t = L.condition
+let my_false_exp = L.Boolean false
 let my_true = L.Bool (L.Var Var.Variable.test_var)
-let my_one = L.Cons 1
-let my_two = L.Cons 2
-let my_false = L.Gt (my_one,my_two)
+let my_false = L.Bool my_false_exp
 let my_const = L.Var V.test_field
 let my_test_equal = L.Eq (my_const,my_const)

@@ -27,6 +27,7 @@ module Utils =
         | F.L.Var (V.T{name;field;table=Some record_table; tp; kn=V.RECORD}) ->"("^record_table^"_Proj_"^field^" ("^txn_name^"_Var_"^name^" t"^(string_of_int t_i)^"))"
         (*other cases: constants, etc*)
         | F.L.Cons c -> string_of_int c
+        | F.L.Boolean c -> string_of_bool c
         | F.L.Str s -> "\""^s^"\""
         | F.L.MINUS (e1,e2) -> let lhs = expression_to_string t_i record_name txn_name table_name e1 in
                                let rhs = expression_to_string t_i record_name txn_name table_name e2 in  
@@ -234,10 +235,10 @@ struct
         let es_conds_to_s2 = extract_where 2 "" txn_name2 "" esc2 in
         let es_conds1 = match _CORRECTNESS with
                         |SERIALIZABILITY -> []
-                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";"(or false "^es_conds_to_s1^")"] in
+                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";es_conds_to_s1] in
         let es_conds2 = match _CORRECTNESS with
                         |SERIALIZABILITY -> []
-                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";"(or false "^es_conds_to_s2^")"] in
+                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";es_conds_to_s2] in
 
         let type_conds = ["(= (otype o1) "^sttyp1^")";"(= (otype o2) "^sttyp2^")"] in
         match (stmt1,sttyp1,stmt2,sttyp2,dir) with

@@ -270,7 +270,7 @@ let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*s
 
 
 (*handle the rhs of update*)
-let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*string*Fol.t*F.L.expr = 
+let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*string*Fol.t*F.L.expr*S.st list = 
   fun [(_,Some exp1);(_,Some exp2);(_,Some exp3)] -> fun old_var_list -> 
         let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*already extracted... keeping the rest for the future*)
         let Texp_function (_,[{c_lhs=fun_lhs;c_guard=None;c_rhs=
@@ -286,7 +286,7 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
                           let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
                           let postfix_name = sub field_name (prefix_size+1) (length field_name - prefix_size - 1) 
                           in prefix_name^"_"^postfix_name
-        in (table_name,column_name,wh_c,update_expression)
+        in (table_name,column_name,wh_c,update_expression,[])
 
 
 let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*Fol.t = 
@@ -326,6 +326,23 @@ let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
     |(Texp_apply _) -> extract_where_clause var_list exp
     |Texp_ident _ -> extract_where_clause var_list exp
     |_ -> Utils.print_helpful_expression_desc exp.exp_desc;  failwith "enncodeIR.ml: eaxtract_condition error"
+
+
+
+
+(*given a list of statements whose value is being used, the old statement list is updated with the current path condition*)
+let update_statements: F.t -> S.st list ->  (S.st*string*F.t) list ->  (S.st*string*F.t) list =
+  fun curr_cond -> fun accessed_stmts -> fun old_statements -> 
+    List.fold_left (fun old_l -> fun (curr_st,st_type,old_cond) -> 
+      let updated_cond = F.L.OR (old_cond,curr_cond) in
+      let result = 
+        if List.exists (fun st -> st=curr_st) accessed_stmts
+        then old_l@[(curr_st,st_type,updated_cond)]
+        else old_l@[(curr_st,st_type,old_cond)]
+      in result) [] old_statements
+
+
+
 
 
 (**********)
@@ -394,10 +411,11 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                                     let new_type = txn_name^"_insert_"^(string_of_int iter_i) in
                                     (old_stmts@[(S.INSERT (inserted_table,inserted_record ,curr_cond),new_type,F.my_true)],old_vars)
  
-                      |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression) = extract_update ae_list old_vars in
+                      |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression,accessed_stmts) = extract_update ae_list old_vars in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
+                                    let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                                     let new_type = txn_name^"_update_"^(string_of_int iter_u) in
-                                    (old_stmts@[(S.UPDATE (accessed_col,update_expression,wh_c,curr_cond),new_type,F.my_true)],old_vars)
+                                    (updated_old_stmts@[(S.UPDATE (accessed_col,update_expression,wh_c,curr_cond),new_type,F.my_true)],old_vars)
                       |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list old_vars in
                                     let accessed_table = Var.Table.make accessed_table_name [] in
                                     let new_type = txn_name^"_delete_"^(string_of_int iter_d) in
