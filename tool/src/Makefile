@@ -65,8 +65,8 @@ MYFILES=desqler/utils.cmx  \
 				desqler/var.cmx \
 				desqler/fol.cmx \
 				desqler/sql.cmx \
-				desqler/rules.cmx \
 				desqler/constants.cmx \
+				desqler/rules.cmx \
 				desqler/encodeIR.cmi desqler/encodeIR.cmx \
 				desqler/encodeZ3.cmi desqler/encodeZ3.cmx \
 				desqler/verify.cmi desqler/verify.cmx \
@@ -78,9 +78,9 @@ MYCMX=desqler/utils.cmx  desqler/speclang.cmx \
 			desqler/var.cmx \
 			desqler/fol.cmx \
 			desqler/sql.cmx \
+			desqler/constants.cmx \
 			desqler/rules.cmx \
 			desqler/encodeIR.cmx \
-			desqler/constants.cmx \
 			desqler/encodeZ3.cmx \
 			desqler/verify.cmx \
 
