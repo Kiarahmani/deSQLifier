@@ -270,8 +270,8 @@ let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*s
 
 
 (*handle the rhs of update*)
-let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*string*Fol.t*F.L.expr*S.st list = 
-  fun [(_,Some exp1);(_,Some exp2);(_,Some exp3)] -> fun old_var_list -> 
+let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> (S.st * string * F.t) list -> string*string*Fol.t*F.L.expr*S.st list = 
+  fun [(_,Some exp1);(_,Some exp2);(_,Some exp3)] -> fun old_var_list ->  fun old_stmt_list ->
         let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*already extracted... keeping the rest for the future*)
         let Texp_function (_,[{c_lhs=fun_lhs;c_guard=None;c_rhs=
                   {exp_desc=Texp_setfield(u_in_fun,{txt=Lident field_name},_,
@@ -411,7 +411,7 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                                     let new_type = txn_name^"_insert_"^(string_of_int iter_i) in
                                     (old_stmts@[(S.INSERT (inserted_table,inserted_record ,curr_cond),new_type,F.my_true)],old_vars)
  
-                      |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression,accessed_stmts) = extract_update ae_list old_vars in
+                      |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression,accessed_stmts) = extract_update ae_list old_vars old_stmts in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
                                     let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                                     let new_type = txn_name^"_update_"^(string_of_int iter_u) in
