@@ -371,6 +371,14 @@ let update_statements: F.t -> S.st list ->  (S.st*string*F.t) list ->  (S.st*str
       in result) [] old_statements
 
 
+
+let merge_statements: (S.st * string * F.t) -> (S.st * string * F.t) -> (S.st * string * F.t) =
+  fun (st1,nm1,cd1) -> fun (st2,nm2,cd2) -> 
+    if st1 = st2 && nm1=nm2 
+    then (st1,nm1,F.L.OR (cd1,cd2))
+    else failwith "ERROR (unexpected state): encodeIR.merge_statements"
+
+
 (*merges the extracted statements from different program paths*)
 let merge_lists: (S.st * string * F.t) list -> (S.st * string * F.t) list -> 
   (S.st * string * F.t) list -> (S.st * string * F.t) list = 
@@ -381,9 +389,12 @@ let merge_lists: (S.st * string * F.t) list -> (S.st * string * F.t) list ->
           if mem cnm o_name_list then old_l else old_l@[(cst,cnm,ccd)] ) [] l1 in
       let trimmed2 = fold_left (fun old_l -> fun (cst,cnm,ccd) -> 
           if mem cnm o_name_list then old_l else old_l@[(cst,cnm,ccd)] ) [] l2 in
-let un_common_section = fold_left (fun old_l -> fun curr_st -> []) [] ol
-      let _ = print_int @@ length un_common_section@trimmed1@trimmed2 in
- in un_common_section@trimmed1@trimmed2
+      let un_common_section = fold_left (fun old_l -> fun (curr_st,curr_nm,curr_cd) -> 
+      let st_from1 = find (fun (_,n1,_) -> n1=curr_nm) l1 in
+      let st_from2 = find (fun (_,n1,_) -> n1=curr_nm) l2 in
+      let merged_statement = merge_statements st_from1 st_from2 in
+      old_l@[merged_statement]) [] ol 
+      in un_common_section@trimmed1@trimmed2
     
 
 

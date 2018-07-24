@@ -48,11 +48,9 @@ type bankaccount = {b_id: int; mutable b_owner: string; mutable b_bal: int}
 let update_txn (ac_id:int) = 
   let v1 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = ac_id)) in
-  if 2<4
-  then SQL.update Bankaccount
-        (fun u -> begin u.b_bal <-  v1.b_bal + 200; end)
-        (fun u -> (u.b_id = v1.b_id))
-  else ()
+  SQL.update Bankaccount
+        (fun u -> begin u.b_bal <- 200; end)
+        (fun u -> (u.b_id =1000))
 
 
 
