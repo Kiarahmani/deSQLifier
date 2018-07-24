@@ -97,7 +97,7 @@
                             (exists ((r Bankaccount))
                                 (and 
                                 ;ES conditions
-                                (or false (> 2 1))
+                                (or false true)
                                 (= (otype o1) Update_select_1)
                                 (= (otype o2) Update_update_1)
                                 (IsAlive_Bankaccount r t2)
@@ -118,7 +118,7 @@
                             (exists ((r Bankaccount))
                                 (and 
                                 ;ES conditions
-                                (or false (> 2 1))
+                                (or false true)
                                 (= (otype o1) Update_update_1)
                                 (= (otype o2) Update_select_1)
                                 (IsAlive_Bankaccount r t1)

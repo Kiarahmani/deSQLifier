@@ -230,11 +230,14 @@ struct
         (*t1 and t2 are the same if the txns are the same*)
         let open Utils in 
         let open Wrappers in
-        let es_conds_to_s1 = extract_where "" txn_name1 "" esc1 in
-        let es_conds = match _CORRECTNESS with
+        let es_conds_to_s1 = extract_where 1 "" txn_name1 "" esc1 in
+        let es_conds_to_s2 = extract_where 2 "" txn_name2 "" esc2 in
+        let es_conds1 = match _CORRECTNESS with
                         |SERIALIZABILITY -> []
-                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";"(or false "^es_conds_to_s1^")"] 
-                        |_ -> failwith "ERROR (Unknown correctness criterion): analyze_stmts.rules.ml" in
+                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";"(or false "^es_conds_to_s1^")"] in
+        let es_conds2 = match _CORRECTNESS with
+                        |SERIALIZABILITY -> []
+                        |EVENTUAL_SERIALIZABILITY -> [";ES conditions";"(or false "^es_conds_to_s2^")"] in
 
         let type_conds = ["(= (otype o1) "^sttyp1^")";"(= (otype o2) "^sttyp2^")"] in
         match (stmt1,sttyp1,stmt2,sttyp2,dir) with
@@ -266,7 +269,7 @@ struct
                              let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
                              let null_cond = "(not ("^to_cap txn_name2^"_isN_"^(V.name v)^" t2))" in
                               Some (rule_wrapper
-                                      (table, es_conds@type_conds@["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
+                                      (table, es_conds2@type_conds@["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      (*4*)
           |(S.INSERT (_,_,_) ,_, S.SELECT (_,v,_,_),_, "WR->")->
@@ -276,7 +279,7 @@ struct
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds2@type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
               |None -> None end
           (*5*)
           |(S.DELETE (_,_,_),_, S.SELECT (_,v,_,_),_, "WR->")->
@@ -287,7 +290,7 @@ struct
 															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond_d = "(IsAlive_"^table^" r t1)" in
 															let alive_cond_s = "(not (IsAlive_"^table^" r t2))" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;null_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds2@type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;null_cond;wr_cond]))
               |None -> None end
           (*10*)
           |(S.DELETE (_,_,_),_, S.RANGE_SELECT (_,v,_,_),_, "WR->")->
@@ -297,7 +300,7 @@ struct
 															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond_d = "(IsAlive_"^table^" r t1)" in
 															let alive_cond_s = "(not (IsAlive_"^table^" r t2))" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;wr_cond]))
+                              Some (rule_wrapper (table,es_conds2@type_conds@[s_cond;i_cond;alive_cond_d;alive_cond_s;wr_cond]))
               |None -> None end
 
           (*6*)
@@ -307,7 +310,7 @@ struct
                              let u_cond  = extract_condition 1 (to_cap txn_name1) table stmt1 in
                              let null_cond = "("^(to_cap txn_name2)^"_SVar_"^(V.name v)^" t2 r)" in
                               Some (rule_wrapper
-                                      (table, es_conds@type_conds@["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
+                                      (table, es_conds2@type_conds@["(IsAlive_"^table^" r t1)";"(WR_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      
           (*7*)
@@ -317,7 +320,7 @@ struct
                               let i_cond =  extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds2@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
  
 
@@ -331,7 +334,7 @@ struct
               match (accessed_common_table stmt1 stmt2)  with 
               |Some table -> let s_cond = extract_condition 1  (to_cap txn_name1) table stmt1 in
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
-                Some (rule_wrapper (table, es_conds@type_conds@["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";s_cond;u_cond]))
+                Some (rule_wrapper (table, es_conds1@type_conds@["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";s_cond;u_cond]))
               |None -> None end
           (*15*)
           |(S.RANGE_SELECT(_,v,_,_),_,S.UPDATE _,_,"RW->") -> 
@@ -340,7 +343,7 @@ struct
                              let u_cond  = extract_condition 2 (to_cap txn_name2) table stmt2 in
                              let null_cond = "(not ("^(to_cap txn_name1)^"_SVar_"^(V.name v)^" t1 r))" in
                               Some (rule_wrapper
-                                      (table, es_conds@type_conds@["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
+                                      (table, es_conds1@type_conds@["(IsAlive_"^table^" r t2)";"(RW_"^table^"_O r o1 o2)";null_cond;s_cond;u_cond]))
               |None -> None end 
  		      (*14*)
           |(S.SELECT (_,v,_,_),_,S.INSERT (_,_,_),_, "RW->" )->
@@ -350,7 +353,7 @@ struct
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(not (IsAlive_"^table^" r t1))" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds1@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
 
           (*16*)
@@ -360,7 +363,7 @@ struct
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(not (IsAlive_"^table^" r t1))" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds1@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
           (*13*)
           |(S.SELECT (_,v,_,_),_,S.DELETE (_,_,_),_, "RW->" )->
@@ -370,7 +373,7 @@ struct
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds1@type_conds@[s_cond;i_cond;alive_cond;null_cond;wr_cond]))
               |None -> None end
           (*17*)
           |(S.RANGE_SELECT (_,v,_,_),_,S.DELETE (_,_,_),_, "RW->" )->
@@ -379,7 +382,7 @@ struct
                               let i_cond =  extract_condition 2 (to_cap txn_name2) table stmt2 in
 															let wr_cond = "(RW_Alive_"^table^" r o1 o2)" in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds1@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
 
 					(*-------------------*)
@@ -392,7 +395,7 @@ struct
                               let i_cond = extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
 															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;null_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds2@type_conds@[s_cond;i_cond;null_cond;alive_cond;wr_cond]))
               |None -> None end
           (*22*)
  	    		|(S.INSERT (_,_,_),_, S.RANGE_SELECT (_,v,_,_),_, "->WR")->
@@ -401,7 +404,7 @@ struct
                               let i_cond = extract_condition 1 (to_cap txn_name1) table stmt1 in
 															let alive_cond = "(IsAlive_"^table^" r t2)" in
 															let wr_cond = "(WR_Alive_"^table^" r o1 o2)" in
-                              Some (rule_wrapper (table,es_conds@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
+                              Some (rule_wrapper (table,es_conds2@type_conds@[s_cond;i_cond;alive_cond;wr_cond]))
               |None -> None end
 
 
