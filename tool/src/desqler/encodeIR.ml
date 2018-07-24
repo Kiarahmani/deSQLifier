@@ -198,28 +198,29 @@ let convert_param: (Ident.t * type_desc) -> V.t  =
     |T.Set table -> V.make id.name "salam" (Some (String.capitalize_ascii table)) (convert_types tp) V.RECORD
     |_ -> V.make id.name "salam" None (convert_types tp) V.PARAM
 
-let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> F.L.expr = 
-  fun var_list -> fun desc -> match desc with
+let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> (string * V.t) list -> (F.L.expr*(string * V.t) list) = 
+  fun var_list -> fun desc -> fun already_extracted_vars -> match desc with
     |Texp_field ({exp_desc=Texp_ident (Pident before_dot,_,_)},_,{lbl_name}) ->  
     let open List in 
     let var_exists = List.filter (fun (v,_) -> before_dot.name = v) (var_list) in
     begin match var_exists with
-      |[(v_name,v)] -> F.L.Var (V.make before_dot.name lbl_name (Some (V.table v)) T.Int RECORD)
-      |[] -> F.L.Var (V.make lbl_name "salam" None T.Int FIELD) 
+          |[(v_name,v)] -> (F.L.Var (V.make before_dot.name lbl_name (Some (V.table v)) T.Int RECORD),already_extracted_vars@[(v_name,v)])
+          |[] -> (F.L.Var (V.make lbl_name "salam" None T.Int FIELD),already_extracted_vars)
     end
     |Texp_ident (Pident {name},_,_) -> let open List in
                                        if mem name  @@ fst @@ split var_list
-                                       then F.L.Var (V.make name "salam" None T.Int LOCAL)
-                                       else F.L.Var (V.make name "salam" None T.Int PARAM)
-    |Texp_constant (Const_int i) -> F.L.Cons i (*integer constant*)
-    |Texp_constant (Const_string (s,_)) -> F.L.Str s (*string constant*)
+                                          then (F.L.Var (V.make name "salam" None T.Int LOCAL),
+                                                    already_extracted_vars@[find (fun (vn,_) ->(name=vn)) var_list])
+                                          else (F.L.Var (V.make name "salam" None T.Int PARAM),[])
+    |Texp_constant (Const_int i) -> (F.L.Cons i,already_extracted_vars) (*integer constant*)
+    |Texp_constant (Const_string (s,_)) -> (F.L.Str s,already_extracted_vars) (*string constant*)
     |Texp_apply ({exp_desc=Texp_ident (Pdot (_,op,_),_,_)},[(Nolabel,Some l);(Nolabel,Some r)]) ->
-      let lhs = extract_operands var_list (l.exp_desc) in 
-      let rhs = extract_operands var_list (r.exp_desc) in
+      let (lhs,l_ext_vars) = extract_operands var_list (l.exp_desc) already_extracted_vars in 
+      let (rhs,r_ext_vars) = extract_operands var_list (r.exp_desc) already_extracted_vars in
       begin
       match op with
-        |"-" -> F.L.MINUS (lhs,rhs)
-        |"+" -> F.L.PLUS (lhs,rhs)
+        |"-" -> (F.L.MINUS (lhs,rhs),l_ext_vars@r_ext_vars)
+        |"+" -> (F.L.PLUS (lhs,rhs),l_ext_vars@r_ext_vars)
       end
     |_ -> let _ = Utils.print_helpful_expression_desc desc in failwith "ERROR extract_operands: case not handled yet"  
   
@@ -231,16 +232,18 @@ let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> Fol.t
                         [(Nolabel,Some l_exp);(Nolabel,Some r_exp)] ) ->
           let r_desc = r_exp.exp_desc in
           let l_desc = l_exp.exp_desc in
+          let (l_op,_) = extract_operands var_list l_desc [] in
+          let (r_op,_) = extract_operands var_list r_desc [] in
           begin
           match op with 
-            |"=" ->  (F.L.Eq (extract_operands var_list l_desc,extract_operands var_list r_desc))
-            |">" ->  (F.L.Gt (extract_operands var_list l_desc,extract_operands var_list r_desc))
-            |"<" ->  (F.L.Lt (extract_operands var_list l_desc,extract_operands var_list r_desc))
-            |"!=" -> (F.L.Nq (extract_operands var_list l_desc,extract_operands var_list r_desc))
+            |"=" ->  (F.L.Eq (l_op,r_op))
+            |">" ->  (F.L.Gt (l_op,r_op))
+            |"<" ->  (F.L.Lt (l_op,r_op))
+            |"!=" -> (F.L.Nq (l_op,r_op))
             |"&&" -> (F.L.AND (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
             |"||" -> (F.L.OR (extract_where_clause var_list r_exp,extract_where_clause var_list l_exp ))
             |_ -> failwith "ERROR extract_where_clause: the operation not handled yet" end
-        |Texp_ident _ -> (F.L.Bool (extract_operands var_list exp.exp_desc))
+        |Texp_ident _ -> (F.L.Bool (fst @@ extract_operands var_list exp.exp_desc []))
         |_ -> failwith "encodeIR.ml: extract_where_clause"
         
 
@@ -276,7 +279,7 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
         let Texp_function (_,[{c_lhs=fun_lhs;c_guard=None;c_rhs=
                   {exp_desc=Texp_setfield(u_in_fun,{txt=Lident field_name},_,
                     {exp_desc=right_of_arrow})}}],_) = exp2.exp_desc in (*the updating function*)
-        let update_expression = extract_operands old_var_list right_of_arrow in
+        let (update_expression,op_accessed_var_list) = extract_operands old_var_list right_of_arrow [] in
         let Texp_ident (Pident uu,_,{val_type=record_type}) = u_in_fun.exp_desc in 
         let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp3.exp_desc in (*the where clause*)
           let Tpat_var ({name},_) = c_lhs.pat_desc in 
@@ -286,7 +289,7 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
                           let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
                           let postfix_name = sub field_name (prefix_size+1) (length field_name - prefix_size - 1) 
                           in prefix_name^"_"^postfix_name
-        in (table_name,column_name,wh_c,update_expression,[])
+                          in (table_name,column_name,wh_c,update_expression,[])
 
 
 let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*Fol.t = 
@@ -314,7 +317,7 @@ let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  ->
 fun [(_,Some exp_cons);(_,Some exp_record)] -> fun var_list ->
   let Texp_construct (_,{cstr_name=table_name},_) = exp_cons.exp_desc  in
   let Texp_record (v_list,_) = exp_record.exp_desc in
-let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(extract_operands var_list e.exp_desc))) v_list in
+  let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(fst @@ extract_operands var_list e.exp_desc []))) v_list in
   (table_name,record)
 
 
