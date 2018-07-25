@@ -489,10 +489,13 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                                     (updated_old_stmts@[(S.DELETE (accessed_table,wh_c,curr_cond),new_type,F.my_true)],old_vars)
                       |"foreach" -> let [(_,Some {exp_desc= (Texp_ident(Pident vname,_,_))});(_,Some loop_body)] = ae_list in 
                                     let iterated_var = List.assoc vname.name old_vars in
+                                    let accessed_stmts = find_accessed_statements [("",iterated_var)] old_stmts in
+                                    let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                                     let new_name = "loop_var_"^(string_of_int for_count)  in
                                     let new_for_var = V.make new_name (V.field iterated_var) (Some (V.table iterated_var)) T.Int RECORD in
                                     let new_stmt = S.CHOOSE (new_for_var,iterated_var,F.my_true,curr_cond) in
-                                    convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) curr_cond (old_vars@[new_name,new_for_var]) (old_stmts@[(new_stmt,"XX",F.my_true)]) (for_count+1) loop_body
+                                    convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) curr_cond (old_vars@[new_name,new_for_var]) 
+                                                      (updated_old_stmts@[(new_stmt,"XX",F.my_true)]) (for_count+1) loop_body
                       |_ -> failwith "ERROR convert_body_rec: unexpected SQL operation"
     in (new_stmt,new_var)
     (*intermediate del/upt/ins*)
