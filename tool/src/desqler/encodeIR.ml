@@ -307,9 +307,6 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
           let Tpat_var ({name},_) = c_lhs.pat_desc in 
         let (wh_c,wh_accessed_var_list) = extract_where_clause old_var_list c_rhs [] in 
         let accessed_stmts = find_accessed_statements (wh_accessed_var_list@op_accessed_var_list) old_stmt_list in
-(*        let _ = print_int @@ List.length wh_accessed_var_list in
-        let _ = print_int @@ List.length op_accessed_var_list in
-        let _ = print_int @@ List.length accessed_stmts in*)
         let column_name = let open String in 
                           let prefix_size = index field_name '_' in
                           let prefix_name = uppercase @@ sub field_name 0 prefix_size in (*fine the prefix before _ and capitalize it*)
@@ -318,12 +315,14 @@ let extract_update: (Asttypes.arg_label * Typedtree.expression option) list -> (
                           in (table_name,column_name,wh_c,update_expression,accessed_stmts)
 
 
-let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> string*Fol.t = 
-  fun  [(_,Some exp1);(_,Some exp2)] -> fun old_var_list -> 
+let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list -> (string * V.t) list -> 
+  (S.st * string * F.t) list -> string*Fol.t*S.st list = 
+  fun  [(_,Some exp1);(_,Some exp2)] -> fun old_var_list -> fun old_stmt_list ->
     let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in 
     let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the where clause*)
-    let (wh_c,_) = extract_where_clause old_var_list c_rhs [] in
-    (table_name,wh_c)
+    let (wh_c,wh_accessed_var_list) = extract_where_clause old_var_list c_rhs [] in
+    let accessed_stmts = find_accessed_statements wh_accessed_var_list old_stmt_list in
+    (table_name,wh_c,accessed_stmts)
 
 
 (*extract info on the lhs of selects*)
@@ -347,13 +346,13 @@ fun [(_,Some exp_cons);(_,Some exp_record)] -> fun var_list ->
   (table_name,record)
 
 
-let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> F.t  =
+let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> (F.t*(string * V.t) list)  =
   fun var_list -> fun exp ->
     match exp.exp_desc with
-    |Texp_construct ({txt=Lident "true"},_,_) -> F.L.Bool (F.L.Var V.true_var)
-    |Texp_construct ({txt=Lident "false"},_,_) ->F.L.Bool (F.L.Var V.false_var)
-    |(Texp_apply _) -> fst @@ extract_where_clause var_list exp []
-    |Texp_ident _ -> fst @@ extract_where_clause var_list exp []
+    |Texp_construct ({txt=Lident "true"},_,_) -> (F.L.Bool (F.L.Var V.true_var),[])
+    |Texp_construct ({txt=Lident "false"},_,_) ->(F.L.Bool (F.L.Var V.false_var),[])
+    |(Texp_apply _) -> extract_where_clause var_list exp []
+    |Texp_ident _ ->  extract_where_clause var_list exp []
     |_ -> Utils.print_helpful_expression_desc exp.exp_desc;  failwith "enncodeIR.ml: eaxtract_condition error"
 
 
@@ -468,14 +467,14 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
  
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression,accessed_stmts) = extract_update ae_list old_vars old_stmts in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
-                                    (*let _ = print_int @@ List.length accessed_stmts in *)
                                     let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                                     let new_type = txn_name^"_update_"^(string_of_int iter_u) in
                                     (updated_old_stmts@[(S.UPDATE (accessed_col,update_expression,wh_c,curr_cond),new_type,F.my_true)],old_vars)
-                      |"delete" ->  let (accessed_table_name,wh_c) = extract_delete ae_list old_vars in
+                      |"delete" ->  let (accessed_table_name,wh_c,accessed_stmts) = extract_delete ae_list old_vars old_stmts in
                                     let accessed_table = Var.Table.make accessed_table_name [] in
                                     let new_type = txn_name^"_delete_"^(string_of_int iter_d) in
-                                    (old_stmts@[(S.DELETE (accessed_table,wh_c,curr_cond),new_type,F.my_true)],old_vars)
+                                    let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
+                                    (updated_old_stmts@[(S.DELETE (accessed_table,wh_c,curr_cond),new_type,F.my_true)],old_vars)
                       |"foreach" -> let [(_,Some {exp_desc= (Texp_ident(Pident vname,_,_))});(_,Some loop_body)] = ae_list in 
                                     let iterated_var = List.assoc vname.name old_vars in
                                     let new_name = "loop_var_"^(string_of_int for_count)  in
@@ -505,14 +504,14 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
     |Texp_construct _ -> (old_stmts,old_vars)
     (*if then else*)
     |Texp_ifthenelse (condition,then_cls,Some else_cls) ->
-      let then_cond = F.L.AND (curr_cond,(eaxtract_condition old_vars condition)) in
+      let then_cond = F.L.AND (curr_cond,fst @@ (eaxtract_condition old_vars condition)) in
       let then_path = convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) then_cond old_vars old_stmts for_count then_cls in
-      let else_cond = F.L.AND (curr_cond,F.L.NOT(eaxtract_condition old_vars condition)) in
+      let else_cond = F.L.AND (curr_cond,F.L.NOT(fst @@ eaxtract_condition old_vars condition)) in
       let else_path =  convert_body_rec txn_name   (iter_s,iter_u,iter_d,iter_i) else_cond old_vars old_stmts for_count else_cls in
       let merged_list = merge_lists (fst then_path) (fst else_path) old_stmts in
       (merged_list,(snd then_path)@(snd else_path))
     |Texp_ifthenelse (condition,then_cls,None) -> 
-      let then_cond = F.L.AND (curr_cond,(eaxtract_condition old_vars condition)) in
+      let then_cond = F.L.AND (curr_cond,(fst @@ eaxtract_condition old_vars condition)) in
       let then_path = convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) then_cond old_vars old_stmts for_count then_cls
       in then_path
 

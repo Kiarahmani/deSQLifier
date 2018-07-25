@@ -17,8 +17,10 @@ module Utils =
   struct
 
     let rec expression_to_string: int -> string -> string -> string -> F.L.expr -> string = 
-      fun t_i -> fun record_name -> fun txn_name -> fun table_name -> 
-      fun e -> match e with
+      fun t_i -> fun record_name -> fun input_txn_name -> fun table_name -> 
+      fun e -> 
+        let txn_name = to_cap input_txn_name in
+        match e with
         (*vars*)
         | F.L.Var (V.T{name="my_true"}) -> "true"
         | F.L.Var (V.T{name;field;table=None; tp; kn=V.PARAM})               -> "("^txn_name^"_Param_"^name^" t"^(string_of_int t_i)^")"

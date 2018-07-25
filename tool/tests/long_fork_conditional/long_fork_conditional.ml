@@ -8,6 +8,7 @@ type table_name =
 
 type column_name = 
   |B_all |B_id |B_owner |B_bal
+ (* |DE_all|DE_id|DE_address|DE_budget *)
 
 
 (* Definition of SimpSQL *)
@@ -45,54 +46,26 @@ type bankaccount = {b_id: int; mutable b_owner: string; mutable b_bal: int}
 
 
 (*TXN 1*)
-let update_txn (ac_id:int) = 
+let read_txn (ac_id:int) = 
   let v1 = SQL.select1 Bankaccount B_bal 
-      (fun u -> (u.b_id = ac_id)) in
+      (fun u -> (u.b_id = 100)) in
+  let v2 = SQL.select1 Bankaccount B_bal 
+      (fun u -> (u.b_id = 200)) in
+  SQL.delete Bankaccount (fun u -> u.b_id = v1.b_bal)
+
+
+
+
+(*TXN 2*)
+let write1_txn (ac_id:int)= 
   SQL.update Bankaccount
-    (fun u -> begin u.b_bal <- 200; end)    
-    (fun u -> u.b_id = 100)
+    (fun u -> begin u.b_bal <-  100; end)
+    (fun u -> (u.b_id = 100))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(*TXN 3*)
+let write2_txn (ac_id:int)= 
+  SQL.update Bankaccount
+    (fun u -> begin u.b_bal <-  200; end)
+    (fun u -> (u.b_id = 200));
 
 
