@@ -52,11 +52,11 @@ let read_txn (ac_id:int) =
   let v2 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = 200)) in
   let v3 = SQL.select Bankaccount B_bal 
-      (fun u -> (u.b_bal > 1000)) in
+      (fun u -> (u.b_id > 99)) in
   SQL.foreach v3
     begin fun loop_var_1 -> 
       let vx = SQL.select1 Bankaccount B_bal
-                   (fun u -> u.b_id = loop_var_1.b_id+v1.b_id+v2.b_id) in 
+                   (fun u -> u.b_id = 100) in 
       ()
     end
 
