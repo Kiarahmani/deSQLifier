@@ -250,33 +250,7 @@ let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> (stri
         |Texp_ident _ -> let (op_extd,var_rtnd) = extract_operands var_list exp.exp_desc already_extracted_vars in
                          (F.L.Bool op_extd, var_rtnd)
         |_ -> failwith "encodeIR.ml: extract_where_clause"
-        
-
-(*handle the rhs of select*)
-let extract_select: (string*V.t) list -> Typedtree.expression -> string*string*string*Fol.t  =  
-  fun var_list -> fun body -> match body.exp_desc with
-    |Texp_apply (e0,[(arg1,Some exp1);(arg3,Some exp3);(arg2,Some exp2)]) -> (*this is old version: before adding column support. should be eventually removed*)
-      let open Utils in
-      let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*table name is extracted here*) (*the rest are not used for this case but I'm gonna keep them for future*)
-      let Texp_construct (_,{cstr_name=column_name},_) = exp3.exp_desc in (*column name is extracted here*) 
-      let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the rest contains the where funtion some where...*)
-      let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
-      let Texp_ident (Pdot (_,select_kind,_) ,_,_) = e0.exp_desc in 
-      let (wh_c,_) = extract_where_clause var_list c_rhs [] in
-      (select_kind,table_name,column_name,wh_c)
-    (*!!!  THE CHOOSE CASE*)
-    |Texp_apply (e0,[(arg1,Some exp_func);(arg2,Some exp_vset)]) -> 
-      let Texp_ident (Pident {name=v_name},_,_) = exp_vset.exp_desc in (*the list being chosen from*) 
-      let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp_func.exp_desc in
-        let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
-      let Texp_ident (Pdot (_,choose_kind,_) ,_,_) = e0.exp_desc in 
-      let (wh_c,_) = extract_where_clause var_list c_rhs [] in
-      (choose_kind,v_name,"",wh_c) (*the second argument here is interpreted as the list being chosen from*)
-
-    |_ -> Utils.print_helpful_expression_desc  body.exp_desc; 
-          failwith "ERROR extract_select_table_name: unexpected case for handling select"
-
-
+ 
 (*given the accessed variables, returns what statements initially sourced these variables*)
 let find_accessed_statements: (string * V.t) list -> (S.st * string * F.t) list -> S.st list  = 
   fun accessed_vars_names -> fun all_stmts -> 
@@ -291,6 +265,35 @@ let find_accessed_statements: (string * V.t) list -> (S.st * string * F.t) list 
           |S.COUNT_SELECT (_,v,_,_) -> if List.mem v accessed_vars then [curr_st]@ old_l else old_l
           |_ -> old_l) [] all_stmts
 
+
+       
+
+(*handle the rhs of select*)
+let extract_select: (string*V.t) list -> Typedtree.expression -> 
+(S.st * string * F.t) list -> string*string*string*Fol.t*S.st list  =  
+  fun var_list -> fun body -> fun old_stmt_list -> match body.exp_desc with
+    |Texp_apply (e0,[(arg1,Some exp1);(arg3,Some exp3);(arg2,Some exp2)]) -> (*this is old version: before adding column support. should be eventually removed*)
+      let open Utils in
+      let Texp_construct (_,{cstr_name=table_name},_) = exp1.exp_desc in (*table name is extracted here*) (*the rest are not used for this case but I'm gonna keep them for future*)
+      let Texp_construct (_,{cstr_name=column_name},_) = exp3.exp_desc in (*column name is extracted here*) 
+      let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp2.exp_desc in (*the rest contains the where funtion some where...*)
+      let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
+      let Texp_ident (Pdot (_,select_kind,_) ,_,_) = e0.exp_desc in 
+      let (wh_c,accessed_vars) = extract_where_clause var_list c_rhs [] in
+      let accessed_stmts = find_accessed_statements accessed_vars old_stmt_list in
+      (select_kind,table_name,column_name,wh_c,accessed_stmts)
+    (*!!!  THE CHOOSE CASE*)
+    |Texp_apply (e0,[(arg1,Some exp_func);(arg2,Some exp_vset)]) -> 
+      let Texp_ident (Pident {name=v_name},_,_) = exp_vset.exp_desc in (*the list being chosen from*) 
+      let Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) = exp_func.exp_desc in
+        let Tpat_var ({name},_) = c_lhs.pat_desc in (* the u in where clause/ for future use*)
+      let Texp_ident (Pdot (_,choose_kind,_) ,_,_) = e0.exp_desc in 
+      let (wh_c,accessed_vars) = extract_where_clause var_list c_rhs [] in
+      let accessed_stmts = find_accessed_statements accessed_vars old_stmt_list in
+      (choose_kind,v_name,"",wh_c,accessed_stmts) (*the second argument here is interpreted as the list being chosen from*)
+
+    |_ -> Utils.print_helpful_expression_desc  body.exp_desc; 
+          failwith "ERROR extract_select_table_name: unexpected case for handling select"
 
 
 
@@ -413,44 +416,49 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
     match exp_desc with 
     (*select case*)
     |Texp_let (_,[{vb_pat;vb_expr}],body) ->  
-      let (select_kind,accessed_table,accessed_col,wh_clause) = extract_select old_vars vb_expr in
+      let (select_kind,accessed_table,accessed_col,wh_clause,accessed_stmts) = extract_select old_vars vb_expr old_stmts in
       let (name,curr_var) = extract_variable vb_pat.pat_desc accessed_table in 
       begin match select_kind with
       |"select1" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  (*TODO column type is assumed to always be integer*)
                     let new_stmt = S.SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                     let new_type = txn_name^"_select_"^(string_of_int iter_s) in
                     let new_es_cond = F.my_false in
+                    let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                       convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
+                                       (updated_old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
                                        body
       |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  
                     let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                     let new_type = txn_name^"_select_"^(string_of_int iter_s) in
                     let new_es_cond = F.my_false in
+                    let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                       convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
+                                       (updated_old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
                                        body
       |"select_max" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
                        let new_stmt = S.MAX_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                        let new_type = txn_name^"_select_"^(string_of_int iter_s) in
                        let new_es_cond = F.my_false in
+                       let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                          convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[new_stmt,new_type,new_es_cond]) for_count
+                                       (updated_old_stmts@[new_stmt,new_type,new_es_cond]) for_count
                                        body
       |"select_min" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
                        let new_stmt = S.MIN_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
                        let new_type = txn_name^"_select_"^(string_of_int iter_s) in
                        let new_es_cond = F.my_false in
+                       let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                          convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (old_stmts@[new_stmt,new_type,new_es_cond]) for_count
+                                       (updated_old_stmts@[new_stmt,new_type,new_es_cond]) for_count
                                        body
       |"choose" ->  let chosen_var = List.assoc accessed_table old_vars in (*accessed_table here is interpreted as the chosen var name*)
                     let (new_name,new_var) = extract_choose_variable vb_pat.pat_desc chosen_var  in
                     let new_stmt = S.CHOOSE (new_var,chosen_var,wh_clause,curr_cond) in
                     let new_es_cond = F.my_false in
+                    let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                     convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) curr_cond  
                                                (old_vars@[(new_name,new_var)]) 
-                                               (old_stmts@[new_stmt,"XX",new_es_cond]) for_count body
+                                               (updated_old_stmts@[new_stmt,"XX",new_es_cond]) for_count body
       
 
       |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 

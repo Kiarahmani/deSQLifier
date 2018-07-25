@@ -51,8 +51,10 @@ let read_txn (ac_id:int) =
       (fun u -> (u.b_id = 100)) in
   let v2 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = 200)) in
-  SQL.insert Bankaccount {b_id=v1.b_bal;b_owner="Roger";b_bal=v2.b_bal}
-
+  let v3 = SQL.select Bankaccount B_bal 
+      (fun u -> (u.b_bal > 100000 )) in
+  let v4 = SQL.choose (fun u -> u.b_bal < v1.b_bal + v2.b_bal) v3 in
+  ()
 
 
 

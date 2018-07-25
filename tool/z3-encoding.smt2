@@ -7,7 +7,7 @@
 (set-option :produce-unsat-cores true)
 
 (declare-datatypes () ((TType (Write2) (Write1) (Read)))) 
-(declare-datatypes () ((OType (Write2_update_1) (Write1_update_1) (Read_select_1)(Read_select_2)(Read_insert_1)))) 
+(declare-datatypes () ((OType (Write2_update_1) (Write1_update_1) (Read_select_1)(Read_select_2)(Read_select_3)))) 
 (declare-sort T)
 (declare-sort O)
 (declare-fun type (T) TType)
@@ -16,14 +16,14 @@
 (declare-fun parent (O) T)
 (declare-fun sibling (O O) Bool)
 (declare-fun program_order (O O) Bool)  
-(assert (forall ((o O))(=> (or (=(otype o) Write2_update_1)(=(otype o) Write1_update_1)(=(otype o) Read_insert_1))(is_write o))))
-(assert (forall ((o O))(=> (is_write o)(or (=(otype o) Write2_update_1)(=(otype o) Write1_update_1)(=(otype o) Read_insert_1)))))
+(assert (forall ((o O))(=> (or (=(otype o) Write2_update_1)(=(otype o) Write1_update_1))(is_write o))))
+(assert (forall ((o O))(=> (is_write o)(or (=(otype o) Write2_update_1)(=(otype o) Write1_update_1)))))
 
 (assert (! (forall ((o1 O))(=> (= (otype o1) Write2_update_1) (= (type (parent o1)) Write2))) :named op_types_Write2_update_1))
 (assert (! (forall ((o1 O))(=> (= (otype o1) Write1_update_1) (= (type (parent o1)) Write1))) :named op_types_Write1_update_1))
 (assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_1) (= (type (parent o1)) Read))) :named op_types_Read_select_1))
 (assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_2) (= (type (parent o1)) Read))) :named op_types_Read_select_2))
-(assert (! (forall ((o1 O))(=> (= (otype o1) Read_insert_1) (= (type (parent o1)) Read))) :named op_types_Read_insert_1))
+(assert (! (forall ((o1 O))(=> (= (otype o1) Read_select_3) (= (type (parent o1)) Read))) :named op_types_Read_select_3))
 
 (declare-fun WR_O (O O) Bool)
 (declare-fun RW_O (O O) Bool)
@@ -94,6 +94,16 @@
 (assert (! (forall((t0 T))(and (=> (not (Read_isN_v2 t0)) (exists ((r Bankaccount))(= (Read_Var_v2 t0) r))) 
                                (=> (exists ((r Bankaccount))(= (Read_Var_v2 t0) r)) (not (Read_isN_v2 t0))))) :named read-v2-isnull-prop) )
 (assert (! (forall ((t0 T)) (= (Bankaccount_Proj_b_id (Read_Var_v2 t0)) 200)) :named read-v2-select-prop))
+;v3
+(declare-fun Read_SVar_v3 (T Bankaccount) Bool)
+(assert (! (forall ((t0 T)(r Bankaccount)) (=> (Read_SVar_v3 t0 r) (> (Bankaccount_Proj_b_bal r) 100000))) :named read-v3-var-prop))
+;read_v4
+(declare-fun Read_isN_v4 (T) Bool)
+(declare-fun Read_Var_v4 (T) Bankaccount)
+(assert (! (forall((t0 T))(and (=> (not (Read_isN_v4 t0)) (exists ((r Bankaccount))(= (Read_Var_v4 t0) r))) 
+                               (=> (exists ((r Bankaccount))(= (Read_Var_v4 t0) r)) (not (Read_isN_v4 t0))))) :named read-v4-isnull-prop) )
+(assert (! (forall ((t0 T)) (< (Bankaccount_Proj_b_bal (Read_Var_v4 t0)) (+ (Bankaccount_Proj_b_bal (Read_Var_v1 t0)) (Bankaccount_Proj_b_bal (Read_Var_v2 t0))))) :named read-v4-var-filter-prop))
+(assert (! (forall ((t0 T))(Read_SVar_v3 t0 (Read_Var_v4 t0)))  :named read-v4-var-chosen-prop))
 
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -140,7 +150,7 @@
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write2))
                     (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or (or false
+                        (or (or (or false
                             (exists ((r Bankaccount))
                                 (and 
                                 ;ES conditions
@@ -160,13 +170,24 @@
                                 (IsAlive_Bankaccount r t2)
                                 (RW_Bankaccount_O r o1 o2)
                                 (= (Bankaccount_Proj_b_id r) 200)  true
+                                (= (Bankaccount_Proj_b_id r) 200)  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                ;ES conditions
+                                false
+                                (= (otype o1) Read_select_3)
+                                (= (otype o2) Write2_update_1)
+                                (IsAlive_Bankaccount r t2)
+                                (RW_Bankaccount_O r o1 o2)
+                                (not (Read_SVar_v3 t1 r))
+                                (> (Bankaccount_Proj_b_bal r) 100000)  true
                                 (= (Bankaccount_Proj_b_id r) 200)  true))) )))
                                 :named read-write2-rw-then))
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Write1))
                     (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or (or false
+                        (or (or (or false
                             (exists ((r Bankaccount))
                                 (and 
                                 ;ES conditions
@@ -186,39 +207,24 @@
                                 (IsAlive_Bankaccount r t2)
                                 (RW_Bankaccount_O r o1 o2)
                                 (= (Bankaccount_Proj_b_id r) 200)  true
+                                (= (Bankaccount_Proj_b_id r) 100)  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                ;ES conditions
+                                false
+                                (= (otype o1) Read_select_3)
+                                (= (otype o2) Write1_update_1)
+                                (IsAlive_Bankaccount r t2)
+                                (RW_Bankaccount_O r o1 o2)
+                                (not (Read_SVar_v3 t1 r))
+                                (> (Bankaccount_Proj_b_bal r) 100000)  true
                                 (= (Bankaccount_Proj_b_id r) 100)  true))) )))
                                 :named read-write1-rw-then))
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read))
                     (=> (and (RW_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or (or false
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                (or false true)
-                                (= (otype o1) Read_select_1)
-                                (= (otype o2) Read_insert_1)
-                                (= (Bankaccount_Proj_b_id r) 100)  true
-                                ;insert
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_bal (Read_Var_v1 t2)))
-                                (= (Bankaccount_Proj_b_owner r) "Roger")
-                                (= (Bankaccount_Proj_b_bal r) (Bankaccount_Proj_b_bal (Read_Var_v2 t2)))  true
-                                (not (IsAlive_Bankaccount r t1))
-                                (RW_Alive_Bankaccount r o1 o2))))
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                (or false true)
-                                (= (otype o1) Read_select_2)
-                                (= (otype o2) Read_insert_1)
-                                (= (Bankaccount_Proj_b_id r) 200)  true
-                                ;insert
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_bal (Read_Var_v1 t2)))
-                                (= (Bankaccount_Proj_b_owner r) "Roger")
-                                (= (Bankaccount_Proj_b_bal r) (Bankaccount_Proj_b_bal (Read_Var_v2 t2)))  true
-                                (not (IsAlive_Bankaccount r t1))
-                                (RW_Alive_Bankaccount r o1 o2)))) )))
+                        false )))
                                 :named read-read-rw-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -241,7 +247,7 @@
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write2) (= (type t2) Read))
                     (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or (or false
+                        (or (or (or false
                             (exists ((r Bankaccount))
                                 (and 
                                 ;ES conditions
@@ -263,6 +269,17 @@
                                 (WR_Bankaccount_O r o1 o2)
                                 (not (Read_isN_v2 t2))
                                 (= (Bankaccount_Proj_b_id r) 200)  true
+                                (= (Bankaccount_Proj_b_id r) 200)  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                ;ES conditions
+                                false
+                                (= (otype o1) Write2_update_1)
+                                (= (otype o2) Read_select_3)
+                                (IsAlive_Bankaccount r t1)
+                                (WR_Bankaccount_O r o1 o2)
+                                (Read_SVar_v3 t2 r)
+                                (> (Bankaccount_Proj_b_bal r) 100000)  true
                                 (= (Bankaccount_Proj_b_id r) 200)  true))) )))
                                 :named write2-read-wr-then))
 
@@ -281,7 +298,7 @@
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Write1) (= (type t2) Read))
                     (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or (or false
+                        (or (or (or false
                             (exists ((r Bankaccount))
                                 (and 
                                 ;ES conditions
@@ -303,6 +320,17 @@
                                 (WR_Bankaccount_O r o1 o2)
                                 (not (Read_isN_v2 t2))
                                 (= (Bankaccount_Proj_b_id r) 200)  true
+                                (= (Bankaccount_Proj_b_id r) 100)  true)))
+                            (exists ((r Bankaccount))
+                                (and 
+                                ;ES conditions
+                                false
+                                (= (otype o1) Write1_update_1)
+                                (= (otype o2) Read_select_3)
+                                (IsAlive_Bankaccount r t1)
+                                (WR_Bankaccount_O r o1 o2)
+                                (Read_SVar_v3 t2 r)
+                                (> (Bankaccount_Proj_b_bal r) 100000)  true
                                 (= (Bankaccount_Proj_b_id r) 100)  true))) )))
                                 :named write1-read-wr-then))
 
@@ -321,35 +349,7 @@
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and  (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read))
                     (=> (and (WR_O o1 o2) (not (= o1 o2)) (not (= t1 t2)))
-                        (or (or false
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                (or false true)
-                                (= (otype o1) Read_insert_1)
-                                (= (otype o2) Read_select_1)
-                                (= (Bankaccount_Proj_b_id r) 100)  true
-                                ;insert
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_bal (Read_Var_v1 t1)))
-                                (= (Bankaccount_Proj_b_owner r) "Roger")
-                                (= (Bankaccount_Proj_b_bal r) (Bankaccount_Proj_b_bal (Read_Var_v2 t1)))  true
-                                (IsAlive_Bankaccount r t2)
-                                (not (Read_isN_v1 t2))
-                                (WR_Alive_Bankaccount r o1 o2))))
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                (or false true)
-                                (= (otype o1) Read_insert_1)
-                                (= (otype o2) Read_select_2)
-                                (= (Bankaccount_Proj_b_id r) 200)  true
-                                ;insert
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_bal (Read_Var_v1 t1)))
-                                (= (Bankaccount_Proj_b_owner r) "Roger")
-                                (= (Bankaccount_Proj_b_bal r) (Bankaccount_Proj_b_bal (Read_Var_v2 t1)))  true
-                                (IsAlive_Bankaccount r t2)
-                                (not (Read_isN_v2 t2))
-                                (WR_Alive_Bankaccount r o1 o2)))) )))
+                        false )))
                                 :named read-read-wr-then))
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -502,35 +502,7 @@
 
 (assert (! (forall ((t1 T) (t2 T) (o1 O) (o2 O))
                 (=> (and (= (parent o1) t1) (= (parent o2) t2) (= (type t1) Read) (= (type t2) Read) (not (= t1 t2)))
-                    (=> (or (or false
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                (or false true)
-                                (= (otype o1) Read_insert_1)
-                                (= (otype o2) Read_select_1)
-                                (= (Bankaccount_Proj_b_id r) 100)  true
-                                ;insert
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_bal (Read_Var_v1 t1)))
-                                (= (Bankaccount_Proj_b_owner r) "Roger")
-                                (= (Bankaccount_Proj_b_bal r) (Bankaccount_Proj_b_bal (Read_Var_v2 t1)))  true
-                                (not (Read_isN_v1 t2))
-                                (IsAlive_Bankaccount r t2)
-                                (WR_Alive_Bankaccount r o1 o2))))
-                            (exists ((r Bankaccount))
-                                (and 
-                                ;ES conditions
-                                (or false true)
-                                (= (otype o1) Read_insert_1)
-                                (= (otype o2) Read_select_2)
-                                (= (Bankaccount_Proj_b_id r) 200)  true
-                                ;insert
-                                (= (Bankaccount_Proj_b_id r) (Bankaccount_Proj_b_bal (Read_Var_v1 t1)))
-                                (= (Bankaccount_Proj_b_owner r) "Roger")
-                                (= (Bankaccount_Proj_b_bal r) (Bankaccount_Proj_b_bal (Read_Var_v2 t1)))  true
-                                (not (Read_isN_v2 t2))
-                                (IsAlive_Bankaccount r t2)
-                                (WR_Alive_Bankaccount r o1 o2))))
+                    (=> false
                         (WR_O o1 o2) )))
                                 :named read-read-then-wr))
 
