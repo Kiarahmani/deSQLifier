@@ -338,12 +338,13 @@ let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list -> (s
     (name,(V.make name (V.field chosen_var) (Some (V.table chosen_var)) T.Int RECORD))
 
 
-let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> (string * V.t) list -> (string*(string*F.L.expr) list) = 
+let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> (string * V.t) list -> 
+(S.st * string * F.t) list -> (string*(string*F.L.expr) list)*S.st list = 
 fun [(_,Some exp_cons);(_,Some exp_record)] -> fun var_list ->
   let Texp_construct (_,{cstr_name=table_name},_) = exp_cons.exp_desc  in
   let Texp_record (v_list,_) = exp_record.exp_desc in
   let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(fst @@ extract_operands var_list e.exp_desc []))) v_list in
-  (table_name,record)
+(table_name,record,[])
 
 
 let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> (F.t*(string * V.t) list)  =
@@ -459,7 +460,7 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
       let Texp_ident (app_path,_,_) = app_exp.exp_desc in
       let Path.Pdot (_,op,_) = app_path in 
       let (new_stmt,new_var) = match op with 
-                      |"insert" ->  let (table_name,var_list) = extract_insert ae_list old_vars in 
+                      |"insert" ->  let (table_name,var_list,accessed_stmts) = extract_insert ae_list old_vars old_stmts in 
                                     let inserted_table = Var.Table.make table_name [Var.my_col] in (*only table name matters. The actuall columns can be retrieved later*)
                                     let inserted_record = Fol.Record.T{name="test_record"; vars=var_list} in (*I'm gonna create test record for now*)
                                     let new_type = txn_name^"_insert_"^(string_of_int iter_i) in
