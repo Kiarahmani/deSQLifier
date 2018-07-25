@@ -221,6 +221,7 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> (st
       match op with
         |"-" -> (F.L.MINUS (lhs,rhs),l_ext_vars@r_ext_vars)
         |"+" -> (F.L.PLUS (lhs,rhs),l_ext_vars@r_ext_vars)
+        | x -> failwith x
       end
     |_ -> let _ = Utils.print_helpful_expression_desc desc in failwith "ERROR extract_operands: case not handled yet"  
   
