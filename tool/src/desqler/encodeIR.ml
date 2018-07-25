@@ -233,14 +233,20 @@ let rec extract_where_clause: (string*V.t) list -> Typedtree.expression -> (stri
                         [(Nolabel,Some l_exp);(Nolabel,Some r_exp)] ) ->
           let r_desc = r_exp.exp_desc in
           let l_desc = l_exp.exp_desc in
-          let (l_op,l_vars) = extract_operands var_list l_desc already_extracted_vars in
-          let (r_op,r_vars) = extract_operands var_list r_desc already_extracted_vars in
           begin
           match op with 
-            |"=" ->  (F.L.Eq (l_op,r_op),r_vars@l_vars)
-            |">" ->  (F.L.Gt (l_op,r_op),r_vars@l_vars)
-            |"<" ->  (F.L.Lt (l_op,r_op),r_vars@l_vars)
-            |"!=" -> (F.L.Nq (l_op,r_op),r_vars@l_vars)
+            |"=" -> let (l_op,l_vars) = extract_operands var_list l_desc already_extracted_vars in
+                    let (r_op ,r_vars) = extract_operands var_list r_desc already_extracted_vars in
+                    (F.L.Eq (l_op,r_op),r_vars@l_vars)
+            |">" -> let (l_op,l_vars) = extract_operands var_list l_desc already_extracted_vars in
+                    let (r_op ,r_vars) = extract_operands var_list r_desc already_extracted_vars in
+                    (F.L.Gt (l_op,r_op),r_vars@l_vars)
+            |"<" -> let (l_op,l_vars) = extract_operands var_list l_desc already_extracted_vars in
+                    let (r_op ,r_vars) = extract_operands var_list r_desc already_extracted_vars in
+                    (F.L.Lt (l_op,r_op),r_vars@l_vars)
+            |"!=" ->let (l_op,l_vars) = extract_operands var_list l_desc already_extracted_vars in
+                    let (r_op ,r_vars) = extract_operands var_list r_desc already_extracted_vars in
+                    (F.L.Nq (l_op,r_op),r_vars@l_vars)
             |"&&" -> let (r_rec_call,r_rec_vars) = extract_where_clause var_list r_exp already_extracted_vars in
                      let (l_rec_call,l_rec_vars) = extract_where_clause var_list l_exp already_extracted_vars in
                      ((F.L.AND (r_rec_call, l_rec_call)),r_rec_vars@l_rec_vars)
