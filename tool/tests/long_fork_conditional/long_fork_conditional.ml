@@ -52,7 +52,7 @@ let read_txn (ac_id:int) =
   let v2 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = 200)) in
   let v3 = SQL.select Bankaccount B_bal 
-      (fun u -> (u.b_id > 99)) in
+      (fun u -> (u.b_id > 89)) in
   SQL.foreach v3
     begin fun loop_var_1 -> 
       let vx = SQL.select1 Bankaccount B_bal
@@ -65,7 +65,7 @@ let read_txn (ac_id:int) =
 let write1_txn (ac_id:int)= 
   SQL.update Bankaccount
     (fun u -> begin u.b_bal <-  100; end)
-    (fun u -> (u.b_id = 100))
+    (fun u -> (u.b_id = 90))
 
 (*TXN 3*)
 let write2_txn (ac_id:int)= 

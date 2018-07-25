@@ -167,25 +167,32 @@ module Cons =
   
 
 
-    let rc = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o1 o3))(vis o3 o2))) :named rc))"
-             ^"\n(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (is_write o3)(and (ar o1 o2)(sibling o2 o3))(ar o1 o3))) :named rc2))"
-    let rr = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))) :named rr))"
-    let cc = "(assert (! (forall ((t1 O) (t2 O) (t3 O))  (=> (and (vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
-    let psi = "(assert (! (forall ((o1 O) (o2 O)) (=> (WW_O o1 o2) (vis o1 o2))) :named psi))"
-    let ser = "(assert (! (forall ((o1 O) (o2 O)) (=> (ar o1 o2) (vis o1 o2))) :named ser))"
-              ^"(assert (! (forall ((o1 O) (o2 O) (o3 O)) (=> (and (ar o1 o2)(vis o2 o3))(vis o1 o3))) :named ser2))"
-    let guarantee : (Constants.g*string option*string option) -> string = 
+
+
+
+    let rc (t1,t2,n) = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and "^t1^"(vis o1 o2)(sibling o1 o3))(vis o3 o2))) :named rc_"^n^"))"
+             ^"\n(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and "^t2^"(is_write o3))(and (ar o1 o2)(sibling o2 o3))(ar o1 o3))) :named rc2_"^n^"))"
+    let rr (t,n) = "(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and "^t^"(vis o1 o2)(sibling o2 o3))(vis o1 o3))) :named rr_"^n^"))"
+    let cc t = "(assert (! (forall ((t1 O) (t2 O) (t3 O))  (=> (and "^t^"(vis  t1 t2) (vis  t2 t3)) (vis  t1 t3))):named cc))"
+    let psi (t,n)  = "(assert (! (forall ((o1 O) (o2 O)) (=> (and "^t^"(WW_O o1 o2)) (vis o1 o2))) :named psi_"^n^"))"
+    let ser (t1,t2,n) = "(assert (! (forall ((o1 O) (o2 O)) (=> (and "^t1^"(ar o1 o2)) (vis o1 o2))) :named ser_"^n^"))"
+              ^"(assert (! (forall ((o1 O) (o2 O) (o3 O)) (=> (and "^t2^"(ar o1 o2)(vis o2 o3))(vis o1 o3))) :named ser2_"^n^"))"
+    let rec guarantee : (Constants.g*string option*string option) -> string = 
       fun (g,t1,t2) -> match (g,t1,t2) with
-        |(PSI,None,None) ->  ";PSI \n"^psi^"\n;RR\n"^rr^"\n;RC\n"^rc
-        |(SER,None,None) ->  ";SER \n"^ser^"\n;RR\n"^rr^"\n;RC\n"^rc
-        |(CC,None,None) -> ";CC \n"^cc
-        |(EC,_,_) -> ";EC"
-        |(RC,None,None) -> ";RC\n"^rc
-        |(RR,None,None) -> ";RR \n"^rr^"\n;RC\n"^rc
+        |(SER,None,None)       ->  "\n;SER (generic) \n"^(ser ("","",""))^(guarantee (RR,None,None))
+        |(SER,Some t,None)     ->  "\n;SER ("^t^")\n"^(ser ("(= (type (parent o2)) "^t^")","(= (type (parent o3)) "^t^")",t))^(guarantee (RR,Some t,None))
+        |(PSI,None,None)       ->  "\n;PSI (generic)\n"^(psi ("",""))^(guarantee (RR,None,None))
+        |(PSI,Some t,None)     ->  "\n;PSI ("^t^")\n"^(psi ("(= (type (parent o2)) "^t^")",t))^(guarantee (RR,Some t,None))
+        |(RR,None,None)        ->  "\n;RR (generic)\n"^(rr ("",""))^"\n;RC\n"^(guarantee (RC,None,None))
+        |(RR,Some t,None)      ->  "\n;RR ("^t^")\n"^(rr ("(= (type (parent o2)) "^t^")",t))^(guarantee (RC,Some t,None))
+        |(RC,None,None)        ->  "\n;RC (generic)\n"^(rc ("","","")) 
+        |(RC,Some t,None)      ->  "\n;RC ("^t^")\n"^(rc ("(= (type (parent o2)) "^t^")","(= (type (parent o1)) "^t^")",t)) 
+        |(CC,None,None)        ->  ";CC \n"^(cc "")
+        |(EC,_,_)              ->  "\n;EC (i.e. read uncommited)"
 
  
 
-let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s^"\n"^(guarantee g) ) "" _GUARANTEE
+let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s^""^(guarantee g) ) "" _GUARANTEE
 
 
 
