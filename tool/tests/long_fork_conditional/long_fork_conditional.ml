@@ -51,7 +51,7 @@ let read_txn (ac_id:int) =
       (fun u -> (u.b_id = 100)) in
   let v2 = SQL.select1 Bankaccount B_bal 
       (fun u -> (u.b_id = 200)) in
-  SQL.delete Bankaccount (fun u -> u.b_id = v1.b_bal)
+  SQL.insert Bankaccount {b_id=v1.b_bal;b_owner="Roger";b_bal=v2.b_bal}
 
 
 

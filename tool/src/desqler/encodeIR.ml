@@ -339,12 +339,14 @@ let extract_delete:(Asttypes.arg_label * Typedtree.expression option) list -> (s
 
 
 let  extract_insert: (Asttypes.arg_label * Typedtree.expression option) list  -> (string * V.t) list -> 
-(S.st * string * F.t) list -> (string*(string*F.L.expr) list)*S.st list = 
-fun [(_,Some exp_cons);(_,Some exp_record)] -> fun var_list ->
+(S.st * string * F.t) list -> (string*(string*F.L.expr) list*S.st list) = 
+fun [(_,Some exp_cons);(_,Some exp_record)] -> fun var_list -> fun old_stmt_list ->
   let Texp_construct (_,{cstr_name=table_name},_) = exp_cons.exp_desc  in
   let Texp_record (v_list,_) = exp_record.exp_desc in
   let record = List.map (fun (_,{lbl_name},e) -> (lbl_name,(fst @@ extract_operands var_list e.exp_desc []))) v_list in
-(table_name,record,[])
+  let all_vars_accessed = List.fold_left (fun old_l -> fun (_,_,e) -> old_l@(snd@@extract_operands var_list e.exp_desc [])) [] v_list in
+  let accessed_stmts = find_accessed_statements all_vars_accessed old_stmt_list in
+  (table_name,record,accessed_stmts)
 
 
 let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> (F.t*(string * V.t) list)  =
@@ -464,7 +466,8 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                                     let inserted_table = Var.Table.make table_name [Var.my_col] in (*only table name matters. The actuall columns can be retrieved later*)
                                     let inserted_record = Fol.Record.T{name="test_record"; vars=var_list} in (*I'm gonna create test record for now*)
                                     let new_type = txn_name^"_insert_"^(string_of_int iter_i) in
-                                    (old_stmts@[(S.INSERT (inserted_table,inserted_record ,curr_cond),new_type,F.my_true)],old_vars)
+                                    let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
+                                    (updated_old_stmts@[(S.INSERT (inserted_table,inserted_record ,curr_cond),new_type,F.my_true)],old_vars)
  
                       |"update" ->  let (accessed_table,accessed_col_name,wh_c,update_expression,accessed_stmts) = extract_update ae_list old_vars old_stmts in
                                     let accessed_col = (accessed_table,accessed_col_name, T.Int ,true) in 
