@@ -6,8 +6,8 @@ type c = SERIALIZABILITY | EVENTUAL_SERIALIZABILITY
 
 
 (*SET THE FOLLOWING CONSTANTS BEFORE RUNNING YOUR ANALYSIS*)
-let _CORRECTNESS = SERIALIZABILITY
-let _MAX_CYCLE_LENGTH = 5
+let _CORRECTNESS = corr
+let _MAX_CYCLE_LENGTH = cl
 let _GUARANTEE = [(SER,Some "New_order",None);
                   (SER,Some "Payment",None);
                   (RR,Some "Order_status",None);

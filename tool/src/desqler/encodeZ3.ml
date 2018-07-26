@@ -188,7 +188,7 @@ module Cons =
         |(RC,None,None)        ->  "\n;RC (generic)\n"^(rc ("","","")) 
         |(RC,Some t,None)      ->  "\n;RC ("^t^")\n"^(rc ("(= (type (parent o2)) "^t^")","(= (type (parent o1)) "^t^")",t)) 
         |(CC,None,None)        ->  ";CC \n"^(cc "")
-        |(EC,_,_)              ->  "\n;EC (i.e. read uncommited)"
+        |(EC,_,_)              ->  "\n;EC (i.e. read uncommited???!!!!)"
 
  
 
