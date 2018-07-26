@@ -566,8 +566,6 @@
                         (or (or (or false
                             (exists ((r Neworder))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_select_1)
                                 (= (otype o2) Delivery_delete_1)
                                 (and (= (Neworder_Proj_n_wid r) (Delivery_Param_input_w_id t1)) (= (Neworder_Proj_n_did r) (Delivery_Param_input_d_id t1)))  true
@@ -576,8 +574,6 @@
                                 (RW_Alive_Neworder r o1 o2))))
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_select_3)
                                 (= (otype o2) Delivery_update_2)
                                 (IsAlive_Orderline r t2)
@@ -587,8 +583,6 @@
                                 (and (and (= (Orderline_Proj_ol_oid r) (Orders_Proj_o_id (Delivery_Var_v3 t2))) (= (Orderline_Proj_ol_wid r) (Delivery_Param_input_w_id t2))) (= (Orderline_Proj_ol_did r) (Delivery_Param_input_d_id t2)))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) true)
                                 (= (otype o1) Delivery_select_4)
                                 (= (otype o2) Delivery_update_3)
                                 (IsAlive_Customer r t2)
@@ -615,8 +609,6 @@
                         (or (or false
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) true)
                                 (= (otype o1) Delivery_select_4)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -625,8 +617,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) true)
                                 (= (otype o1) Delivery_select_4)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -641,8 +631,6 @@
                         (or (or false
                             (exists ((r Neworder))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_select_1)
                                 (= (otype o2) New_order_insert_2)
                                 (and (= (Neworder_Proj_n_wid r) (Delivery_Param_input_w_id t1)) (= (Neworder_Proj_n_did r) (Delivery_Param_input_d_id t1)))  true
@@ -654,8 +642,6 @@
                                 (RW_Alive_Neworder r o1 o2))))
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                (or (or (or (or (or false true) true) true) true) true)
                                 (= (otype o1) Delivery_select_2)
                                 (= (otype o2) New_order_insert_1)
                                 (and (and (= (Orders_Proj_o_id r) (Neworder_Proj_n_oid (Delivery_Var_v2 t1))) (= (Orders_Proj_o_wid r) (Delivery_Param_input_w_id t1))) (= (Orders_Proj_o_did r) (Delivery_Param_input_d_id t1)))  true
@@ -676,8 +662,6 @@
                         (or false
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                (or false true)
                                 (= (otype o1) Stock_level_select_2)
                                 (= (otype o2) Delivery_update_2)
                                 (IsAlive_Orderline r t2)
@@ -711,8 +695,6 @@
                         (or (or (or (or (or false
                             (exists ((r District))
                                 (and 
-                                ;ES conditions
-                                (or false true)
                                 (= (otype o1) Stock_level_select_1)
                                 (= (otype o2) New_order_update_1)
                                 (IsAlive_District r t2)
@@ -721,8 +703,6 @@
                                 (and (= (District_Proj_d_wid r) (New_order_Param_input_w_id t2)) (= (District_Proj_d_id r) (New_order_Param_input_d_id t2)))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Stock_level_select_3)
                                 (= (otype o2) New_order_update_2)
                                 (IsAlive_Stock r t2)
@@ -732,8 +712,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t2)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t2))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Stock_level_select_3)
                                 (= (otype o2) New_order_update_3)
                                 (IsAlive_Stock r t2)
@@ -743,8 +721,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t2)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t2))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Stock_level_select_3)
                                 (= (otype o2) New_order_update_4)
                                 (IsAlive_Stock r t2)
@@ -754,8 +730,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t2)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t2))))  (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t2)) (New_order_Param_input_ol_qnt t2)) 10)))))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Stock_level_select_3)
                                 (= (otype o2) New_order_update_4)
                                 (IsAlive_Stock r t2)
@@ -771,8 +745,6 @@
                         (or (or (or (or (or (or (or false
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Order_status_Param_input_cid_is_given t1)))
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Delivery_update_3)
                                 (IsAlive_Customer r t2)
@@ -781,8 +753,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t2))))  true)))
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_2)
                                 (= (otype o2) Delivery_update_1)
                                 (IsAlive_Orders r t2)
@@ -792,8 +762,6 @@
                                 (and (and (= (Orders_Proj_o_id r) (Neworder_Proj_n_oid (Delivery_Var_v2 t2))) (= (Orders_Proj_o_wid r) (Delivery_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Delivery_Param_input_d_id t2)))  true)))
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_3)
                                 (= (otype o2) Delivery_update_2)
                                 (IsAlive_Orderline r t2)
@@ -803,8 +771,6 @@
                                 (and (and (= (Orderline_Proj_ol_oid r) (Orders_Proj_o_id (Delivery_Var_v3 t2))) (= (Orderline_Proj_ol_wid r) (Delivery_Param_input_w_id t2))) (= (Orderline_Proj_ol_did r) (Delivery_Param_input_d_id t2)))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Delivery_update_3)
                                 (IsAlive_Customer r t2)
@@ -814,8 +780,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t2))))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Delivery_update_4)
                                 (IsAlive_Customer r t2)
@@ -825,8 +789,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t2))))  true)))
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_2)
                                 (= (otype o2) Delivery_update_1)
                                 (IsAlive_Orders r t2)
@@ -836,8 +798,6 @@
                                 (and (and (= (Orders_Proj_o_id r) (Neworder_Proj_n_oid (Delivery_Var_v2 t2))) (= (Orders_Proj_o_wid r) (Delivery_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Delivery_Param_input_d_id t2)))  true)))
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_3)
                                 (= (otype o2) Delivery_update_2)
                                 (IsAlive_Orderline r t2)
@@ -865,8 +825,6 @@
                         (or (or (or (or (or (or (or (or false
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Order_status_Param_input_cid_is_given t1)))
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -875,8 +833,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Order_status_Param_input_cid_is_given t1)))
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -885,8 +841,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -896,8 +850,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_4)
                                 (IsAlive_Customer r t2)
@@ -907,8 +859,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_5)
                                 (IsAlive_Customer r t2)
@@ -918,8 +868,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -929,8 +877,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_4)
                                 (IsAlive_Customer r t2)
@@ -940,8 +886,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_1)
                                 (= (otype o2) Payment_update_5)
                                 (IsAlive_Customer r t2)
@@ -957,8 +901,6 @@
                         (or (or false
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_2)
                                 (= (otype o2) New_order_insert_1)
                                 (and (and (= (Orders_Proj_o_cid r) (Customer_Proj_c_id (Order_status_Var_v1 t1))) (= (Orders_Proj_o_wid r) (Order_status_Param_input_w_id t1))) (= (Orders_Proj_o_did r) (Order_status_Param_input_d_id t1)))  (and true (Order_status_Param_input_cid_is_given t1))
@@ -973,8 +915,6 @@
                                 (RW_Alive_Orders r o1 o2))))
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Order_status_select_2)
                                 (= (otype o2) New_order_insert_1)
                                 (and (and (= (Orders_Proj_o_cid r) (Customer_Proj_c_id (Order_status_Var_v3 t1))) (= (Orders_Proj_o_wid r) (Order_status_Param_input_w_id t1))) (= (Orders_Proj_o_did r) (Order_status_Param_input_d_id t1)))  (and true (not (Order_status_Param_input_cid_is_given t1)))
@@ -995,8 +935,6 @@
                         (or (or (or false
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t1)))
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Delivery_update_3)
                                 (IsAlive_Customer r t2)
@@ -1005,8 +943,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t2))))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Delivery_update_3)
                                 (IsAlive_Customer r t2)
@@ -1016,8 +952,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t2))))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Delivery_update_4)
                                 (IsAlive_Customer r t2)
@@ -1045,8 +979,6 @@
                         (or (or (or (or (or (or (or (or (or (or (or (or (or (or false
                             (exists ((r Warehouse))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) Payment_select_1)
                                 (= (otype o2) Payment_update_1)
                                 (IsAlive_Warehouse r t2)
@@ -1055,8 +987,6 @@
                                 (= (Warehouse_Proj_w_id r) (Payment_Param_input_w_id t2))  true)))
                             (exists ((r District))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) Payment_select_2)
                                 (= (otype o2) Payment_update_2)
                                 (IsAlive_District r t2)
@@ -1065,8 +995,6 @@
                                 (and (= (District_Proj_d_wid r) (Payment_Param_input_w_id t2)) (= (District_Proj_d_id r) (Payment_Param_input_d_id t2)))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t1)))
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -1075,8 +1003,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t1)))
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -1085,8 +1011,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t1)))
                                 (= (otype o1) Payment_select_4)
                                 (= (otype o2) Payment_update_4)
                                 (IsAlive_Customer r t2)
@@ -1095,8 +1019,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t1)))
                                 (= (otype o1) Payment_select_4)
                                 (= (otype o2) Payment_update_4)
                                 (IsAlive_Customer r t2)
@@ -1105,8 +1027,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t1)))
                                 (= (otype o1) Payment_select_5)
                                 (= (otype o2) Payment_update_5)
                                 (IsAlive_Customer r t2)
@@ -1115,8 +1035,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t1)))
                                 (= (otype o1) Payment_select_5)
                                 (= (otype o2) Payment_update_5)
                                 (IsAlive_Customer r t2)
@@ -1125,8 +1043,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -1136,8 +1052,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_4)
                                 (IsAlive_Customer r t2)
@@ -1147,8 +1061,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_5)
                                 (IsAlive_Customer r t2)
@@ -1158,8 +1070,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (Payment_Param_input_cid_is_given t2)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_3)
                                 (IsAlive_Customer r t2)
@@ -1169,8 +1079,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_4)
                                 (IsAlive_Customer r t2)
@@ -1180,8 +1088,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t2)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t2))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t2)))  (and true (not (Payment_Param_input_cid_is_given t2))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_select_3)
                                 (= (otype o2) Payment_update_5)
                                 (IsAlive_Customer r t2)
@@ -1227,8 +1133,6 @@
                         (or (or (or (or (or false
                             (exists ((r District))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) New_order_select_3)
                                 (= (otype o2) New_order_update_1)
                                 (IsAlive_District r t2)
@@ -1237,8 +1141,6 @@
                                 (and (= (District_Proj_d_wid r) (New_order_Param_input_w_id t2)) (= (District_Proj_d_id r) (New_order_Param_input_d_id t2)))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) New_order_select_8)
                                 (= (otype o2) New_order_update_3)
                                 (IsAlive_Stock r t2)
@@ -1247,8 +1149,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t2)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t2))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) New_order_select_9)
                                 (= (otype o2) New_order_update_2)
                                 (IsAlive_Stock r t2)
@@ -1257,8 +1157,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t2)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t2))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t1)) (New_order_Param_input_ol_qnt t1)) 10))) (or false (and true (not (> (- (Stock_Proj_s_quant (New_order_Var_v10 t1)) (New_order_Param_input_ol_qnt t1)) 10)))))
                                 (= (otype o1) New_order_select_10)
                                 (= (otype o2) New_order_update_4)
                                 (IsAlive_Stock r t2)
@@ -1267,8 +1165,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t2)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t2))))  (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t2)) (New_order_Param_input_ol_qnt t2)) 10)))))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t1)) (New_order_Param_input_ol_qnt t1)) 10))) (or false (and true (not (> (- (Stock_Proj_s_quant (New_order_Var_v10 t1)) (New_order_Param_input_ol_qnt t1)) 10)))))
                                 (= (otype o1) New_order_select_10)
                                 (= (otype o2) New_order_update_4)
                                 (IsAlive_Stock r t2)
@@ -1288,8 +1184,6 @@
                         (or (or (or false
                             (exists ((r Neworder))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_delete_1)
                                 (= (otype o2) Delivery_select_1)
                                 (and (= (Neworder_Proj_n_wid r) (Delivery_Param_input_w_id t2)) (= (Neworder_Proj_n_did r) (Delivery_Param_input_d_id t2)))  true
@@ -1299,8 +1193,6 @@
                                 (WR_Alive_Neworder r o1 o2))))
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_2)
                                 (= (otype o2) Delivery_select_3)
                                 (IsAlive_Orderline r t1)
@@ -1310,8 +1202,6 @@
                                 (and (and (= (Orderline_Proj_ol_oid r) (Orders_Proj_o_id (Delivery_Var_v3 t1))) (= (Orderline_Proj_ol_wid r) (Delivery_Param_input_w_id t1))) (= (Orderline_Proj_ol_did r) (Delivery_Param_input_d_id t1)))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) true)
                                 (= (otype o1) Delivery_update_3)
                                 (= (otype o2) Delivery_select_4)
                                 (IsAlive_Customer r t1)
@@ -1327,8 +1217,6 @@
                         (or false
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                (or false true)
                                 (= (otype o1) Delivery_update_2)
                                 (= (otype o2) Stock_level_select_2)
                                 (IsAlive_Orderline r t1)
@@ -1344,8 +1232,6 @@
                         (or (or (or (or (or (or (or false
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_1)
                                 (= (otype o2) Order_status_select_2)
                                 (IsAlive_Orders r t1)
@@ -1355,8 +1241,6 @@
                                 (and (and (= (Orders_Proj_o_id r) (Neworder_Proj_n_oid (Delivery_Var_v2 t1))) (= (Orders_Proj_o_wid r) (Delivery_Param_input_w_id t1))) (= (Orders_Proj_o_did r) (Delivery_Param_input_d_id t1)))  true)))
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_1)
                                 (= (otype o2) Order_status_select_2)
                                 (IsAlive_Orders r t1)
@@ -1366,8 +1250,6 @@
                                 (and (and (= (Orders_Proj_o_id r) (Neworder_Proj_n_oid (Delivery_Var_v2 t1))) (= (Orders_Proj_o_wid r) (Delivery_Param_input_w_id t1))) (= (Orders_Proj_o_did r) (Delivery_Param_input_d_id t1)))  true)))
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_2)
                                 (= (otype o2) Order_status_select_3)
                                 (IsAlive_Orderline r t1)
@@ -1377,8 +1259,6 @@
                                 (and (and (= (Orderline_Proj_ol_oid r) (Orders_Proj_o_id (Delivery_Var_v3 t1))) (= (Orderline_Proj_ol_wid r) (Delivery_Param_input_w_id t1))) (= (Orderline_Proj_ol_did r) (Delivery_Param_input_d_id t1)))  true)))
                             (exists ((r Orderline))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_2)
                                 (= (otype o2) Order_status_select_3)
                                 (IsAlive_Orderline r t1)
@@ -1388,8 +1268,6 @@
                                 (and (and (= (Orderline_Proj_ol_oid r) (Orders_Proj_o_id (Delivery_Var_v3 t1))) (= (Orderline_Proj_ol_wid r) (Delivery_Param_input_w_id t1))) (= (Orderline_Proj_ol_did r) (Delivery_Param_input_d_id t1)))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Order_status_Param_input_cid_is_given t2)))
                                 (= (otype o1) Delivery_update_3)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1399,8 +1277,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t1))))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_3)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1410,8 +1286,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t1))))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_4)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1427,8 +1301,6 @@
                         (or (or (or false
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t2)))
                                 (= (otype o1) Delivery_update_3)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1438,8 +1310,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t1))))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_3)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1449,8 +1319,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Delivery_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Delivery_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Orders_Proj_o_cid (Delivery_Var_v3 t1))))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Delivery_update_4)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1532,8 +1400,6 @@
                         (or (or false
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) true)
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Delivery_select_4)
                                 (IsAlive_Customer r t1)
@@ -1543,8 +1409,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) true)
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Delivery_select_4)
                                 (IsAlive_Customer r t1)
@@ -1566,8 +1430,6 @@
                         (or (or (or (or (or (or (or (or false
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Order_status_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1577,8 +1439,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1588,8 +1448,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_4)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1599,8 +1457,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_5)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1610,8 +1466,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Order_status_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1621,8 +1475,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1632,8 +1484,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_4)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1643,8 +1493,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_5)
                                 (= (otype o2) Order_status_select_1)
                                 (IsAlive_Customer r t1)
@@ -1660,8 +1508,6 @@
                         (or (or (or (or (or (or (or (or (or (or (or (or (or (or false
                             (exists ((r Warehouse))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) Payment_update_1)
                                 (= (otype o2) Payment_select_1)
                                 (IsAlive_Warehouse r t1)
@@ -1671,8 +1517,6 @@
                                 (= (Warehouse_Proj_w_id r) (Payment_Param_input_w_id t1))  true)))
                             (exists ((r District))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) Payment_update_2)
                                 (= (otype o2) Payment_select_2)
                                 (IsAlive_District r t1)
@@ -1682,8 +1526,6 @@
                                 (and (= (District_Proj_d_wid r) (Payment_Param_input_w_id t1)) (= (District_Proj_d_id r) (Payment_Param_input_d_id t1)))  true)))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1693,8 +1535,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1704,8 +1544,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_4)
                                 (= (otype o2) Payment_select_4)
                                 (IsAlive_Customer r t1)
@@ -1715,8 +1553,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_4)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1726,8 +1562,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_5)
                                 (= (otype o2) Payment_select_5)
                                 (IsAlive_Customer r t1)
@@ -1737,8 +1571,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_5)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1748,8 +1580,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (Payment_Param_input_cid_is_given t1)))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1759,8 +1589,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_3)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1770,8 +1598,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_4)
                                 (= (otype o2) Payment_select_4)
                                 (IsAlive_Customer r t1)
@@ -1781,8 +1607,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_4)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1792,8 +1616,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                (or false (and true (Payment_Param_input_cid_is_given t2)))
                                 (= (otype o1) Payment_update_5)
                                 (= (otype o2) Payment_select_5)
                                 (IsAlive_Customer r t1)
@@ -1803,8 +1625,6 @@
                                 (and (and (= (Customer_Proj_c_wid r) (Payment_Param_input_w_id t1)) (= (Customer_Proj_c_did r) (Payment_Param_input_d_id t1))) (= (Customer_Proj_c_id r) (Payment_Param_input_c_id t1)))  (and true (not (Payment_Param_input_cid_is_given t1))))))
                             (exists ((r Customer))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) Payment_update_5)
                                 (= (otype o2) Payment_select_3)
                                 (IsAlive_Customer r t1)
@@ -1826,8 +1646,6 @@
                         (or (or false
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                (or (or (or (or (or false true) true) true) true) true)
                                 (= (otype o1) New_order_insert_1)
                                 (= (otype o2) Delivery_select_2)
                                 (and (and (= (Orders_Proj_o_id r) (Neworder_Proj_n_oid (Delivery_Var_v2 t2))) (= (Orders_Proj_o_wid r) (Delivery_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Delivery_Param_input_d_id t2)))  true
@@ -1843,8 +1661,6 @@
                                 (WR_Alive_Orders r o1 o2))))
                             (exists ((r Neworder))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_insert_2)
                                 (= (otype o2) Delivery_select_1)
                                 (and (= (Neworder_Proj_n_wid r) (Delivery_Param_input_w_id t2)) (= (Neworder_Proj_n_did r) (Delivery_Param_input_d_id t2)))  true
@@ -1862,8 +1678,6 @@
                         (or (or (or (or (or false
                             (exists ((r District))
                                 (and 
-                                ;ES conditions
-                                (or false true)
                                 (= (otype o1) New_order_update_1)
                                 (= (otype o2) Stock_level_select_1)
                                 (IsAlive_District r t1)
@@ -1873,8 +1687,6 @@
                                 (and (= (District_Proj_d_wid r) (New_order_Param_input_w_id t1)) (= (District_Proj_d_id r) (New_order_Param_input_d_id t1)))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_update_2)
                                 (= (otype o2) Stock_level_select_3)
                                 (IsAlive_Stock r t1)
@@ -1884,8 +1696,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t1)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t1))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_update_3)
                                 (= (otype o2) Stock_level_select_3)
                                 (IsAlive_Stock r t1)
@@ -1895,8 +1705,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t1)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t1))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_update_4)
                                 (= (otype o2) Stock_level_select_3)
                                 (IsAlive_Stock r t1)
@@ -1906,8 +1714,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t1)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t1))))  (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t1)) (New_order_Param_input_ol_qnt t1)) 10)))))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_update_4)
                                 (= (otype o2) Stock_level_select_3)
                                 (IsAlive_Stock r t1)
@@ -1923,8 +1729,6 @@
                         (or (or false
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_insert_1)
                                 (= (otype o2) Order_status_select_2)
                                 (and (and (= (Orders_Proj_o_cid r) (Customer_Proj_c_id (Order_status_Var_v1 t2))) (= (Orders_Proj_o_wid r) (Order_status_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Order_status_Param_input_d_id t2)))  (and true (Order_status_Param_input_cid_is_given t2))
@@ -1939,8 +1743,6 @@
                                 (WR_Alive_Orders r o1 o2))))
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_insert_1)
                                 (= (otype o2) Order_status_select_2)
                                 (and (and (= (Orders_Proj_o_cid r) (Customer_Proj_c_id (Order_status_Var_v3 t2))) (= (Orders_Proj_o_wid r) (Order_status_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Order_status_Param_input_d_id t2)))  (and true (not (Order_status_Param_input_cid_is_given t2)))
@@ -1967,8 +1769,6 @@
                         (or (or (or (or (or false
                             (exists ((r District))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) New_order_update_1)
                                 (= (otype o2) New_order_select_3)
                                 (IsAlive_District r t1)
@@ -1978,8 +1778,6 @@
                                 (and (= (District_Proj_d_wid r) (New_order_Param_input_w_id t1)) (= (District_Proj_d_id r) (New_order_Param_input_d_id t1)))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) New_order_update_2)
                                 (= (otype o2) New_order_select_9)
                                 (IsAlive_Stock r t1)
@@ -1989,8 +1787,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t1)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t1))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false true) (or false true))
                                 (= (otype o1) New_order_update_3)
                                 (= (otype o2) New_order_select_8)
                                 (IsAlive_Stock r t1)
@@ -2000,8 +1796,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t1)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t1))))  true)))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t2)) (New_order_Param_input_ol_qnt t2)) 10))) (or false (and true (not (> (- (Stock_Proj_s_quant (New_order_Var_v10 t2)) (New_order_Param_input_ol_qnt t2)) 10)))))
                                 (= (otype o1) New_order_update_4)
                                 (= (otype o2) New_order_select_10)
                                 (IsAlive_Stock r t1)
@@ -2011,8 +1805,6 @@
                                 (and (= (Stock_Proj_s_wid r) (New_order_Param_input_w_id t1)) (= (Stock_Proj_s_iid r) (Item_Proj_i_id (New_order_Var_loop_var_1 t1))))  (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t1)) (New_order_Param_input_ol_qnt t1)) 10)))))
                             (exists ((r Stock))
                                 (and 
-                                ;ES conditions
-                                (or (or false (and true (> (- (Stock_Proj_s_quant (New_order_Var_v10 t2)) (New_order_Param_input_ol_qnt t2)) 10))) (or false (and true (not (> (- (Stock_Proj_s_quant (New_order_Var_v10 t2)) (New_order_Param_input_ol_qnt t2)) 10)))))
                                 (= (otype o1) New_order_update_4)
                                 (= (otype o2) New_order_select_10)
                                 (IsAlive_Stock r t1)
@@ -2568,8 +2360,6 @@
                     (=> (or (or false
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                (or (or (or (or (or false true) true) true) true) true)
                                 (= (otype o1) New_order_insert_1)
                                 (= (otype o2) Delivery_select_2)
                                 (and (and (= (Orders_Proj_o_id r) (Neworder_Proj_n_oid (Delivery_Var_v2 t2))) (= (Orders_Proj_o_wid r) (Delivery_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Delivery_Param_input_d_id t2)))  true
@@ -2585,8 +2375,6 @@
                                 (WR_Alive_Orders r o1 o2))))
                             (exists ((r Neworder))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_insert_2)
                                 (= (otype o2) Delivery_select_1)
                                 (and (= (Neworder_Proj_n_wid r) (Delivery_Param_input_w_id t2)) (= (Neworder_Proj_n_did r) (Delivery_Param_input_d_id t2)))  true
@@ -2610,8 +2398,6 @@
                     (=> (or (or false
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_insert_1)
                                 (= (otype o2) Order_status_select_2)
                                 (and (and (= (Orders_Proj_o_cid r) (Customer_Proj_c_id (Order_status_Var_v1 t2))) (= (Orders_Proj_o_wid r) (Order_status_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Order_status_Param_input_d_id t2)))  (and true (Order_status_Param_input_cid_is_given t2))
@@ -2626,8 +2412,6 @@
                                 (WR_Alive_Orders r o1 o2))))
                             (exists ((r Orders))
                                 (and 
-                                ;ES conditions
-                                false
                                 (= (otype o1) New_order_insert_1)
                                 (= (otype o2) Order_status_select_2)
                                 (and (and (= (Orders_Proj_o_cid r) (Customer_Proj_c_id (Order_status_Var_v3 t2))) (= (Orders_Proj_o_wid r) (Order_status_Param_input_w_id t2))) (= (Orders_Proj_o_did r) (Order_status_Param_input_d_id t2)))  (and true (not (Order_status_Param_input_cid_is_given t2)))
@@ -3052,7 +2836,7 @@
 
 (assert (! (forall ((t1 O)(t2 O)) (=> (D t1 t2) (and (not (sibling t1 t2))(or (WW_O t1 t2)(WR_O t1 t2)(RW_O t1 t2))))) :named gen-dep) )
 (assert (! (forall ((t1 O)(t2 O)) (=> (X t1 t2) (or (sibling t1 t2)(D t1 t2)))) :named gen-depx) )
-(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O)) (and (not (= t1 t4)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t1))) :named cycle))
+(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O) (t5 O) (t6 O) (t7 O) (t8 O) (t9 O) (t10 O) (t11 O) (t12 O) (t13 O) (t14 O)) (and (not (= t1 t14)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t5) (X t5 t6) (X t6 t7) (X t7 t8) (X t8 t9) (X t9 t10) (X t10 t11) (X t11 t12) (X t12 t13) (X t13 t14) (X t14 t1))) :named cycle))
 
 ;Guarantees
 ;PSI (Read)

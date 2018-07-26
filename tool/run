@@ -31,21 +31,27 @@ echo ">> maximum cycle length = ${s}"
 echo '-------------------------------'
 
 # update the config file
+rm src/desqler/constants.*
 if [ $c == 'ser' ]; then
-  sed  's/corr/SERIALIZABILITY/g' src/desqler/constants.ml > src/desqler/constants.ml
+	sed  "s/corr/SERIALIZABILITY/" src/desqler/constants_template.ml  > src/desqler/constants.ml 
 else
-  sed  's/corr/EVENTUALSERIALIZABILITY/g' src/desqler/constants.ml >  src/desqler/constants.ml
+	sed  "s/corr/EVENTUAL_SERIALIZABILITY/" src/desqler/constants_template.ml  > src/desqler/constants.ml
 fi
+sed -i '' "s/cl/$s/" src/desqler/constants.ml 
 
 # compile the tool
-#cd src 
-#make localclean
-#make world 
-#cd ../ 
+cd src 
+make localclean
+make world 
+cd ../ 
+
 # run the tool on the requested file
-#./bin/deSQLer.opt -w -20 -c ./$dir/$file/$file.ml 
+./bin/deSQLer.opt -w -20 -c ./$t/$f/$f.ml 
+
 # run z3 on the generated file
-
-
 time z3 z3-encoding.smt2 > z3.output
 cat z3.output
+
+
+
+
