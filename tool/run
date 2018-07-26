@@ -2,7 +2,7 @@
 # This script will run the deSQLer on the given test benchmark
 
 usage() { echo "Usage: $0 [-t <bench|test>] [-f <file>] [-c <ser|es>] [-s <int>] [-a <auto:int>]" 1>&2; exit 1; }
-
+rm src/*.opt
 while getopts ":t:f:c:s:a:" o; do
     case "${o}" in
         t)
@@ -35,15 +35,17 @@ echo '-------------------------------'
 
 #initialize
 touch z3-encoding.smt2
-rm z3-encoding.smt2
+rm *.smt2
+rm src/desqler/constants*.*
+rm z3*.output
 
+# VERIFY AGAINST MANUALLY CRAFTED ASSIGMENTS
 if [ -z "$a" ]; then
 	# update the config file
-	rm src/desqler/constants.*
 	if [ $c == 'ser' ]; then
-		sed  "s/corr/SERIALIZABILITY/" src/desqler/constants_template.ml  > src/desqler/constants.ml 
+		sed  "s/corr/SERIALIZABILITY/" $t/$f/constants_template.ml  > src/desqler/constants.ml 
 	else
-		sed  "s/corr/EVENTUAL_SERIALIZABILITY/" src/desqler/constants_template.ml  > src/desqler/constants.ml
+		sed  "s/corr/EVENTUAL_SERIALIZABILITY/" $t/$f/constants_template.ml  > src/desqler/constants.ml
 	fi
 	sed -i '' "s/cl/$s/" src/desqler/constants.ml 
 
@@ -54,24 +56,46 @@ if [ -z "$a" ]; then
 	cd ../ 
 	
 	# run the tool on the requested file
-	./bin/deSQLer.opt -w -20 -c ./$t/$f/$f.ml 
+	./bin/deSQLer.opt -20 -c ./$t/$f/$f.ml 
 
 	# run z3 on the generated file
 	time z3 z3-encoding.smt2 > z3.output
 	cat z3.output
+
+# AUTOMATICALLY DETERMINE THE OPTIMAL ASSIGNMENT
 else
 	iter=$(($a + 2))
 	for i in $( eval echo {3..$iter} )
 	do
+		num=$(($i - 2))
 		# update the config file
-		rm src/desqler/constants.*
+		# clean-up per iteration
+		rm src/desqler/constants*.*
+		touch z3-encoding.smt2
+		rm z3-encoding.smt2 
+		
 		if [ $c == 'ser' ]; then
-			sed  "s/corr/SERIALIZABILITY/" src/desqler/constants_template.ml  > src/desqler/constants.ml 
+			sed  "s/corr/SERIALIZABILITY/" $t/$f/constants_template.ml  > src/desqler/constants.ml 
 		else
-			sed  "s/corr/EVENTUAL_SERIALIZABILITY/" src/desqler/constants_template.ml  > src/desqler/constants.ml
+			sed  "s/corr/EVENTUAL_SERIALIZABILITY/" $t/$f/constants_template.ml  > src/desqler/constants.ml
 		fi
 		sed -i '' "s/cl/$s/" src/desqler/constants.ml 
-		tr '\n' '^' < src/desqler/constants.ml | sed "s/EC/SER/$i" | tr '^' '\n'
+		tr '\n' '^' < src/desqler/constants.ml | sed "s/EC/SER/$i" | tr '^' '\n' > src/desqler/temp
+		mv src/desqler/temp  src/desqler/constants.ml
+		# compile with the modified configuration
+		cd src
+		make localclean 
+		make world 
+		cd ../
+	  # run the tool on the requested file
+	  ./bin/deSQLer.opt -w -20 -c ./$t/$f/$f.ml > /dev/null
+    
+		# run z3 and create the result file
+		echo "Test Number $num:" >> z3.output
+		echo '--------------------------------------------------' >> z3.output
+		cat  src/desqler/constants.ml | tail -6 | head -5 >> z3.output
+		time z3 z3-encoding.smt2 >> z3.output
+		echo '\n\n' >> z3.output
 	done
 fi
 

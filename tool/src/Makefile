@@ -1,7 +1,7 @@
 # The main Makefile, fragments shared between Makefile and Makefile.nt
 include config/Makefile
 # CAMLYACC ?= boot/ocamlyacc
-CAMLC=ocamlc
+CAMLC=ocamlc 
 CAMLOPT=ocamlopt
 CAMLYACC=ocamlyacc
 YACCFLAGS=-v --strict

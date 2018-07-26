@@ -536,18 +536,18 @@
 
 (assert (! (forall ((t1 O)(t2 O)) (=> (D t1 t2) (and (not (sibling t1 t2))(or (WW_O t1 t2)(WR_O t1 t2)(RW_O t1 t2))))) :named gen-dep) )
 (assert (! (forall ((t1 O)(t2 O)) (=> (X t1 t2) (or (sibling t1 t2)(D t1 t2)))) :named gen-depx) )
-(assert (! (exists ( (t1 O) (t2 O) (t3 O)) (and (not (= t1 t3)) (D t1 t2) (X t2 t3) (X t3 t1))) :named cycle))
+(assert (! (exists ( (t1 O) (t2 O) (t3 O) (t4 O) (t5 O) (t6 O)) (and (not (= t1 t6)) (D t1 t2) (X t2 t3) (X t3 t4) (X t4 t5) (X t5 t6) (X t6 t1))) :named cycle))
 
 ;Guarantees
-;SER (generic) 
-(assert (! (forall ((o1 O) (o2 O)) (=> (and (ar o1 o2)) (vis o1 o2))) :named ser_))(assert (! (forall ((o1 O) (o2 O) (o3 O)) (=> (and (ar o1 o2)(vis o2 o3))(vis o1 o3))) :named ser2_))
-;RR (generic)
-(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o2 o3))(vis o1 o3))) :named rr_))
-;RC
-
-;RC (generic)
-(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (vis o1 o2)(sibling o1 o3))(vis o3 o2))) :named rc_))
-(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (is_write o3))(and (ar o1 o2)(sibling o2 o3))(ar o1 o3))) :named rc2_))
+;EC (i.e. read uncommited)
+;EC (i.e. read uncommited)
+;SER (Write2)
+(assert (! (forall ((o1 O) (o2 O)) (=> (and (= (type (parent o2)) Write2)(ar o1 o2)) (vis o1 o2))) :named ser_Write2))(assert (! (forall ((o1 O) (o2 O) (o3 O)) (=> (and (= (type (parent o3)) Write2)(ar o1 o2)(vis o2 o3))(vis o1 o3))) :named ser2_Write2))
+;RR (Write2)
+(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (= (type (parent o2)) Write2)(vis o1 o2)(sibling o2 o3))(vis o1 o3))) :named rr_Write2))
+;RC (Write2)
+(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (= (type (parent o2)) Write2)(vis o1 o2)(sibling o1 o3))(vis o3 o2))) :named rc_Write2))
+(assert (! (forall ((o1 O)(o2 O)(o3 O))(=> (and (= (type (parent o1)) Write2)(is_write o3))(and (ar o1 o2)(sibling o2 o3))(ar o1 o3))) :named rc2_Write2))
 
 (check-sat)
 ;(get-unsat-core) 
