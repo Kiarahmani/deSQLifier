@@ -33,6 +33,9 @@ echo ">> correctness criterion = ${c}"
 echo ">> maximum cycle length = ${s}"
 echo '-------------------------------'
 
+#initialize
+touch z3-encoding.smt2
+rm z3-encoding.smt2
 
 if [ -z "$a" ]; then
 	# update the config file
@@ -73,7 +76,7 @@ else
 fi
 
 
-
+#clean up
 
 
 
