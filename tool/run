@@ -1,12 +1,51 @@
 #/bin/bash
 # This script will run the deSQLer on the given test benchmark
-TEST=$2
-BENCH=$1
-cd src 
-make localclean
-make world 
-cd ../ 
-./bin/deSQLer.opt -w -20 -c ./$BENCH/$TEST/$TEST.ml #&> /dev/null
+
+usage() { echo "Usage: $0 [-t <bench|test>] [-f <file>] [-c <ser|es>] [s <int>]" 1>&2; exit 1; }
+
+while getopts ":t:f:c:s:" o; do
+    case "${o}" in
+        t)
+            t=${OPTARG}
+            ;;
+        f)
+            f=${OPTARG}
+            ;;
+        c)
+            c=${OPTARG}
+            ;;
+        s)
+            s=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+# screen the input args
+echo ">> ${t}"
+echo ">> ${f}"
+echo ">> correctness criterion = ${c}"
+echo ">> maximum cycle length = ${s}"
+echo '-------------------------------'
+
+# update the config file
+if [ $c == 'ser' ]; then
+  sed  's/corr/SERIALIZABILITY/g' src/desqler/constants.ml > src/desqler/constants.ml
+else
+  sed  's/corr/EVENTUALSERIALIZABILITY/g' src/desqler/constants.ml >  src/desqler/constants.ml
+fi
+
+# compile the tool
+#cd src 
+#make localclean
+#make world 
+#cd ../ 
+# run the tool on the requested file
+#./bin/deSQLer.opt -w -20 -c ./$dir/$file/$file.ml 
+# run z3 on the generated file
+
+
 time z3 z3-encoding.smt2 > z3.output
 cat z3.output
-
