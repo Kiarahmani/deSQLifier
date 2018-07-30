@@ -286,7 +286,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
 (* vars *)
   
   let declare_vars tname vname vtype table_name = let txn_cap = String.capitalize_ascii tname in 
-    ";"^tname^"_"^vname^
+    ";"^tname^"__"^vname^
     "\n(declare-fun "^txn_cap^"_isN_"^vname^" (T) Bool)"^ 
     "\n(declare-fun "^txn_cap^"_Var_"^vname^" (T) "^table_name^")"^
     "\n(assert (! (forall((t0 T))(and (=> (not ("^txn_cap^"_isN_"^vname^" t0)) (exists ((r "^table_name^"))(= ("^txn_cap^"_Var_"^vname^" t0) r))) 
@@ -295,8 +295,10 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
   let vars_props tname vname table_name fol = 
     let txn_cap = String.capitalize_ascii tname in 
     let innser_record = "("^txn_cap^"_Var_"^vname^" t0)" in
-    let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
-    "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^tname^"-"^vname^"-select-prop))"
+    match table_name with
+    |"Int" -> ""
+    |_ -> let inner_eq = Rules.Utils.extract_where 0 innser_record txn_cap table_name fol in
+            "(assert (! (forall ((t0 T)) "^inner_eq^") :named "^tname^"-"^vname^"-select-prop))"
   
   let choose_vars_props tname vname table_name fol chosen_var = 
     let txn_cap = String.capitalize_ascii tname in 
@@ -353,7 +355,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
       |S.RANGE_SELECT ((s_tb_name,_,_,_),v,f,_) -> (Some v,"s",s_tb_name,f,"")
       |S.MAX_SELECT (_,v,f,_) ->  (Some v,"v","",f,"")
       |S.MIN_SELECT (_,v,f,_) ->  (Some v,"v","",f,"")
-      |S.COUNT_SELECT (_,v,f,_) ->  (Some v,"v","",f,"")
+      |S.COUNT_SELECT (_,v,f,_) ->  (Some v,"v","Int",f,"")
       |S.CHOOSE (v,v2,f,_) -> (Some v, "c",(V.table v), f,(V.name v2))
       |_ -> (None,"","",F.my_true,"")
 

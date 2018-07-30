@@ -468,7 +468,15 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                                                (updated_old_stmts@[new_stmt,"XX",new_es_cond]) for_count body
       
 
-      |"select_count" -> failwith "ERROR convert_body_rec: unhandled select kind (select_count)" 
+      |"select_count" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
+                       let new_stmt = S.COUNT_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
+                       let new_type = txn_name^"_select_"^(string_of_int iter_s) in
+                       let new_es_cond = F.my_false in
+                       let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
+                         convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
+                                       (updated_old_stmts@[new_stmt,new_type,new_es_cond]) for_count
+                                       body
+  
       |_ -> failwith "(encodeIR.ml) ERROR  convert_body_rec: unexpected select kind" 
       end
     
