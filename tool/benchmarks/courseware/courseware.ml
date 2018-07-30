@@ -135,7 +135,10 @@ let expel_student_txn (input_threshold:int) =
     begin fun loop_var_1 ->
       let v2 = SQL.select_count Transcript T_all
           (fun r -> r.t_s_id = loop_var_1.s_id && r.t_grade < input_threshold) in
-      ()
+      if v2 > 10
+      then SQL.delete Student (fun r -> r.s_id=loop_var_1.s_id)
+      else ()
+      
       end
 
 
