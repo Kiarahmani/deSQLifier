@@ -106,17 +106,25 @@ module Utils =
           |_ -> (extract_where t_i "r"  txn_name table_name (return_where stmt))^"  "^(extract_where t_i "r" txn_name table_name (return_reach stmt))
 
 
-
+      let is_all_columns : string -> bool = 
+        fun s_name -> 
+          let open String in 
+          let size = length s_name in
+          let clast1 = get s_name (size-1) in
+          let clast2 = get s_name (size-2) in
+          let clast3 = get s_name (size-3) in
+          let final = concat "" [make 1 clast3; make 1 clast2; make 1 clast1] in
+          equal final "all"
   
       let accessed_common_table : S.st -> S.st -> string option = 
       fun stmt1 -> fun stmt2 ->
         match (stmt1,stmt2) with
           |(S.SELECT ((t_name_s,c_name_s,_,_),_,_,_) , S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_)) -> 
-            if t_name_s = t_name_u && c_name_s = c_name_u
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
           |(S.RANGE_SELECT((t_name_s,c_name_s,_,_),_,_,_) , S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_)) -> 
-            if t_name_s = t_name_u (*no need to check for the equality of columns*)
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
           |( S.UPDATE ((t_name_u1,c_name_u1,_,_),_,_,_) , S.UPDATE ((t_name_u2,c_name_u2,_,_),_,_,_) ) -> 
@@ -124,7 +132,7 @@ module Utils =
             then Some t_name_u1
             else None
           |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_) , S.SELECT ((t_name_s,c_name_s,_,_),_,_,_)) -> 
-            if t_name_s = t_name_u && c_name_s = c_name_u
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
           |(S.INSERT (Var.Table.T{name=t_name_i},_,_), S.SELECT ((t_name_s,_,_,_),_,_,_)) -> 
@@ -152,15 +160,15 @@ module Utils =
             then Some t_name_s
             else None  
           |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_),S.RANGE_SELECT((t_name_s,c_name_s,_,_),_,_,_)) -> 
-            if t_name_s = t_name_u (*no need to check for the equality of columns*)
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
           |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_),S.MAX_SELECT((t_name_s,c_name_s,_,_),_,_,_)) -> 
-            if t_name_s = t_name_u && c_name_s = c_name_u (*no need to check for the equality of columns*)
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
           |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_),S.MIN_SELECT((t_name_s,c_name_s,_,_),_,_,_)) -> 
-            if t_name_s = t_name_u && c_name_s = c_name_u (*no need to check for the equality of columns*)
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
           |(S.DELETE (Var.Table.T{name=t_name_d},_,_), S.RANGE_SELECT ((t_name_s,_,_,_),_,_,_)) -> 

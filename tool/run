@@ -60,7 +60,7 @@ if [ -z "$a" ]; then
 
 	# run z3 on the generated file
 	time z3 z3-encoding.smt2 > z3.output
-	cat z3.output
+	head -3 z3.output
 
 
 

@@ -496,7 +496,7 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                                     (updated_old_stmts@[(S.DELETE (accessed_table,wh_c,curr_cond),new_type,F.my_true)],old_vars)
                       |"foreach" -> let [(_,Some {exp_desc= (Texp_ident(Pident vname,_,_))});(_,Some loop_body)] = ae_list in 
                                     let iterated_var = List.assoc vname.name old_vars in
-                                    let accessed_stmts = find_accessed_statements [(vname.name,iterated_var)] old_stmts in
+                                    let accessed_stmts = find_accessed_statements [(*for now, assume it is empty TO_DO#1*)] old_stmts in
                                     let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                                     let new_name = "loop_var_"^(string_of_int for_count)  in
                                     let new_for_var = V.make new_name (V.field iterated_var) (Some (V.table iterated_var)) T.Int RECORD in

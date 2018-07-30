@@ -196,7 +196,7 @@ let all_guarantees = "\n;Guarantees"^List.fold_left (fun old_s -> fun g -> old_s
 
 
 
-let requests = "\n(check-sat)\n;(get-unsat-core) \n;(get-model)"
+let requests = "\n(check-sat)\n;(get-unsat-core) \n(get-model)"
 end
 
 

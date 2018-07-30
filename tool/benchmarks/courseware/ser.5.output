@@ -1,0 +1,1305 @@
+==================================================
+Test Number 1:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(PSI,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 2:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (PSI,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 3:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (PSI,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 4:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (PSI,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 5:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (PSI,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 6:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (PSI,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 10:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 11:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 12:
+--------------------------------------------------
+let _CORRECTNESS = SERIALIZABILITY
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 10:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 10:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 11:
+--------------------------------------------------
+let _MAX_CYCLE_LENGTH = 5
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+let _GUARANTEE = [(SER,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 10:
+--------------------------------------------------
+let _GUARANTEE = [(EC,Some "Enroll_student",None);
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 8:
+--------------------------------------------------
+                  (SER,Some "Register",None);
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 9:
+--------------------------------------------------
+                  (EC,Some "Register",None);
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+unsat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (EC,Some "Add_course",None);
+                  (EC,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (SER,Some "Query_student",None);
+                  (EC,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+sat
+--------------------------------------------------
+
+
+==================================================
+Test Number 7:
+--------------------------------------------------
+                  (SER,Some "Add_course",None);
+                  (SER,Some "Remove_course",None);
+                  (EC,Some "Query_student",None);
+                  (SER,Some "Query_course",None)]
+
+
+
+
+unknown
+--------------------------------------------------
+
+
