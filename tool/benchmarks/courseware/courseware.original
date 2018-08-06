@@ -48,9 +48,7 @@ type register = {r_s_id:int; r_c_id:int; mutable r_regdate:string}
 
 (*TXN 1*)
 let enroll_student_txn (input_s_id:int) (input_s_coid:int) (input_s_name:string) (input_s_age:int)(input_s_gender:string) =
-  SQL.insert Student {s_id=input_s_id; s_coid=input_s_coid; s_name=input_s_name; s_age=input_s_age; s_gender=input_s_gender}
-  
-let enroll_student2_txn (input_s_id:int) (input_s_coid:int) (input_s_name:string) (input_s_age:int)(input_s_gender:string) =
+  SQL.insert Student {s_id=input_s_id; s_coid=input_s_coid; s_name=input_s_name; s_age=input_s_age; s_gender=input_s_gender};
   let v1 = SQL.select1 College CO_stcount
                    (fun u -> (u.co_id = input_s_coid)) in 
   SQL.update College
@@ -61,15 +59,12 @@ let enroll_student2_txn (input_s_id:int) (input_s_coid:int) (input_s_name:string
 let query_student_txn (input_s_id:int) =
   let v0 = SQL.select1 Student S_all 
       (fun r -> r.s_id = input_s_id) in
-  let v2 = SQL.select1  College C_all 
-      (fun r -> r.co_id = v0.s_coid) in
-  ()
-
-let query_student2_txn (input_s_id:int) =
-  let v4 = SQL.select Transcript T_all
-      (fun r -> r.t_s_id=input_s_id) in
   let v1 = SQL.select Register R_all
       (fun r -> r.r_s_id=input_s_id) in
+  let v4 = SQL.select Transcript T_all
+      (fun r -> r.t_s_id=input_s_id) in
+  let v2 = SQL.select1  College C_all 
+      (fun r -> r.co_id = v0.s_coid) in
   SQL.foreach v1
     begin fun loop_var_1 ->
       let v3 = SQL.select1 Course C_title
@@ -92,26 +87,20 @@ let remove_course_txn (input_c_id:int)  =
 
 (*TXN 5*)
 let register_txn (input_s_id:int) (input_c_id:int) (input_today:string) = 
-  SQL.insert Register {r_s_id=input_s_id; r_c_id=input_c_id; r_regdate=input_today}
-
-
-let register2_txn (input_s_id:int) (input_c_id:int) (input_today:string) = 
   let v1 = SQL.select1 Course C_capacity
       (fun r -> r.c_id = input_c_id) in
   SQL.update Course
     (*do:*)    (fun u -> begin u.c_capacity <- v1.c_capacity-1; end)    
-    (*where:*) (fun u -> u.c_id = input_c_id)
+    (*where:*) (fun u -> u.c_id = input_c_id);
 
+  SQL.insert Register {r_s_id=input_s_id; r_c_id=input_c_id; r_regdate=input_today}
 
 (*TXN 6*)
-let query_course2_txn (input_c_id:int) =
+let query_course_txn (input_c_id:int) =
   let v0 = SQL.select1 Course C_all 
       (fun r -> r.c_id = input_c_id) in
   let v1 = SQL.select Register R_all
       (fun r -> r.r_c_id=input_c_id) in
-  ()
-  
-let query_course_txn (v1:register list) =
   SQL.foreach v1
     begin fun loop_var_1 ->
       let v2 = SQL.select1 Student S_all
@@ -123,6 +112,7 @@ let query_course_txn (v1:register list) =
 let increase_capacity_txn (input_threshold:int) =
   let v1 = SQL.select College C_all
       (fun r -> r.co_stcount > input_threshold) in
+ 
   SQL.foreach v1
     begin fun loop_var_1 ->
       let v2 = SQL.select  Course C_all
@@ -149,6 +139,7 @@ let expel_student_txn (input_threshold:int) =
       else ()
       
       end
+
 
 (*TXN 8*)
 let enter_grade_txn (input_s_id:int)(input_i_id:int)(input_c_id:int)(input_grade:int) =

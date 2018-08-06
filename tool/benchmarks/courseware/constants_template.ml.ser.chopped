@@ -11,9 +11,9 @@ let _MAX_CYCLE_LENGTH = cl
 let _GUARANTEE = [(EC,Some "Enroll_student",None); 
                   (PSI,Some "Enroll_student2",None);
                   (EC,Some "Query_student",None); 
-                  (EC,Some "Query_student2",None); 
+                  (SER,Some "Query_student2",None); 
                   (EC,Some "Query_course",None); 
-                  (EC,Some "Query_course2",None); 
+                  (SER,Some "Query_course2",None); 
                   (EC,Some "Add_course",None); 
                   (EC,Some "Register",None);
                   (SER,Some "Register2",None);

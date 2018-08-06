@@ -7,4 +7,4 @@ all:
 	pdflatex -shell-escape vldb_sample
 
 clean:
-	rm -f *.log *.aux *.blg *.bbl *.out *~ *.cut
+	rm -f *.log *.aux *.blg *.bbl *.out *~ *.cut sections/*.aux

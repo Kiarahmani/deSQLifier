@@ -127,6 +127,10 @@ module Utils =
             if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
+          |(S.COUNT_SELECT((t_name_s,c_name_s,_,_),_,_,_) , S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_)) -> 
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
+            then Some t_name_s
+            else None
           |( S.UPDATE ((t_name_u1,c_name_u1,_,_),_,_,_) , S.UPDATE ((t_name_u2,c_name_u2,_,_),_,_,_) ) -> 
             if t_name_u1 = t_name_u2 && c_name_u1 = c_name_u2
             then Some t_name_u1
@@ -160,6 +164,10 @@ module Utils =
             then Some t_name_s
             else None  
           |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_),S.RANGE_SELECT((t_name_s,c_name_s,_,_),_,_,_)) -> 
+            if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
+            then Some t_name_s
+            else None
+          |(S.UPDATE ((t_name_u,c_name_u,_,_),_,_,_),S.COUNT_SELECT((t_name_s,c_name_s,_,_),_,_,_)) -> 
             if t_name_s = t_name_u && (c_name_s = c_name_u || is_all_columns c_name_s)
             then Some t_name_s
             else None
