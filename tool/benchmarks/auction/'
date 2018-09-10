@@ -1,0 +1,117 @@
+let unimpl () = failwith "Unimpl"
+
+type table_name = 
+  |Region |Global_attribute_group
+  |Global_attribute_value |Category
+  |User |User_attributes |Item
+  |Item_image |Item_comment |Item_bid
+  |Item_feedback |Item_max_bid
+  |Item_purchase |User_items |Post_auction_args
+
+
+type column_name = 
+  |R_id |R_name  |R_all
+  |AG_id|AG_cid  |AG_name |AG_all
+  |AV_id|AV_agid |AV_name |AV_all
+  |C_id |C_name  |C_parentid |C_all
+  |U_id |U_rating|U_balance |U_created |U_rid |U_all
+  |UA_id|UA_uid  |UA_name |UA_value |UA_created |UA_all
+  |I_id |I_uid   |I_cid |I_name |I_description |I_initprice |I_currprice |I_numbids |I_numimages |I_numgattrs |I_startdate |I_enddate |I_status |I_all
+  |II_id|II_iid  |II_uid |II_path |II_all
+  |IC_id|IC_iid  |IC_uid |IC_buyerid |IC_date |IC_question |IC_response |IC_all
+  |IF_id|IF_iid  |IF_uid |IF_buyerid |IF_rating |IF_date |IF_comment |IF_all
+  |IB_id|IB_iid  |IB_uid |IB_buyerid |IB_bid |IB_maxbid |IB_created |IB_updated |IB_all
+  |MB_iid |MB_uid|MB_ibid|MB_ibiid |MB_ibuid |MB_created |MB_updated|MB_all
+  |IP_id|IP_ibid |IP_iid |IP_uid |IP_date |IP_all 
+  |UI_uid |UI_iid|UI_sellerid |UI_created |UI_all
+  |PA_iid |PA_sellerid |PA_buyerid |PA_ibid |PA_all
+
+module SQL: 
+sig
+  val select1:      table_name -> column_name  -> ('a -> bool) -> 'a
+  val select:       table_name -> column_name -> ('a -> bool) -> 'a list
+  val select_max:   table_name -> column_name -> ('a -> bool) -> 'a
+  val select_min:   table_name -> column_name -> ('a -> bool) -> 'a
+  val select_count: table_name -> column_name -> ('a -> bool) -> int
+  val insert:       table_name  ->  'a -> unit
+  val delete:       table_name  -> ('a -> bool) -> unit
+  val update:       table_name  -> ('a -> unit) -> ('a -> bool) -> unit
+  val choose:  ('a -> bool) -> 'a list -> 'a
+  val foreach: 'a list -> ('a -> unit) -> unit
+end = 
+struct
+  let select = unimpl ()
+  let select1 = unimpl ()
+  let select_max = unimpl ()
+  let select_count = unimpl ()
+  let select_min = unimpl ()
+  let insert = unimpl ()
+  let delete = unimpl ()
+  let update = unimpl ()
+  let choose = unimpl ()
+  let foreach = unimpl ()
+end
+
+(*----------------------------------------------------------------------------------------------------*)
+type region  = {r_id:int; r_name:string}
+type global_attribute_group  = {ag_id:int; ag_cid:int; ag_name:string}
+type global_attribute_value  = {av_id:int; av_agid:int; av_name:string}
+type category  = {c_id:int; c_name:string; c_parentid:int}
+type user  = {u_id:int; u_rating:int; u_balance:int; u_created:int; u_rid:int}
+type user_attributes = {ua_id:int; ua_uid:int; ua_name:string; ua_value:int; ua_created:string}
+type item = {i_id:int; i_uid:int; i_cid:int; i_name:string; i_description:string; i_initprice:int; i_currprice:int; i_numbids:int; i_numimages:int; i_numgattrs:int; i_startdate:string; i_enddate:string; i_status:bool}
+type item_image = {ii_id:int; ii_iid:int; ii_uid:int; ii_path:string}
+type item_comment = {ic_id:int; ic_iid:int; ic_uid:int; ic_buyerid:int; ic_date:string; ic_question:string; ic_response:string}
+type item_feedback  = {if_id:int; if_iid:int; if_uid:int; if_buyerid:int; if_rating:int; if_date:string; if_comment:string}
+type item_bid = {ib_id:int; ib_iid:int; ib_uid:int; ib_buyerid:int; ib_bid:int; ib_maxbid:int; ib_created:string; ib_updated:string}
+type item_max_bid = {mb_iid:int; mb_uid:int; mb_ibiid:int; mb_ibuid:int; mb_created:string; mb_updated:string}
+type item_purchase = {ip_id:int; ip_ibid:int; ip_iid:int; ip_uid:int; ip_date:string}
+type user_items = {ui_uid:int; ui_iid:int; ui_sellerid:int; ui_created:string}
+type post_auction_args = {pa_iid:int; pa_sellerid:int; pa_buyerid:int; pa_ibid:int}
+(*----------------------------------------------------------------------------------------------------*)
+
+
+(*--------------------*)
+(*TXN1: UpdateReservation*)
+let update_reservation_txn (input_r_id:int) (input_f_id:int) (input_cu_id:int) (input_seatnum:string) (input_attr_idx:int) (input_attr_val:string) = 
+  (*pull the reservation from the database*)
+  let v = SQL.select Category C_id (fun u -> (u.c_id=input_f_id)) in
+  ()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

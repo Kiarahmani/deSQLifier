@@ -223,6 +223,9 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> (st
         |"+" -> (F.L.PLUS (lhs,rhs),l_ext_vars@r_ext_vars)
         | x -> failwith x
       end
+    (*true/false case*)
+    |Texp_construct (_,{cstr_name="true"},_) -> (F.L.Boolean true,already_extracted_vars)
+    |Texp_construct (_,{cstr_name="false"},_) -> (F.L.Boolean false,already_extracted_vars)
     |_ -> let _ = Utils.print_helpful_expression_desc desc in failwith "ERROR extract_operands: case not handled yet"  
   
 
@@ -366,6 +369,7 @@ let eaxtract_condition: (string * V.t) list -> Typedtree.expression -> (F.t*(str
     |Texp_construct ({txt=Lident "false"},_,_) ->(F.L.Bool (F.L.Var V.false_var),[])
     |(Texp_apply _) -> extract_where_clause var_list exp []
     |Texp_ident _ ->  extract_where_clause var_list exp []
+    |Texp_field (_,_,x) -> failwith @@ x.lbl_name
     |_ -> Utils.print_helpful_expression_desc exp.exp_desc;  failwith "enncodeIR.ml: eaxtract_condition error"
 
 
@@ -402,10 +406,10 @@ let merge_lists: (S.st * string * F.t) list -> (S.st * string * F.t) list ->
       let trimmed2 = fold_left (fun old_l -> fun (cst,cnm,ccd) -> 
           if mem cnm o_name_list then old_l else old_l@[(cst,cnm,ccd)] ) [] l2 in
       let un_common_section = fold_left (fun old_l -> fun (curr_st,curr_nm,curr_cd) -> 
-      let st_from1 = find (fun (_,n1,_) -> n1=curr_nm) l1 in
-      let st_from2 = find (fun (_,n1,_) -> n1=curr_nm) l2 in
-      let merged_statement = merge_statements st_from1 st_from2 in
-      old_l@[merged_statement]) [] ol 
+        let st_from1 = find (fun (_,n1,_) -> n1=curr_nm) l1 in
+        let st_from2 = find (fun (_,n1,_) -> n1=curr_nm) l2 in
+          let merged_statement = merge_statements st_from1 st_from2 in
+          old_l@[merged_statement]) [] ol 
       in un_common_section@trimmed1@trimmed2
     
 
@@ -465,7 +469,7 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                     let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                     convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) curr_cond  
                                                (old_vars@[(new_name,new_var)]) 
-                                               (updated_old_stmts@[new_stmt,"XX",new_es_cond]) for_count body
+                                               (updated_old_stmts@[new_stmt,txn_name^"_choose_"^(string_of_int iter_s),new_es_cond]) for_count body
       
 
       |"select_count" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
@@ -515,7 +519,7 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
     in (new_stmt,new_var)
     (*intermediate del/upt/ins*)
     |Texp_sequence (app_exp1,body_exps) ->
-    let (s_list1,v_list1) = convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) curr_cond old_vars old_stmts for_count app_exp1 in
+    let (s_list1,v_list1) = convert_body_rec txn_name  (iter_s,iter_u,iter_d,iter_i) curr_cond old_vars old_stmts (for_count) app_exp1 in
       (*depending on what the latest statement was, the ticker must be updated*)
       let open List in
       let open Sql.Statement in
@@ -527,8 +531,11 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                         curr_cond v_list1 s_list1  for_count body_exps
           |(UPDATE _,_,_) -> convert_body_rec txn_name (iter_s,iter_u+1,iter_d,iter_i) 
                         curr_cond v_list1 s_list1  for_count body_exps
-          |(CHOOSE _,_,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) 
+          |(CHOOSE (_,x,_,_),_,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) 
                         curr_cond v_list1 s_list1  for_count body_exps
+          |(SELECT _,_,_) -> convert_body_rec txn_name (iter_s+1,iter_u,iter_d,iter_i) 
+                        curr_cond v_list1 s_list1  for_count body_exps
+
         end
     (*the unit ()*)
     |Texp_construct _ -> (old_stmts,old_vars)

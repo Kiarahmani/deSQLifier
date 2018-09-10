@@ -80,7 +80,7 @@ module Cons =
                |S.MAX_SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
                |S.MIN_SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
                |S.COUNT_SELECT _ -> (old_s^("("^name^"_"^"select_"^(string_of_int iter_s)^")"),iter_s+1,iter_u,iter_d,iter_i,old_writes) 
-               |S.CHOOSE _ -> (old_s,iter_s,iter_u,iter_d,iter_i,old_writes) 
+               |S.CHOOSE (_,x,_,_) -> (old_s,iter_s,iter_u,iter_d,iter_i,old_writes) 
                |S.DELETE _ -> (old_s^("("^name^"_"^"delete_"^(string_of_int iter_d)^")"),iter_s,iter_u,iter_d+1,iter_i,old_writes@[name^"_"^"delete_"^(string_of_int iter_d)])
                |S.UPDATE _ -> (old_s^("("^name^"_"^"update_"^(string_of_int iter_u)^")"),iter_s,iter_u+1,iter_d,iter_i,old_writes@[name^"_"^"update_"^(string_of_int iter_u)]) 
                |S.INSERT _ -> (old_s^("("^name^"_"^"insert_"^(string_of_int iter_i)^")"),iter_s,iter_u,iter_d,iter_i+1,old_writes@[name^"_"^"insert_"^(string_of_int iter_i)])) ("",1,1,1,1,[]) stmts
@@ -338,11 +338,11 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
             let props = set_vars_props txn_name name table_name fol  in
             prev_s^"\n"^var_dec^"\n"^props
 
-          |("c",V.T{name;tp;_},table_name, fol,chosen_var) -> 
+          |("c",V.T{name;tp;_},table_name, fol,chosen_var) ->
             let var_t = Var.Type.to_string tp in
             let txn_name = T.name txn in
-            let var_dec = declare_vars txn_name name var_t table_name in
-            let props = choose_vars_props txn_name name table_name fol chosen_var  in
+            let var_dec = declare_vars txn_name (name) var_t table_name in
+            let props = choose_vars_props txn_name (name) table_name fol chosen_var  in
             prev_s^"\n"^var_dec^"\n"^props) 
           "" var_list 
       in vars
@@ -366,7 +366,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
                                                 |(Some curr_var,"v",tb_name,fol,_) -> prev_l@[("v",curr_var,tb_name,fol,"")]
                                                 |(Some curr_var,"s",tb_name,fol,_) -> prev_l@[("s",curr_var,tb_name,fol,"")]
                                                 |(Some curr_var,"c",tb_name,fol,chosen_var) -> prev_l@[("c",curr_var,tb_name,fol,chosen_var)]
-                                                |_ -> prev_l) [] stmts
+                                                |(_,_,x,_,_) ->prev_l) [] stmts
   in (vars)
   
 (*params*)

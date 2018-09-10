@@ -5,4 +5,4 @@ Useful Commands:
 alias m='cd src || make localclean && make world && cd ../ && ./run bankaccount'
 watch -n 1 cat z3-encoding.smt2
 
-
+./run -t benchmarks -f failure -c ser -s 4 

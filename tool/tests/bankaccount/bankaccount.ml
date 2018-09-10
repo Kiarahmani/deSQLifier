@@ -6,12 +6,10 @@ module U = Unix
 type table_name = 
   | Bankaccount
   | Employee
-  | Department
 
 type column_name = 
   |B_all |B_id |B_bal
   |E_all |E_id |E_name |E_sal
- (* |DE_all|DE_id|DE_address|DE_budget *)
 
 
 (* Definition of SimpSQL *)
@@ -44,42 +42,33 @@ end
 
 (*Tabel Definitions*)
 type bankaccount = {b_id: int; mutable b_bal: int}
-(*type department = {de_id: int; mutable de_address: string; mutable de_budget: int}
-*)
 type employee = {e_id: int; mutable e_name: string; mutable e_sal: int}
 
-(*
-(*TXN1*)
-let txn1_txn (src_id:int) (dst_id:int) (amount:int) =  
-  SQL.update Employee
-     (fun u -> begin u.e_sal <- amount; end)          
-     (fun u -> u.e_id != src_id)
- 
-  SQL.delete Employee (fun u -> u.e_id = src_id);
-  SQL.insert Employee {e_id=src_id;e_name="David";e_sal=amount};
-  let acc_src = SQL.select1 Bankaccount B_bal 
-                  (fun u -> u.b_id = src_id) in 
-  let acc_dst = SQL.select_max Employee E_sal 
-                (fun u -> u.e_id = dst_id) in 
-    SQL.update Bankaccount
-    (*do:*)    (fun u -> begin u.b_bal <- amount; end)
-    (*where:*) (fun u -> u.b_id = src_id); 
-    SQL.update Employee
-    (*do:*)    (fun u -> begin u.e_sal <- 400; end)
-    (*where:*) (fun u -> u.e_id = dst_id)
-*)
-
-(*you cannot fix this with PSI, right?*)
-(*TXN2*)
+(*TXN*)
 let deposit_txn (input:int) =  
- 
   let v1 = SQL.select Employee E_sal
-                   (fun u -> (u.e_id > 100) || (u.e_id < 200)) in 
-  
+                   (fun u -> (u.e_id = 100)) in 
   SQL.update Employee
-    (*do:*)    (fun u -> begin u.e_sal <- 200; end)    
-      (*where:*) (fun u -> u.e_id = 100)
-  (*let v2 = SQL.choose (fun u -> u.e_id <300) v1 in
+    (*do:*)    (fun u -> begin u.e_sal <- 65000; end)    
+      (*where:*) (fun u -> u.e_id = 101)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*let v2 = SQL.choose (fun u -> u.e_id <300) v1 in
   *)
  (* SQL.foreach v1
    begin fun loop_var_1 -> 

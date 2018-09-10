@@ -6,8 +6,8 @@ type c = SERIALIZABILITY | EVENTUAL_SERIALIZABILITY
 
 
 (*SET THE FOLLOWING CONSTANTS BEFORE RUNNING YOUR ANALYSIS*)
-let _CORRECTNESS = SERIALIZABILITY
-let _MAX_CYCLE_LENGTH = 10
+let _CORRECTNESS = corr
+let _MAX_CYCLE_LENGTH = cl
 let _GUARANTEE = [
   (EC,Some "New_user",None); (*must be ser, even in isolation*)
   (EC,Some "New_item",None); (*must be ser, even in isolation*)
