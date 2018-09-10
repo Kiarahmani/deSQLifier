@@ -85,16 +85,16 @@ let new_user_txn (input_uid:int) (input_rid:int) =
 let new_item_txn (input_i_id:int)(input_u_id:int)(input_c_id:int)(input_ag_ids: int list)(input_name:string)(input_init_price:int)(input_num_images:int)
     (input_ag_ids_length:int ) (input_image_paths:string list) (input_start_date:string) (input_end_date:string) = 
   SQL.foreach input_ag_ids
-    begin fun loop_var_1 -> 
-      let v1 = SQL.select1 Global_attribute_group AG_name (fun u -> u.ag_id = loop_var_1) in
+    begin fun input_ag_ids_loop_var_1 -> 
+      let v1 = SQL.select1 Global_attribute_group AG_name (fun u -> u.ag_id = input_ag_ids_loop_var_1) in
       ()
     end;
-(*  SQL.insert Item {i_id=input_i_id; i_uid=input_u_id; i_cid=input_c_id; i_name=input_name; i_description="description"; i_initprice=input_init_price;
+  SQL.insert Item {i_id=input_i_id; i_uid=input_u_id; i_cid=input_c_id; i_name=input_name; i_description="description"; i_initprice=input_init_price;
                    i_currprice=input_init_price; i_numbids=0; i_numimages=input_num_images; i_numgattrs=input_ag_ids_length; i_startdate=input_start_date; 
                     i_enddate=input_end_date; i_status=true};
    
   SQL.foreach input_image_paths
-    begin fun loop_var_2 ->
+    begin fun input_image_paths_loop_var_1 ->
       ()
     end
-*)
+
