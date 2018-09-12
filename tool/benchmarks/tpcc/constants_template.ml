@@ -10,6 +10,6 @@ let _CORRECTNESS = corr
 let _MAX_CYCLE_LENGTH = cl
 let _GUARANTEE = [(SER,Some "New_order",None);
                   (SER,Some "Payment",None);
-                  (SER,Some "Order_status",None); (*when rr-> unsat in es and sat in ser*)
-                  (SER, Some "Stock_level",None); (*when rr-> sat in both cases*) (*both cases unsat when column checks added to range select*)
-                  (RR,Some "Delivery",None)]
+                  (EC,Some "Order_status",None); (*when rr-> unsat in es and sat in ser*)
+                  (EC, Some "Stock_level",None); (*when rr-> sat in both cases*) (*both cases unsat when column checks added to range select*)
+                  (SER,Some "Delivery",None)]

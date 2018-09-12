@@ -86,31 +86,31 @@ let new_order_txn (input_w_id:int) (input_d_id:int) (input_c_id:int) (input_o_id
     {n_oid=input_o_id; n_did=input_d_id; n_wid=input_w_id};
   
   SQL.foreach input_item_list
-     begin fun loop_var_1 -> 
+     begin fun input_item_list_loop_var_1 -> 
       let v7 = SQL.select1 Item I_info (*read corresponding item*)
-                            (fun r -> r.i_id = loop_var_1.i_id) in
+                            (fun r -> r.i_id = input_item_list_loop_var_1.i_id) in
       (*read and update stock*)
       let v8 = SQL.select1 Stock S_ytd
-                            (fun r -> (r.s_iid = loop_var_1.i_id) && (r.s_wid = input_w_id)) in
+                            (fun r -> (r.s_iid = input_item_list_loop_var_1.i_id) && (r.s_wid = input_w_id)) in
       let v9 = SQL.select1 Stock S_ordercnt
-                            (fun r -> (r.s_iid = loop_var_1.i_id) && (r.s_wid = input_w_id)) in
+                            (fun r -> (r.s_iid = input_item_list_loop_var_1.i_id) && (r.s_wid = input_w_id)) in
       SQL.update Stock
           (*do:*)    (fun u -> begin u.s_ordercnt <- v9.s_ordercnt+1; end)
-          (*where:*) (fun r -> (r.s_iid = loop_var_1.i_id) && (r.s_wid = input_w_id));
+          (*where:*) (fun r -> (r.s_iid = input_item_list_loop_var_1.i_id) && (r.s_wid = input_w_id));
       SQL.update Stock
           (*do:*)    (fun u -> begin u.s_ytd <- v8.s_ytd+input_ol_qnt; end)
-          (*where:*) (fun r -> (r.s_iid = loop_var_1.i_id) && (r.s_wid = input_w_id));
+          (*where:*) (fun r -> (r.s_iid = input_item_list_loop_var_1.i_id) && (r.s_wid = input_w_id));
       
       let v10 = SQL.select1 Stock S_quant
-                            (fun r -> (r.s_iid = loop_var_1.i_id) && (r.s_wid = input_w_id)) in
+                            (fun r -> (r.s_iid = input_item_list_loop_var_1.i_id) && (r.s_wid = input_w_id)) in
       (*conditional update*)
       if v10.s_quant-input_ol_qnt>10
       then SQL.update Stock
             (*do:*)    (fun r -> begin r.s_quant <- v10.s_quant - input_ol_qnt; end)
-            (*where:*) (fun r -> (r.s_iid = loop_var_1.i_id) && (r.s_wid = input_w_id))
+            (*where:*) (fun r -> (r.s_iid = input_item_list_loop_var_1.i_id) && (r.s_wid = input_w_id))
       else SQL.update Stock
             (*do:*)    (fun r -> begin r.s_quant <- v10.s_quant - input_ol_qnt + 91; end)
-            (*where:*) (fun r -> (r.s_iid = loop_var_1.i_id) && (r.s_wid = input_w_id))
+            (*where:*) (fun r -> (r.s_iid = input_item_list_loop_var_1.i_id) && (r.s_wid = input_w_id))
      end
 
 
@@ -206,9 +206,9 @@ let stock_level_txn (input_w_id:int) (input_d_id:int) =
                          (fun r -> r.ol_did=input_d_id && r.ol_wid = input_w_id && 
                                    r.ol_oid<v1.d_nextoid && r.ol_oid>v1.d_nextoid-20) in
   SQL.foreach v2
-    begin fun loop_var_1 ->
+    begin fun v2_loop_var_1 ->
       let v3 = SQL.select Stock S_all
-                         (fun r -> r.s_wid=input_w_id && r.s_iid = loop_var_1.ol_iid) in
+                         (fun r -> r.s_wid=input_w_id && r.s_iid = v2_loop_var_1.ol_iid) in
       ()(*print v3*)
     end
   
