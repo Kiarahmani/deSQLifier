@@ -210,7 +210,8 @@ let rec extract_operands:  (string*V.t) list -> Typedtree.expression_desc -> (st
     |Texp_ident (Pident {name},_,_) -> let open List in
                                        if mem name  @@ fst @@ split var_list
                                           then (F.L.Var (V.make name "salam" None T.Int LOCAL),
-                                                    already_extracted_vars@[find (fun (vn,_) ->(name=vn)) var_list])
+                                                    already_extracted_vars@[try find (fun (vn,_) ->(name=vn)) var_list
+                                                                            with Not_found -> failwith " encodeIR.ml ERROR L214" ])
                                           else (F.L.Var (V.make name "salam" None T.Int PARAM),[])
     |Texp_constant (Const_int i) -> (F.L.Cons i,already_extracted_vars) (*integer constant*)
     |Texp_constant (Const_string (s,_)) -> (F.L.Str s,already_extracted_vars) (*string constant*)
@@ -406,8 +407,10 @@ let merge_lists: (S.st * string * F.t) list -> (S.st * string * F.t) list ->
       let trimmed2 = fold_left (fun old_l -> fun (cst,cnm,ccd) -> 
           if mem cnm o_name_list then old_l else old_l@[(cst,cnm,ccd)] ) [] l2 in
       let un_common_section = fold_left (fun old_l -> fun (curr_st,curr_nm,curr_cd) -> 
-        let st_from1 = find (fun (_,n1,_) -> n1=curr_nm) l1 in
-        let st_from2 = find (fun (_,n1,_) -> n1=curr_nm) l2 in
+        let st_from1 = try (find (fun (_,n1,_) -> n1=curr_nm) l1) 
+                       with Not_found -> failwith " encodeIR.ml ERROR L409" in
+        let st_from2 = try (find (fun (_,n1,_) -> n1=curr_nm) l2)
+                       with Not_found -> failwith " encodeIR.ml ERROR L411" in
           let merged_statement = merge_statements st_from1 st_from2 in
           old_l@[merged_statement]) [] ol 
       in un_common_section@trimmed1@trimmed2
@@ -437,6 +440,14 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                     let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
                       convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
                                        (updated_old_stmts@[(new_stmt,new_type,new_es_cond)]) for_count
+                                       body
+      |"select_count" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
+                       let new_stmt = S.COUNT_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
+                       let new_type = txn_name^"_select_"^(string_of_int iter_s) in
+                       let new_es_cond = F.my_false in
+                       let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
+                         convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
+                                       (updated_old_stmts@[new_stmt,new_type,new_es_cond]) for_count
                                        body
       |"select" ->  let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in  
                     let new_stmt = S.RANGE_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
@@ -471,15 +482,6 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
                                                (old_vars@[(new_name,new_var)]) 
                                                (updated_old_stmts@[new_stmt,txn_name^"_choose_"^(string_of_int iter_s),new_es_cond]) for_count body
       
-
-      |"select_count" -> let new_stmt_col = (accessed_table,accessed_col, T.Int ,true) in 
-                       let new_stmt = S.COUNT_SELECT (new_stmt_col,curr_var,wh_clause,curr_cond) in 
-                       let new_type = txn_name^"_select_"^(string_of_int iter_s) in
-                       let new_es_cond = F.my_false in
-                       let updated_old_stmts = update_statements curr_cond accessed_stmts old_stmts in
-                         convert_body_rec txn_name  (iter_s+1,iter_u,iter_d,iter_i) curr_cond (old_vars@[(name,curr_var)])  
-                                       (updated_old_stmts@[new_stmt,new_type,new_es_cond]) for_count
-                                       body
   
       |_ -> failwith "(encodeIR.ml) ERROR  convert_body_rec: unexpected select kind" 
       end
@@ -554,7 +556,8 @@ let rec convert_body_rec:  string -> (int*int*int*int) -> F.t -> (string*V.t) li
 
     |Texp_function (_,[{c_lhs;c_guard=None;c_rhs}],_) -> 
         convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) curr_cond old_vars old_stmts for_count c_rhs
-  
+    
+    |Texp_try (exp,_) -> convert_body_rec txn_name (iter_s,iter_u,iter_d,iter_i) curr_cond old_vars old_stmts for_count exp
     |_ -> Utils.print_helpful_expression_desc exp_desc;  failwith "ERROR convert_body_rec: unexpected case"
 
 

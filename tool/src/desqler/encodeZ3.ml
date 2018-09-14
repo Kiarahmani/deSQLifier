@@ -355,7 +355,7 @@ String.concat "\n" [PrintUtils.comment_header "Finalization";cycles_to_check;all
       |S.RANGE_SELECT ((s_tb_name,_,_,_),v,f,_) -> (Some v,"s",s_tb_name,f,"")
       |S.MAX_SELECT ((tb_name,_,_,_),v,f,_) -> (Some v,"v",tb_name,f,"")
       |S.MIN_SELECT ((tb_name,_,_,_),v,f,_) ->  (Some v,"v",tb_name,f,"")
-      |S.COUNT_SELECT (_,v,f,_) ->  (Some v,"v","Int",f,"")
+      |S.COUNT_SELECT (_,v,f,_) ->              (Some v,"v","Int"  ,f,"")
       |S.CHOOSE (v,v2,f,_) -> (Some v, "c",(V.table v), f,(V.name v2))
       |_ -> (None,"","",F.my_true,"")
 
