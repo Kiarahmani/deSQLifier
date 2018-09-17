@@ -119,33 +119,49 @@ let delete_link_txn (input_id1:int)(input_id2:int)(input_link_type:int)(input_ex
 
 (*--------------------*)
 (*TXN5*)
-let t5_txn (input_:int) = 
-  ()
+let delete_node_txn (input_id:int)(input_type:int) = 
+  SQL.delete Node_table (fun u -> u.n_id=input_id&&u.n_type=input_type)
 
 (*--------------------*)
 (*TXN6*)
-let t6_txn (input_:int) = 
-  ()
+let get_link_txn (input_id1:int)(input_link_type:int)(input_id2_list: int list) = 
+  SQL.foreach input_id2_list 
+    begin fun input_id2_list_loop_var_1 ->    
+      let v1 = SQL.select1 Link_table L_all (fun u -> u.l_id1=input_id1&&u.l_link_type=input_link_type&&u.l_id2=input_id2_list_loop_var_1)
+      in ()
+    end
 
 (*--------------------*)
 (*TXN7*)
-let t7_txn (input_:int) = 
-  ()
+let get_link_list_txn (input_visibility:int)(input_minTimestamp:int)(input_maxTimestamp:int)(input_id:int)(input_type:int) = 
+  let v = SQL.select Link_table L_all (fun u ->
+      u.l_id1=input_id&&u.l_link_type=input_type&&u.l_time>input_minTimestamp&&u.l_time<input_maxTimestamp&&u.l_visibility=input_visibility)
+  in ()
     
 (*--------------------*)
 (*TXN8*)
-let t8_txn (input_:int) = 
-  ()
+let get_node_txn (input_id:int)(input_type:int) = 
+  let v1 = SQL.select1 Node_table N_all (fun u -> u.n_id=input_id&&u.n_type=input_type)
+  in ()
 
 (*--------------------*)
 (*TXN9*)
-let t9_txn (input_:int) = 
+let update_link_txn (input_:int) = 
   ()
 
 (*--------------------*)
 (*TXN10*)
-let t10_txn (input_:int) = 
-  ()
+let update_node_txn (input_id:int)(input_type:int)(input_version:int)(input_time:int) = 
+  SQL.update Node_table
+    (fun u -> u.n_data <- "HEXDATA")
+    (fun u -> u.n_id = input_id && u.n_type=input_type);
+  SQL.update Node_table
+    (fun u -> u.n_version <- input_version)
+    (fun u -> u.n_id = input_id && u.n_type=input_type);
+  SQL.update Node_table
+    (fun u -> u.n_time <- input_time)
+    (fun u -> u.n_id = input_id && u.n_type=input_type)
+
 
 
 
